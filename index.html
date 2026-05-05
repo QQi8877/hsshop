@@ -1,0 +1,2087 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>信通家俱行 | 讓家更有溫度</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --charcoal:#343331;
+  --ink:#262523;
+  --muted:#67625b;
+  --soft:#8d867b;
+  --tan:#b99263;
+  --tan-dark:#967244;
+  --sage:#7f9076;
+  --cream:#f3eee6;
+  --paper:#fffaf3;
+  --line:#ddd2c4;
+  --white:#fff;
+  --danger:#b84236;
+  --shadow:0 18px 50px rgba(45,38,30,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:"Noto Sans TC",system-ui,sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.7;
+}
+button,input,textarea,select{font:inherit}
+button{cursor:pointer}
+img{max-width:100%}
+nav{
+  position:fixed;
+  inset:0 0 auto;
+  z-index:100;
+  height:62px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:0 36px;
+  background:rgba(243,238,230,.94);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(12px);
+}
+.nav-logo{
+  font-family:"Noto Serif TC",serif;
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:.08em;
+  white-space:nowrap;
+}
+.nav-logo span{color:var(--tan)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{
+  color:var(--muted);
+  text-decoration:none;
+  font-size:13px;
+  letter-spacing:.08em;
+}
+.nav-links a:hover{color:var(--tan-dark)}
+.nav-edit-btn{
+  border:0;
+  color:var(--white);
+  background:var(--charcoal);
+  border-radius:7px;
+  padding:8px 15px;
+  font-size:12px;
+  letter-spacing:.04em;
+}
+.nav-edit-btn.active,.nav-edit-btn:hover{background:var(--tan-dark)}
+#hero{
+  margin-top:62px;
+  min-height:520px;
+  position:relative;
+  display:flex;
+  align-items:center;
+  overflow:hidden;
+  background:
+    linear-gradient(90deg,rgba(22,27,30,.82),rgba(22,27,30,.42),rgba(22,27,30,.05)),
+    url("assets/hero-furniture-art.svg") center/cover;
+}
+.hero-content{position:relative;z-index:1;max-width:560px;padding:84px 72px}
+.hero-tag{
+  display:inline-block;
+  color:var(--white);
+  background:var(--tan);
+  border-radius:999px;
+  padding:5px 14px;
+  font-size:11px;
+  letter-spacing:.16em;
+  margin-bottom:22px;
+}
+.hero-title{
+  font-family:"Noto Serif TC",serif;
+  color:var(--white);
+  font-size:52px;
+  line-height:1.18;
+  letter-spacing:.07em;
+  margin-bottom:12px;
+}
+.hero-sub{
+  color:rgba(255,255,255,.72);
+  font-family:"Noto Serif TC",serif;
+  letter-spacing:.18em;
+  margin-bottom:22px;
+}
+.hero-desc{
+  color:rgba(255,255,255,.82);
+  max-width:450px;
+  margin-bottom:34px;
+}
+.hero-cta{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:var(--white);
+  text-decoration:none;
+  border:1px solid rgba(255,255,255,.58);
+  border-radius:6px;
+  padding:11px 22px;
+  letter-spacing:.08em;
+  font-size:13px;
+}
+.hero-cta:hover{background:rgba(255,255,255,.12)}
+body.edit-mode [data-editable]:hover,
+body.edit-mode [data-product-field]:hover,
+body.edit-mode [data-contact-field]:hover{outline:2px dashed var(--tan);outline-offset:4px}
+body.edit-mode [data-editable]:focus,
+body.edit-mode [data-product-field]:focus,
+body.edit-mode [data-contact-field]:focus{outline:2px solid var(--tan);outline-offset:4px;background:rgba(255,255,255,.08)}
+body.edit-mode [data-product-field="desc"]:empty::before{content:"點此輸入商品說明";color:var(--soft)}
+.section-header{text-align:center;padding:58px 24px 28px}
+.section-label{font-size:11px;letter-spacing:.18em;color:var(--tan-dark);margin-bottom:8px}
+.section-title{
+  font-family:"Noto Serif TC",serif;
+  font-size:29px;
+  font-weight:500;
+  color:var(--charcoal);
+  margin-bottom:12px;
+}
+.section-line{width:42px;height:2px;background:var(--tan);margin:auto}
+#categories{padding-bottom:64px}
+.categories-bar,.sub-categories-bar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  padding:0 38px 18px;
+}
+.sub-categories-bar{display:none;padding-bottom:24px}
+.cat-tab,.sub-tab,.add-cat-btn{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--muted);
+  border-radius:999px;
+  padding:8px 17px;
+  font-size:13px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+.sub-tab{font-size:12px;padding:6px 14px}
+.cat-tab:hover,.sub-tab:hover{border-color:var(--tan);color:var(--tan-dark)}
+.cat-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
+.sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
+.tab-count{font-size:11px;background:rgba(0,0,0,.08);border-radius:999px;padding:0 7px}
+.active .tab-count{background:rgba(255,255,255,.22)}
+.add-cat-btn{display:none;border-style:dashed;color:var(--tan-dark);background:transparent}
+body.edit-mode .add-cat-btn{display:inline-flex}
+.products-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(255px,1fr));
+  gap:24px;
+  padding:0 38px;
+}
+.product-card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:8px;
+  overflow:hidden;
+  position:relative;
+  cursor:pointer;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.product-card:hover{
+  transform:translateY(-4px);
+  box-shadow:var(--shadow);
+  border-color:#d0bda4;
+}
+.product-img-wrap{
+  position:relative;
+  aspect-ratio:4/3;
+  overflow:hidden;
+  background:#e5d9ca;
+}
+.product-img-wrap img{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center;
+  transition:opacity .34s ease,transform .34s ease;
+}
+.img-primary{opacity:1;z-index:1}
+.img-secondary{opacity:0;z-index:2}
+.product-card:hover .img-primary.has-secondary{opacity:0}
+.product-card:hover .img-secondary{opacity:1;transform:scale(1.04)}
+.product-card:hover .img-primary:not(.has-secondary){transform:scale(1.04)}
+.product-cat-badge{
+  position:absolute;
+  top:12px;
+  left:12px;
+  z-index:4;
+  background:rgba(43,39,34,.74);
+  color:var(--white);
+  border-radius:999px;
+  padding:3px 10px;
+  font-size:11px;
+  letter-spacing:.05em;
+  backdrop-filter:blur(6px);
+}
+.img-count-badge,.img-zoom-hint{
+  position:absolute;
+  z-index:4;
+  bottom:10px;
+  border-radius:999px;
+  color:var(--white);
+  background:rgba(43,39,34,.66);
+  backdrop-filter:blur(6px);
+}
+.img-count-badge{left:10px;font-size:11px;padding:3px 9px}
+.img-zoom-hint{
+  right:10px;
+  width:34px;
+  height:34px;
+  display:grid;
+  place-items:center;
+  opacity:0;
+  transition:opacity .2s;
+}
+.product-card:hover .img-zoom-hint{opacity:1}
+.placeholder{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  color:var(--tan-dark);
+  text-align:center;
+  font-size:13px;
+}
+.placeholder svg{width:44px;height:44px;opacity:.52;margin-bottom:6px}
+.product-info{padding:17px 18px 19px}
+.product-name{
+  font-family:"Noto Serif TC",serif;
+  color:var(--charcoal);
+  font-size:17px;
+  font-weight:500;
+  margin-bottom:5px;
+}
+.product-size{font-size:12px;color:var(--tan-dark);margin-bottom:6px}
+.product-desc{font-size:13px;color:var(--soft)}
+.favorite-btn{
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:6;
+  width:36px;
+  height:36px;
+  border:0;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  color:var(--white);
+  background:rgba(43,39,34,.58);
+  backdrop-filter:blur(6px);
+  font-size:19px;
+  transition:transform .16s ease,background .16s ease,color .16s ease;
+}
+.favorite-btn:hover{transform:scale(1.06);background:rgba(43,39,34,.76)}
+.favorite-btn.active{background:var(--danger);color:#fff}
+.favorites-fab{
+  position:fixed;
+  right:22px;
+  bottom:22px;
+  z-index:190;
+  min-width:56px;
+  height:48px;
+  border:0;
+  border-radius:999px;
+  padding:0 16px;
+  background:var(--charcoal);
+  color:var(--white);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 14px 34px rgba(0,0,0,.24);
+}
+.favorites-count{
+  min-width:20px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:999px;
+  background:var(--tan);
+  font-size:12px;
+}
+.favorites-panel{
+  position:fixed;
+  top:0;
+  right:0;
+  bottom:0;
+  z-index:620;
+  width:min(390px,100%);
+  background:var(--paper);
+  box-shadow:-24px 0 70px rgba(0,0,0,.24);
+  transform:translateX(105%);
+  transition:transform .24s ease;
+  display:flex;
+  flex-direction:column;
+}
+.favorites-panel.open{transform:translateX(0)}
+.favorites-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:22px;
+  border-bottom:1px solid var(--line);
+}
+.favorites-title{font-family:"Noto Serif TC",serif;font-size:22px;color:var(--charcoal)}
+.favorites-close{border:0;background:#ece3d8;color:var(--muted);border-radius:50%;width:34px;height:34px}
+.favorites-list{padding:18px;display:grid;gap:12px;overflow:auto}
+.favorite-item{
+  display:grid;
+  grid-template-columns:84px 1fr auto;
+  gap:12px;
+  align-items:center;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px;
+  background:#fff;
+}
+.favorite-item img{width:84px;height:64px;object-fit:cover;border-radius:6px;background:var(--cream)}
+.favorite-item-name{font-weight:700;color:var(--charcoal);font-size:14px}
+.favorite-item-size{font-size:12px;color:var(--soft)}
+.favorite-item button{border:0;background:transparent;color:var(--danger);font-size:18px}
+.favorites-empty{padding:34px 18px;text-align:center;color:var(--soft);font-size:14px}
+.card-edit-controls{
+  display:none;
+  position:absolute;
+  top:8px;
+  right:8px;
+  z-index:8;
+  gap:6px;
+}
+body.edit-mode .card-edit-controls{display:flex}
+.card-edit-controls button{
+  border:0;
+  width:30px;
+  height:30px;
+  border-radius:6px;
+  color:var(--white);
+}
+.btn-edit-card{background:var(--charcoal)}
+.btn-del-card{background:var(--danger)}
+.add-product-card{
+  display:none;
+  min-height:225px;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:10px;
+  border:2px dashed var(--line);
+  border-radius:8px;
+  color:var(--tan-dark);
+  background:transparent;
+}
+body.edit-mode .add-product-card{display:flex}
+#contact{background:var(--charcoal);padding:70px 38px}
+.contact-inner{
+  max-width:940px;
+  margin:auto;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:54px;
+}
+.contact-heading{
+  font-family:"Noto Serif TC",serif;
+  color:var(--white);
+  font-size:27px;
+  font-weight:500;
+}
+.contact-sub{color:rgba(255,255,255,.48);font-size:13px;letter-spacing:.08em;margin:6px 0 30px}
+.contact-items{display:grid;gap:18px}
+.contact-item{display:flex;gap:13px;align-items:flex-start}
+.contact-icon{
+  width:36px;
+  height:36px;
+  display:grid;
+  place-items:center;
+  border-radius:8px;
+  background:rgba(185,146,99,.17);
+  flex:none;
+}
+.contact-icon svg{width:17px;height:17px;stroke:var(--tan)}
+.contact-item-label{font-size:11px;color:var(--tan);letter-spacing:.1em}
+.contact-item-val{color:rgba(255,255,255,.86);font-size:14px}
+.social-links{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.social-card{
+  min-height:230px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;
+  padding:22px;
+  color:var(--white);
+  text-decoration:none;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  background:#385182;
+  isolation:isolate;
+  transition:transform .2s ease,border-color .2s ease;
+}
+.social-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.32)}
+.social-card.line-card{background:#2b7f52}
+.social-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background:
+    radial-gradient(circle at 75% 18%,rgba(255,255,255,.24),transparent 26%),
+    linear-gradient(140deg,rgba(255,255,255,.14),rgba(0,0,0,.28));
+}
+.social-mark{
+  position:absolute;
+  top:22px;
+  left:22px;
+  width:68px;
+  height:68px;
+  display:grid;
+  place-items:center;
+  border-radius:18px;
+  background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.16);
+  font-size:34px;
+  font-weight:700;
+}
+.social-card-title{font-family:"Noto Serif TC",serif;font-size:22px;margin-bottom:5px}
+.social-card-text{font-size:13px;color:rgba(255,255,255,.78)}
+.social-edit-note{display:none;margin-top:12px;font-size:12px;color:rgba(255,255,255,.46)}
+body.edit-mode .social-edit-note{display:block}
+footer{
+  background:#232220;
+  color:rgba(255,255,255,.42);
+  padding:22px 38px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  font-size:12px;
+}
+.footer-brand{font-family:"Noto Serif TC",serif;letter-spacing:.08em}
+.modal-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:240;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(34,29,24,.72);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  width:min(590px,100%);
+  max-height:92vh;
+  overflow:auto;
+  background:var(--paper);
+  border-radius:14px;
+  padding:32px;
+  position:relative;
+  box-shadow:0 24px 80px rgba(0,0,0,.22);
+}
+.modal-title{
+  font-family:"Noto Serif TC",serif;
+  font-size:21px;
+  color:var(--charcoal);
+  margin-bottom:22px;
+}
+.modal-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:32px;
+  height:32px;
+  border:0;
+  border-radius:50%;
+  color:var(--muted);
+  background:#ece3d8;
+}
+.modal label{
+  display:block;
+  margin:15px 0 6px;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.06em;
+}
+.modal input,.modal textarea,.modal select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--cream);
+  color:var(--ink);
+  padding:10px 12px;
+  outline:none;
+}
+.modal textarea{min-height:78px;resize:vertical}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
+.photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
+.photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
+.upload-method-row{display:flex;gap:5px;margin-bottom:10px}
+.upload-method-btn{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--white);
+  color:var(--muted);
+  padding:7px 4px;
+  font-size:11px;
+}
+.upload-method-btn.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
+.url-input-row{display:flex;gap:7px;margin-bottom:8px}
+.url-input-row input{margin:0}
+.url-input-row button{
+  white-space:nowrap;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--white);
+  color:var(--muted);
+  padding:0 14px;
+}
+.helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
+.dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.spec-editor{margin-top:8px;overflow-x:auto}
+.spec-table{width:100%;border-collapse:collapse;font-size:13px}
+.spec-table th{
+  padding:7px 10px;
+  background:var(--cream);
+  color:var(--muted);
+  font-weight:500;
+  font-size:11px;
+  letter-spacing:.08em;
+  border:1px solid var(--line);
+  text-align:center;
+  white-space:nowrap;
+}
+.spec-table th:first-child{text-align:left;min-width:90px}
+.spec-table td{
+  border:1px solid var(--line);
+  padding:4px 6px;
+}
+.spec-table td:first-child{padding:4px 8px}
+.spec-table input{
+  width:100%;
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  font-size:13px;
+  text-align:center;
+  padding:3px 4px;
+  outline:none;
+  min-width:52px;
+}
+.spec-table input:first-child,.spec-table td:first-child input{text-align:left}
+.spec-table input:focus{background:rgba(185,146,99,.1);border-radius:4px}
+.spec-table .spec-del-btn{
+  border:0;
+  background:transparent;
+  color:var(--soft);
+  cursor:pointer;
+  font-size:15px;
+  padding:2px 5px;
+  border-radius:4px;
+  display:block;
+  margin:auto;
+}
+.spec-table .spec-del-btn:hover{background:#fce8e8;color:var(--danger)}
+.add-spec-btn{
+  border:1px dashed var(--tan);
+  border-radius:7px;
+  background:rgba(185,146,99,.08);
+  color:var(--tan-dark);
+  padding:8px 10px;
+  font-size:12px;
+  margin-top:6px;
+}
+.photo-slots{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin:10px 0 8px;
+}
+.photo-slot{
+  position:relative;
+  aspect-ratio:1;
+  overflow:hidden;
+  border:1.5px dashed var(--line);
+  border-radius:8px;
+  background:var(--cream);
+}
+.photo-slot.has-img{border-style:solid}
+.photo-slot:hover{border-color:var(--tan)}
+.slot-img{width:100%;height:100%;object-fit:cover;display:block}
+.slot-num{
+  position:absolute;
+  top:3px;
+  left:5px;
+  z-index:3;
+  font-size:10px;
+  color:var(--soft);
+}
+.has-img .slot-num{color:rgba(255,255,255,.72)}
+.slot-overlay{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  color:var(--tan-dark);
+  font-size:10px;
+  text-align:center;
+}
+.has-img .slot-overlay{opacity:0;background:rgba(0,0,0,.44);color:var(--white);transition:opacity .18s}
+.has-img:hover .slot-overlay{opacity:1}
+.slot-file-input{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+}
+.slot-del{
+  display:none;
+  position:absolute;
+  top:4px;
+  right:4px;
+  z-index:6;
+  width:19px;
+  height:19px;
+  border:0;
+  border-radius:50%;
+  background:var(--danger);
+  color:var(--white);
+  line-height:1;
+}
+.has-img:hover .slot-del{display:grid;place-items:center}
+.slot-drag-handle{
+  display:none;
+  position:absolute;
+  bottom:4px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:6;
+  background:rgba(0,0,0,.52);
+  color:#fff;
+  border-radius:4px;
+  padding:2px 6px;
+  font-size:10px;
+  letter-spacing:.04em;
+  cursor:grab;
+  white-space:nowrap;
+  pointer-events:all;
+}
+.has-img:hover .slot-drag-handle{display:block}
+.photo-slot.drag-over{
+  border:2px solid var(--tan);
+  background:rgba(185,146,99,.12);
+  transform:scale(1.04);
+  transition:transform .15s;
+}
+.photo-slot.dragging{opacity:.4}
+.modal-actions{display:flex;gap:10px;margin-top:26px}
+.btn-secondary,.btn-primary{
+  border-radius:7px;
+  padding:12px 18px;
+}
+.btn-secondary{border:1px solid var(--line);background:transparent;color:var(--muted)}
+.btn-primary{flex:1;border:0;background:var(--charcoal);color:var(--white)}
+.btn-primary:hover{background:var(--tan-dark)}
+.edit-toolbar{
+  display:none;
+  position:fixed;
+  left:50%;
+  bottom:24px;
+  transform:translateX(-50%);
+  z-index:180;
+  align-items:center;
+  gap:7px;
+  border-radius:999px;
+  padding:10px 16px;
+  background:var(--charcoal);
+  color:rgba(255,255,255,.82);
+  box-shadow:0 16px 42px rgba(0,0,0,.3);
+  font-size:13px;
+}
+body.edit-mode .edit-toolbar{display:flex}
+.edit-toolbar button{
+  border:0;
+  border-radius:999px;
+  background:rgba(255,255,255,.12);
+  color:var(--white);
+  padding:6px 13px;
+  font-size:12px;
+}
+.edit-toolbar button:hover{background:var(--tan-dark)}
+.toast{
+  position:fixed;
+  right:24px;
+  bottom:84px;
+  z-index:500;
+  border-radius:8px;
+  background:var(--charcoal);
+  color:var(--white);
+  padding:12px 18px;
+  opacity:0;
+  transform:translateY(8px);
+  pointer-events:none;
+  transition:.25s;
+  font-size:13px;
+}
+.toast.show{opacity:1;transform:translateY(0)}
+#lightbox{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:600;
+  background:
+    radial-gradient(circle at 22% 18%,rgba(185,146,99,.2),transparent 28%),
+    radial-gradient(circle at 82% 72%,rgba(127,144,118,.16),transparent 32%),
+    linear-gradient(135deg,rgba(35,32,28,.91),rgba(55,48,40,.88));
+  color:var(--ink);
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:12px;
+  padding:18px;
+}
+#lightbox.open{display:flex}
+.lb-close,.lb-arrow{
+  position:fixed;
+  z-index:3;
+  border:0;
+  border-radius:50%;
+  background:rgba(255,250,243,.82);
+  color:var(--charcoal);
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+  display:grid;
+  place-items:center;
+}
+.lb-close{top:18px;right:22px;width:42px;height:42px;font-size:25px}
+.lb-arrow{top:50%;width:46px;height:46px;font-size:27px;transform:translateY(-50%)}
+#lbPrev{left:18px}
+#lbNext{right:18px}
+.lb-close:hover,.lb-arrow:hover{background:var(--tan);color:var(--white)}
+.lb-stage{
+  position:relative;
+  width:100%;
+  max-height:72vh;
+  overflow:hidden;
+  border-radius:8px;
+  cursor:zoom-in;
+  background:rgba(255,250,243,.08);
+  box-shadow:0 24px 70px rgba(0,0,0,.18);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.lb-left{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:12px;
+  min-width:0;
+}
+.lb-layout{
+  width:min(1180px,94vw);
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);
+  gap:24px;
+  align-items:start;
+}
+.lb-info{
+  max-height:72vh;
+  overflow:auto;
+  border:1px solid rgba(221,210,196,.82);
+  border-radius:8px;
+  padding:26px;
+  background:rgba(255,250,243,.93);
+  color:var(--muted);
+  box-shadow:0 20px 58px rgba(0,0,0,.16);
+  backdrop-filter:blur(10px);
+}
+.lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
+.lb-product-title{font-family:"Noto Serif TC",serif;font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
+.lb-product-desc{font-size:14px;margin-bottom:18px}
+.lb-product-note{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:14px;color:var(--muted)}
+.lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
+.lb-spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.lb-spec-box{border:1px solid var(--line);border-radius:7px;padding:10px;background:rgba(243,238,230,.72)}
+.lb-spec-label{font-size:11px;color:var(--soft)}
+.lb-spec-value{font-size:15px;color:var(--charcoal)}
+.lb-detail-list{display:grid;gap:8px}
+.lb-detail-row{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:7px;font-size:13px}
+.lb-detail-row span:first-child{color:var(--soft)}
+.lb-detail-row strong{color:var(--charcoal)}
+.lb-spec-table-wrap{overflow-x:auto;margin-bottom:4px}
+.lb-spec-table{width:100%;border-collapse:collapse;font-size:13px}
+.lb-spec-table th{
+  padding:7px 12px;
+  background:rgba(243,238,230,.8);
+  color:var(--soft);
+  font-size:11px;
+  letter-spacing:.06em;
+  font-weight:500;
+  border:1px solid var(--line);
+  text-align:center;
+}
+.lb-spec-table th:first-child{text-align:left}
+.lb-spec-table td{
+  padding:8px 12px;
+  border:1px solid var(--line);
+  color:var(--charcoal);
+  text-align:center;
+  font-size:13px;
+}
+.lb-spec-table .lb-spec-part{
+  text-align:left;
+  color:var(--soft);
+  font-size:12px;
+  white-space:nowrap;
+}
+.lb-spec-table tr:hover td{background:rgba(243,238,230,.5)}
+.lb-stage.zoomed{cursor:zoom-in}
+.lb-stage img{
+  display:block;
+  max-width:100%;
+  max-height:72vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:8px;
+  transform-origin:center center;
+  transition:transform .12s ease, transform-origin .08s ease;
+  user-select:none;
+}
+.lb-thumbs{
+  display:flex;
+  gap:8px;
+  max-width:100%;
+  overflow:auto;
+  padding:2px 0;
+}
+.lb-thumb{
+  width:58px;
+  height:44px;
+  object-fit:cover;
+  border:2px solid transparent;
+  border-radius:6px;
+  opacity:.55;
+}
+.lb-thumb.active,.lb-thumb:hover{border-color:var(--tan);opacity:1}
+.lb-counter{font-size:12px;color:rgba(255,255,255,.55)}
+.lb-hint{font-size:11px;color:rgba(255,255,255,.42);text-align:center}
+@media(max-width:760px){
+  nav{padding:0 15px}
+  .nav-links{display:none}
+  .hero-content{padding:58px 24px}
+  .hero-title{font-size:34px}
+  .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:14px}
+  .categories-bar,.sub-categories-bar{padding-left:15px;padding-right:15px}
+  .contact-inner{grid-template-columns:1fr;gap:34px}
+  .social-links{grid-template-columns:1fr}
+  #contact{padding:54px 22px}
+  footer{padding:20px 22px}
+  .modal{padding:28px 20px}
+  .edit-toolbar{left:12px;right:12px;transform:none;overflow:auto;border-radius:14px}
+  .lb-layout{grid-template-columns:1fr;gap:14px}
+  .lb-info{max-height:none;width:88vw}
+  .lb-spec-grid{grid-template-columns:1fr 1fr}
+  .favorites-fab{right:14px;bottom:14px}
+}
+@media(max-width:470px){
+  .products-grid{grid-template-columns:1fr}
+  .photo-slots{grid-template-columns:repeat(3,1fr)}
+  .lb-arrow{display:none!important}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-logo">信通<span>家俱行</span></div>
+  <ul class="nav-links">
+    <li><a href="#hero">首頁</a></li>
+    <li><a href="#categories">商品</a></li>
+    <li><a href="#contact">聯繫</a></li>
+  </ul>
+  <button class="nav-edit-btn" id="editToggleBtn" onclick="toggleEditMode()">編輯模式</button>
+</nav>
+
+<section id="hero">
+  <div class="hero-content">
+    <div class="hero-tag" data-editable data-page-field="heroTag" contenteditable="false">XIN TONG FURNITURE</div>
+    <h1 class="hero-title" data-editable data-page-field="heroTitle" contenteditable="false">信通家俱行</h1>
+    <p class="hero-sub" data-editable data-page-field="heroSub" contenteditable="false">讓家，更有溫度</p>
+    <p class="hero-desc" data-editable data-page-field="heroDesc" contenteditable="false">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
+    <a href="#categories" class="hero-cta" data-editable data-page-field="heroCta" contenteditable="false">探索商品</a>
+  </div>
+</section>
+
+<section id="categories">
+  <div class="section-header">
+    <div class="section-label">PRODUCTS</div>
+    <h2 class="section-title" data-editable data-page-field="productsTitle" contenteditable="false">精選商品</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="categories-bar" id="categoriesBar">
+    <button class="add-cat-btn" onclick="addCategory()">新增類別</button>
+  </div>
+  <div class="sub-categories-bar" id="subCategoriesBar"></div>
+  <div class="products-grid" id="productsGrid"></div>
+</section>
+
+<section id="contact">
+  <div class="contact-inner">
+    <div>
+      <h2 class="contact-heading" data-editable data-page-field="contactTitle" contenteditable="false">聯繫我們</h2>
+      <p class="contact-sub" data-editable data-page-field="contactSub" contenteditable="false">CONTACT US</p>
+      <div class="contact-items" id="contactItems"></div>
+    </div>
+    <div>
+      <div class="social-links">
+        <a class="social-card fb-card" id="fbLink" href="#" target="_blank" rel="noopener">
+          <div class="social-mark">f</div>
+          <div class="social-card-title" data-editable data-page-field="fbTitle" contenteditable="false">Facebook</div>
+          <div class="social-card-text" data-editable data-page-field="fbText" contenteditable="false">查看新品與門市消息</div>
+        </a>
+        <a class="social-card line-card" id="lineLink" href="#" target="_blank" rel="noopener">
+          <div class="social-mark">LINE</div>
+          <div class="social-card-title" data-editable data-page-field="lineTitle" contenteditable="false">LINE</div>
+          <div class="social-card-text" data-editable data-page-field="lineText" contenteditable="false">加入好友快速詢問</div>
+        </a>
+      </div>
+      <div class="social-edit-note">連結網址可在「聯繫資訊」中修改。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
+  <div>© 2026 信通家俱行</div>
+</footer>
+
+<div class="edit-toolbar">
+  <span>編輯模式開啟</span>
+  <button onclick="addCategory()">新增類別</button>
+  <button onclick="openProductModal(null)">新增商品</button>
+  <button onclick="editContactInfo()">聯繫資訊</button>
+  <button onclick="saveAll()" style="background:var(--tan)">儲存</button>
+</div>
+<div class="toast" id="toast"></div>
+<button class="favorites-fab" onclick="toggleFavoritesPanel()">
+  <span>♡ 喜愛清單</span>
+  <span class="favorites-count" id="favoritesCount">0</span>
+</button>
+<aside class="favorites-panel" id="favoritesPanel">
+  <div class="favorites-head">
+    <div class="favorites-title">喜愛清單</div>
+    <button class="favorites-close" onclick="toggleFavoritesPanel(false)">×</button>
+  </div>
+  <div class="favorites-list" id="favoritesList"></div>
+</aside>
+
+<div id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()" aria-label="關閉">×</button>
+  <button class="lb-arrow" id="lbPrev" onclick="lbNav(-1)" aria-label="上一張">‹</button>
+  <button class="lb-arrow" id="lbNext" onclick="lbNav(1)" aria-label="下一張">›</button>
+  <div class="lb-layout">
+    <div class="lb-left">
+      <div class="lb-stage" id="lbStage"><img id="lbImg" src="" alt=""></div>
+      <div class="lb-thumbs" id="lbThumbs"></div>
+      <div class="lb-counter" id="lbCounter"></div>
+      <div class="lb-hint">滑鼠移到圖片上會局部放大；縮圖、方向鍵可切換照片，ESC 關閉。</div>
+    </div>
+    <div class="lb-info" id="lbInfo"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('productModal')">×</button>
+    <div class="modal-title" id="productModalTitle">新增商品</div>
+    <label>主分類</label>
+    <select id="pMainCat" onchange="updateSubSelect()"></select>
+    <label>子分類</label>
+    <div id="pSubCatWrap"><select id="pSubCat"></select></div>
+    <label>商品名稱 *</label>
+    <input type="text" id="pName" placeholder="例：北歐實木餐桌">
+    <input type="hidden" id="pSize">
+    <div class="dimension-grid">
+      <div>
+        <label>寬 W（cm）</label>
+        <input type="text" id="pWidth" placeholder="例：120">
+      </div>
+      <div>
+        <label>深 D（cm）</label>
+        <input type="text" id="pDepth" placeholder="例：60">
+      </div>
+      <div>
+        <label>高 H（cm）</label>
+        <input type="text" id="pHeight" placeholder="例：75">
+      </div>
+    </div>
+    <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
+    <div class="spec-editor" id="specEditor"></div>
+    <button class="add-spec-btn" onclick="addSpecRow()">＋ 新增部位列</button>
+    <label>商品說明（選填）</label>
+    <textarea id="pDesc" placeholder="材質、特色說明"></textarea>
+
+    <div class="photos-section">
+      <div class="photos-section-title">商品照片（最多 5 張）</div>
+      <div class="photos-note">
+        第 1 張是封面，第 2 張是滑鼠移過商品時的切換圖片。Google Drive 連結請先設定為「知道連結的任何人都可以檢視」。
+      </div>
+      <div class="upload-method-row">
+        <button class="upload-method-btn active" onclick="setUploadMethod('file',this)">本機上傳</button>
+        <button class="upload-method-btn" onclick="setUploadMethod('gdrive',this)">Google 雲端</button>
+        <button class="upload-method-btn" onclick="setUploadMethod('url',this)">圖片網址</button>
+      </div>
+      <div id="urlInputPanel" style="display:none">
+        <div class="url-input-row">
+          <input type="text" id="urlInput" placeholder="https://example.com/image.jpg">
+          <button onclick="addPhotoByUrl()">新增</button>
+        </div>
+      </div>
+      <div id="gdriveInputPanel" style="display:none">
+        <div class="url-input-row">
+          <input type="text" id="gdriveInput" placeholder="貼上 Google Drive 分享連結">
+          <button onclick="addPhotoByGdrive()">新增</button>
+        </div>
+        <div class="helper-text">支援 /file/d/ID/view 與 open?id=ID 等常見格式，會自動轉成圖片可讀取網址。</div>
+      </div>
+      <div class="photo-slots" id="photoSlots"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('productModal')">取消</button>
+      <button class="btn-primary" onclick="saveProduct()">儲存商品</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="catModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('catModal')">×</button>
+    <div class="modal-title">新增類別</div>
+    <label>類別名稱 *</label>
+    <input type="text" id="catName" placeholder="例：沙發、餐桌椅">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('catModal')">取消</button>
+      <button class="btn-primary" onclick="saveCategory()">新增</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contactModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('contactModal')">×</button>
+    <div class="modal-title">編輯聯繫資訊</div>
+    <label>地址</label><input type="text" id="cAddr">
+    <label>電話</label><input type="text" id="cPhone">
+    <label>LINE / WeChat</label><input type="text" id="cLine">
+    <label>營業時間</label><input type="text" id="cHours">
+    <label>電子郵件</label><input type="text" id="cEmail">
+    <label>Facebook 連結</label><input type="text" id="cFb" placeholder="https://www.facebook.com/...">
+    <label>LINE 連結</label><input type="text" id="cLineUrl" placeholder="https://line.me/...">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
+      <button class="btn-primary" onclick="saveContactInfo()">儲存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 密碼驗證 Modal -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal" style="max-width:360px">
+    <div class="modal-title" style="margin-bottom:8px">🔒 編輯模式</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">請輸入管理員密碼</p>
+    <label>密碼</label>
+    <input type="password" id="pwInput" placeholder="••••••••"
+      onkeydown="if(event.key==='Enter')verifyPassword()">
+    <div id="pwError" style="display:none;color:var(--danger);font-size:12px;margin-top:8px">密碼錯誤，請再試一次</div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('pwModal');document.getElementById('pwInput').value='';document.getElementById('pwError').style.display='none'">取消</button>
+      <button class="btn-primary" onclick="verifyPassword()">確認</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* ── Firebase Firestore 整合 ────────────────────────────────────── */
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
+  authDomain:"hsshop-10bd9.firebaseapp.com",
+  projectId:"hsshop-10bd9",
+  storageBucket:"hsshop-10bd9.firebasestorage.app",
+  messagingSenderId:"693625648338",
+  appId:"1:693625648338:web:7460e5aa1c5e9e55b1a90b"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+const SITE_DOC="hsshop-10bd9";
+
+const Storage={
+  async get(){
+    try{
+      const snap=await getDoc(doc(db,"sitedata",SITE_DOC));
+      if(snap.exists())return snap.data();
+      return null;
+    }catch(e){
+      console.warn("Firestore 讀取失敗，改用 localStorage",e);
+      try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null}catch(e2){return null}
+    }
+  },
+  async set(data){
+    try{
+      await setDoc(doc(db,"sitedata",SITE_DOC),data);
+      // 同時備份 localStorage
+      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(e){}
+      return true;
+    }catch(e){
+      console.warn("Firestore 寫入失敗，改用 localStorage",e);
+      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));return false}catch(e2){return false}
+    }
+  }
+};
+/* ─────────────────────────────────────────────────────────────── */
+const STORAGE_KEY="xintong_furniture_site_v1";
+const MAX_PHOTOS=5;
+const DEFAULT_CATALOG=[
+  {id:"cat-bed",name:"寢具",subs:[{id:"sub-bed-frame",name:"床架"},{id:"sub-bed-mattress",name:"床墊"},{id:"sub-bed-head",name:"床頭板"},{id:"sub-bed-side",name:"床邊桌"}]},
+  {id:"cat-table",name:"桌子",subs:[{id:"sub-tbl-dining",name:"餐桌"},{id:"sub-tbl-coffee",name:"茶几／邊桌"},{id:"sub-tbl-desk",name:"書桌／工作桌"},{id:"sub-tbl-dressing",name:"梳妝台"}]},
+  {id:"cat-chair",name:"椅子",subs:[{id:"sub-chr-dining",name:"餐椅"},{id:"sub-chr-sofa",name:"沙發"},{id:"sub-chr-lounge",name:"單人休閒椅"},{id:"sub-chr-office",name:"辦公椅"}]},
+  {id:"cat-storage",name:"收納櫃／架",subs:[{id:"sub-sto-wardrobe",name:"衣櫃"},{id:"sub-sto-bookshelf",name:"書架／展示架"},{id:"sub-sto-tv",name:"電視櫃"},{id:"sub-sto-shoe",name:"鞋櫃"}]}
+];
+function sampleSvg(title,color1,color2){
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="900" height="675" viewBox="0 0 900 675">
+    <rect width="900" height="675" fill="${color1}"/>
+    <rect x="0" y="460" width="900" height="215" fill="#ded0bd"/>
+    <rect x="160" y="290" width="580" height="145" rx="26" fill="${color2}"/>
+    <rect x="205" y="225" width="210" height="125" rx="24" fill="#a4937d"/>
+    <rect x="485" y="225" width="210" height="125" rx="24" fill="#bba886"/>
+    <rect x="210" y="426" width="36" height="94" rx="10" fill="#5b5144"/>
+    <rect x="654" y="426" width="36" height="94" rx="10" fill="#5b5144"/>
+    <text x="450" y="590" fill="#4f463a" font-family="Arial" font-size="36" text-anchor="middle">${title}</text>
+  </svg>`;
+  return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
+}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function escapeHTML(str=""){
+  return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+const DEFAULT_STATE={
+  catalog:structuredClone(DEFAULT_CATALOG),
+  activeMain:"全部",
+  activeSub:null,
+  favorites:[],
+  products:[
+    {id:uid(),mainCat:"cat-bed",subCat:"sub-bed-frame",name:"日式低床架",size:"Queen 153 x 203 cm",desc:"低矮設計，原木質感，附床頭收納空間。",photos:[sampleSvg("日式低床架","#8a7b68","#5b5448"),sampleSvg("床架細節","#9b8a70","#6b5f50")]},
+    {id:uid(),mainCat:"cat-table",subCat:"sub-tbl-dining",name:"實木圓形餐桌",size:"直徑 120 x 高 75 cm",desc:"橡木實木材質，圓形設計增加圍桌親密感。",photos:[sampleSvg("實木圓形餐桌","#8f8a76","#a78350"),sampleSvg("桌面紋理","#a6967b","#7d6f58")]},
+    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-sofa",name:"北歐亞麻三人沙發",size:"寬 220 x 深 90 x 高 80 cm",desc:"天然亞麻布面，木腳設計，耐用舒適。",photos:[sampleSvg("北歐亞麻沙發","#87917b","#6f765f"),sampleSvg("沙發布面","#a5aa96","#7f886f")]},
+    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-tv",name:"木質電視矮櫃",size:"寬 160 x 深 40 x 高 50 cm",desc:"附線材收納孔與門片收納空間。",photos:[sampleSvg("木質電視矮櫃","#827765","#7d5f3f")]}
+  ],
+  contact:{
+    addr:"台北市大安區 XX 路 XX 號",
+    phone:"02-2345-6789",
+    line:"@xintong",
+    hours:"週一至週六 10:00-19:00",
+    email:"info@xintong.com",
+    fbUrl:"https://www.facebook.com/",
+    lineUrl:"https://line.me/"
+  },
+  pageText:{}
+};
+let state=structuredClone(DEFAULT_STATE);
+function normalizeProduct(product){
+  product.photos=product.photos||[product.img,product.img2].filter(Boolean);
+  product.dimensions=product.dimensions||{width:"",depth:"",height:""};
+  product.specs=Array.isArray(product.specs)?product.specs:[];
+  if(!product.specs.length&&product.size){
+    product.specs=[{label:"尺寸備註",value:product.size}];
+  }
+  return product;
+}
+let editMode=false,editingProductId=null,workingPhotos=[],uploadMethod="file",workingSpecs=[];
+
+function getMainCat(id){return state.catalog.find(c=>c.id===id)}
+function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||id)}
+function getSubName(mainId,subId){return (getMainCat(mainId)?.subs||[]).find(s=>s.id===subId)?.name||""}
+function withCm(value){
+  const text=String(value||"").trim();
+  if(!text)return "";
+  if(/[a-zA-Z公分吋尺]/.test(text))return text;
+  if(/^[\d\s.xX×*~\-–—]+$/.test(text))return `${text} cm`;
+  return text;
+}
+function getSizeSummary(product){
+  const d=product.dimensions||{};
+  const parts=[];
+  if(d.width)parts.push(`寬 ${withCm(d.width)}`);
+  if(d.depth)parts.push(`深 ${withCm(d.depth)}`);
+  if(d.height)parts.push(`高 ${withCm(d.height)}`);
+  return parts.length?parts.join(" x "):(product.size||"尺寸洽詢");
+}
+function toast(msg,dur=2200){
+  const el=document.getElementById("toast");
+  el.textContent=msg;
+  el.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>el.classList.remove("show"),dur);
+}
+async function saveAll(){
+  const saveData={
+    catalog:state.catalog,
+    products:state.products,
+    contact:state.contact,
+    pageText:state.pageText,
+    favorites:state.favorites
+  };
+  const ok=await Storage.set(saveData);
+  toast(ok?"已儲存 ☁️":"已儲存（本機備份）");
+}
+function openModal(id){document.getElementById(id).classList.add("open")}
+function closeModal(id){document.getElementById(id).classList.remove("open")}
+function applyPageText(){
+  document.querySelectorAll("[data-page-field]").forEach(el=>{
+    const key=el.dataset.pageField;
+    if(state.pageText?.[key])el.textContent=state.pageText[key];
+    el.addEventListener("blur",()=>{
+      state.pageText=state.pageText||{};
+      state.pageText[key]=el.textContent.trim();
+      saveAll();
+    });
+  });
+}
+function syncEditableState(){
+  document.querySelectorAll("[data-editable],[data-product-field],[data-contact-field]").forEach(el=>{
+    el.contentEditable=editMode?"true":"false";
+  });
+}
+/* 密碼雜湊（SHA-256） */
+const ADMIN_HASH="fb2495b0307d8ea473eef24e55c4c6a4b264074ef206122f79631ad9940a73a8";
+async function sha256(str){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+async function verifyPassword(){
+  const pw=document.getElementById("pwInput").value;
+  const hash=await sha256(pw);
+  if(hash===ADMIN_HASH){
+    document.getElementById("pwInput").value="";
+    document.getElementById("pwError").style.display="none";
+    closeModal("pwModal");
+    activateEditMode();
+  }else{
+    document.getElementById("pwError").style.display="block";
+    document.getElementById("pwInput").select();
+  }
+}
+function activateEditMode(){
+  editMode=true;
+  document.body.classList.add("edit-mode");
+  const btn=document.getElementById("editToggleBtn");
+  btn.textContent="完成編輯";
+  btn.classList.add("active");
+  syncEditableState();
+  renderProducts();
+  renderContact();
+}
+function toggleEditMode(){
+  if(editMode){
+    // 退出編輯模式，直接儲存
+    editMode=false;
+    document.body.classList.remove("edit-mode");
+    const btn=document.getElementById("editToggleBtn");
+    btn.textContent="編輯模式";
+    btn.classList.remove("active");
+    syncEditableState();
+    saveAll();
+    renderProducts();
+    renderContact();
+  }else{
+    // 進入編輯模式，要求密碼
+    document.getElementById("pwInput").value="";
+    document.getElementById("pwError").style.display="none";
+    openModal("pwModal");
+    setTimeout(()=>document.getElementById("pwInput").focus(),100);
+  }
+}
+
+function renderCategories(){
+  const bar=document.getElementById("categoriesBar");
+  const subBar=document.getElementById("subCategoriesBar");
+  const addBtn=bar.querySelector(".add-cat-btn");
+  bar.querySelectorAll(".cat-tab").forEach(el=>el.remove());
+  ["全部",...state.catalog.map(c=>c.id)].forEach(id=>{
+    const count=id==="全部"?state.products.length:state.products.filter(p=>p.mainCat===id).length;
+    const btn=document.createElement("button");
+    btn.className="cat-tab"+(state.activeMain===id?" active":"");
+    btn.innerHTML=`${escapeHTML(getMainName(id))}<span class="tab-count">${count}</span>`;
+    btn.onclick=()=>{state.activeMain=id;state.activeSub=null;renderCategories();renderProducts()};
+    bar.insertBefore(btn,addBtn);
+  });
+  subBar.innerHTML="";
+  if(state.activeMain!=="全部"){
+    const main=getMainCat(state.activeMain);
+    if(main?.subs?.length){
+      const all=document.createElement("button");
+      all.className="sub-tab"+(state.activeSub===null?" active":"");
+      all.innerHTML=`全部 <span class="tab-count">${state.products.filter(p=>p.mainCat===state.activeMain).length}</span>`;
+      all.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
+      subBar.appendChild(all);
+      main.subs.forEach(sub=>{
+        const count=state.products.filter(p=>p.mainCat===state.activeMain&&p.subCat===sub.id).length;
+        const btn=document.createElement("button");
+        btn.className="sub-tab"+(state.activeSub===sub.id?" active":"");
+        btn.innerHTML=`${escapeHTML(sub.name)}<span class="tab-count">${count}</span>`;
+        btn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
+        subBar.appendChild(btn);
+      });
+    }
+    subBar.style.display="flex";
+  }else{
+    subBar.style.display="none";
+  }
+  renderCatSelect();
+}
+function addCategory(){document.getElementById("catName").value="";openModal("catModal")}
+function saveCategory(){
+  const name=document.getElementById("catName").value.trim();
+  if(!name){toast("請輸入類別名稱");return}
+  state.catalog.push({id:"cat-"+uid(),name,subs:[]});
+  closeModal("catModal");
+  renderCategories();
+  renderProducts();
+  saveAll();
+  toast("類別已新增");
+}
+function renderCatSelect(){
+  const main=document.getElementById("pMainCat");
+  if(!main)return;
+  main.innerHTML=state.catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+  updateSubSelect();
+}
+function updateSubSelect(){
+  const mainId=document.getElementById("pMainCat").value;
+  const sub=document.getElementById("pSubCat");
+  const wrap=document.getElementById("pSubCatWrap");
+  const main=getMainCat(mainId);
+  if(main?.subs?.length){
+    sub.innerHTML=main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
+    wrap.style.display="block";
+  }else{
+    sub.innerHTML="";
+    wrap.style.display="none";
+  }
+}
+
+function renderProducts(){
+  const grid=document.getElementById("productsGrid");
+  grid.innerHTML="";
+  let list=[...state.products];
+  if(state.activeMain!=="全部"){
+    list=list.filter(p=>p.mainCat===state.activeMain);
+    if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
+  }
+  if(!list.length&&!editMode){
+    const empty=document.createElement("div");
+    empty.style.cssText="grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--soft)";
+    empty.textContent="此分類尚無商品";
+    grid.appendChild(empty);
+  }
+  list.forEach(product=>{
+    const photos=(product.photos||[]).filter(Boolean);
+    const card=document.createElement("article");
+    card.className="product-card";
+    const wrap=document.createElement("div");
+    wrap.className="product-img-wrap";
+    const subName=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
+    const fav=document.createElement("button");
+    fav.className="favorite-btn"+(state.favorites.includes(product.id)?" active":"");
+    fav.title="加入喜愛清單";
+    fav.textContent=state.favorites.includes(product.id)?"♥":"♡";
+    fav.addEventListener("click",event=>{
+      event.stopPropagation();
+      toggleFavorite(product.id);
+    });
+    card.appendChild(fav);
+    if(photos.length){
+      const cover=document.createElement("img");
+      cover.src=normalizePhotoUrl(photos[0]);
+      cover.alt=product.name;
+      cover.loading="lazy";
+      cover.className="img-primary"+(photos.length>1?" has-secondary":"");
+      cover.onerror=()=>showBrokenImage(wrap,cover);
+      wrap.appendChild(cover);
+      if(photos.length>1){
+        const hover=document.createElement("img");
+        hover.src=normalizePhotoUrl(photos[1]);
+        hover.alt=product.name+" hover";
+        hover.loading="lazy";
+        hover.className="img-secondary";
+        hover.onerror=()=>hover.style.display="none";
+        wrap.appendChild(hover);
+      }
+      const hint=document.createElement("div");
+      hint.className="img-zoom-hint";
+      hint.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/><path d="M11 8v6M8 11h6"/></svg>';
+      wrap.appendChild(hint);
+      if(photos.length>1){
+        const count=document.createElement("div");
+        count.className="img-count-badge";
+        count.textContent=photos.length+" 張";
+        wrap.appendChild(count);
+      }
+    }else{
+      wrap.innerHTML=placeholderMarkup("尚無圖片");
+    }
+    const badge=document.createElement("span");
+    badge.className="product-cat-badge";
+    badge.textContent=subName;
+    wrap.appendChild(badge);
+    card.appendChild(wrap);
+    const info=document.createElement("div");
+    info.className="product-info";
+    info.innerHTML=`
+      <div class="product-name" data-product-id="${product.id}" data-product-field="name" contenteditable="${editMode}">${escapeHTML(product.name)}</div>
+      <div class="product-size" data-product-id="${product.id}" data-product-field="size" contenteditable="${editMode}">${escapeHTML(getSizeSummary(product))}</div>
+    `;
+    info.querySelectorAll("[data-product-field]").forEach(el=>{
+      el.addEventListener("click",event=>{if(editMode)event.stopPropagation()});
+      el.addEventListener("blur",()=>{
+        const target=state.products.find(p=>p.id===el.dataset.productId);
+        if(!target)return;
+        if(el.dataset.productField==="size")target.size=el.textContent.trim();
+        else target[el.dataset.productField]=el.textContent.trim();
+        saveAll();
+        renderCategories();
+      });
+    });
+    card.appendChild(info);
+    const controls=document.createElement("div");
+    controls.className="card-edit-controls";
+    controls.innerHTML=`<button class="btn-edit-card" title="編輯" onclick="event.stopPropagation();openProductModal('${product.id}')">編</button><button class="btn-del-card" title="刪除" onclick="event.stopPropagation();deleteProduct('${product.id}')">刪</button>`;
+    card.appendChild(controls);
+    card.addEventListener("click",()=>{if(!editMode)openProductDetail(product.id)});
+    grid.appendChild(card);
+  });
+  const add=document.createElement("button");
+  add.className="add-product-card";
+  add.innerHTML='<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg><span>新增商品</span>';
+  add.onclick=()=>openProductModal(null);
+  grid.appendChild(add);
+}
+function placeholderMarkup(text){
+  return `<div class="placeholder"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><div>${escapeHTML(text)}</div></div></div>`;
+}
+function showBrokenImage(wrap,img){
+  img.style.display="none";
+  if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片無法載入<br><small>請確認 Drive 已公開分享</small></div></div>`);
+}
+function deleteProduct(id){
+  if(!confirm("確定要刪除這個商品嗎？"))return;
+  state.products=state.products.filter(p=>p.id!==id);
+  state.favorites=state.favorites.filter(favId=>favId!==id);
+  renderCategories();
+  renderProducts();
+  renderFavorites();
+  saveAll();
+  toast("商品已刪除");
+}
+function toggleFavorite(id){
+  if(state.favorites.includes(id)){
+    state.favorites=state.favorites.filter(favId=>favId!==id);
+    toast("已從喜愛清單移除");
+  }else{
+    state.favorites.push(id);
+    toast("已加入喜愛清單");
+  }
+  renderProducts();
+  renderFavorites();
+  saveAll();
+}
+function toggleFavoritesPanel(force){
+  const panel=document.getElementById("favoritesPanel");
+  panel.classList.toggle("open",typeof force==="boolean"?force:!panel.classList.contains("open"));
+}
+function renderFavorites(){
+  const list=document.getElementById("favoritesList");
+  const count=document.getElementById("favoritesCount");
+  const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(Boolean);
+  count.textContent=products.length;
+  if(!products.length){
+    list.innerHTML='<div class="favorites-empty">尚未加入商品。點商品卡右上角愛心即可收藏。</div>';
+    return;
+  }
+  list.innerHTML="";
+  products.forEach(product=>{
+    const item=document.createElement("div");
+    item.className="favorite-item";
+    const photo=normalizePhotoUrl((product.photos||[])[0]||"");
+    item.innerHTML=`
+      <img src="${photo}" alt="">
+      <div>
+        <div class="favorite-item-name">${escapeHTML(product.name)}</div>
+        <div class="favorite-item-size">${escapeHTML(getSizeSummary(product))}</div>
+      </div>
+      <button title="移除">×</button>
+    `;
+    item.querySelector("img").onclick=()=>openProductDetail(product.id);
+    item.querySelector(".favorite-item-name").onclick=()=>openProductDetail(product.id);
+    item.querySelector("button").onclick=()=>toggleFavorite(product.id);
+    list.appendChild(item);
+  });
+}
+
+function setUploadMethod(method,el){
+  uploadMethod=method;
+  document.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
+  document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
+  renderPhotoSlots();
+}
+function renderPhotoSlots(){
+  const container=document.getElementById("photoSlots");
+  container.innerHTML="";
+  let dragSrcIdx=null;
+  for(let i=0;i<MAX_PHOTOS;i++){
+    const src=workingPhotos[i];
+    const slot=document.createElement("div");
+    slot.className="photo-slot"+(src?" has-img":"");
+    slot.dataset.idx=i;
+    if(src){
+      const img=document.createElement("img");
+      img.className="slot-img";
+      img.src=normalizePhotoUrl(src);
+      img.alt="";
+      slot.appendChild(img);
+
+      // 拖曳排序
+      slot.draggable=true;
+      slot.addEventListener("dragstart",e=>{
+        dragSrcIdx=i;
+        slot.classList.add("dragging");
+        e.dataTransfer.effectAllowed="move";
+      });
+      slot.addEventListener("dragend",()=>{
+        slot.classList.remove("dragging");
+        container.querySelectorAll(".photo-slot").forEach(s=>s.classList.remove("drag-over"));
+      });
+      slot.addEventListener("dragover",e=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect="move";
+        if(dragSrcIdx!==i)slot.classList.add("drag-over");
+      });
+      slot.addEventListener("dragleave",()=>slot.classList.remove("drag-over"));
+      slot.addEventListener("drop",e=>{
+        e.preventDefault();
+        slot.classList.remove("drag-over");
+        if(dragSrcIdx===null||dragSrcIdx===i)return;
+        // 交換兩張圖片
+        const tmp=workingPhotos[dragSrcIdx];
+        workingPhotos[dragSrcIdx]=workingPhotos[i];
+        workingPhotos[i]=tmp;
+        dragSrcIdx=null;
+        renderPhotoSlots();
+        toast("圖片順序已更新");
+      });
+
+      // 拖曳提示標籤
+      const handle=document.createElement("div");
+      handle.className="slot-drag-handle";
+      handle.textContent="⠿ 拖曳排序";
+      handle.addEventListener("mousedown",e=>e.stopPropagation());
+      slot.appendChild(handle);
+    }
+    const num=document.createElement("span");
+    num.className="slot-num";
+    num.textContent=i+1;
+    slot.appendChild(num);
+    const overlay=document.createElement("div");
+    overlay.className="slot-overlay";
+    overlay.innerHTML=src?"更換":"新增";
+    if(uploadMethod==="file"){
+      const file=document.createElement("input");
+      file.type="file";
+      file.accept="image/*";
+      file.className="slot-file-input";
+      file.addEventListener("change",event=>handleSlotFile(i,event));
+      slot.appendChild(file);
+    }else{
+      overlay.style.cursor="pointer";
+      overlay.addEventListener("click",()=>promptUrlForSlot(i));
+    }
+    slot.appendChild(overlay);
+    if(src){
+      const del=document.createElement("button");
+      del.className="slot-del";
+      del.textContent="×";
+      del.addEventListener("click",event=>{
+        event.stopPropagation();
+        workingPhotos[i]="";
+        const filled=workingPhotos.filter(Boolean);
+        workingPhotos=new Array(MAX_PHOTOS).fill("");
+        filled.forEach((photo,index)=>workingPhotos[index]=photo);
+        renderPhotoSlots();
+      });
+      slot.appendChild(del);
+    }
+    container.appendChild(slot);
+  }
+}
+function handleSlotFile(slotIdx,event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{workingPhotos[slotIdx]=e.target.result;renderPhotoSlots()};
+  reader.readAsDataURL(file);
+}
+function promptUrlForSlot(slotIdx){
+  const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
+  const raw=document.getElementById(inputId).value.trim();
+  if(!raw){toast("請先在上方輸入連結");return}
+  workingPhotos[slotIdx]=normalizePhotoUrl(raw);
+  renderPhotoSlots();
+  toast("圖片已設定");
+}
+function addPhotoByUrl(){
+  const raw=document.getElementById("urlInput").value.trim();
+  if(!raw){toast("請輸入圖片網址");return}
+  addWorkingPhoto(normalizePhotoUrl(raw));
+}
+function addPhotoByGdrive(){
+  const raw=document.getElementById("gdriveInput").value.trim();
+  if(!raw){toast("請輸入 Google Drive 連結");return}
+  addWorkingPhoto(convertGdriveUrl(raw));
+}
+function addWorkingPhoto(url){
+  const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
+  if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
+  workingPhotos[empty]=url;
+  renderPhotoSlots();
+  toast("圖片已新增");
+}
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+function extractGdriveId(url){
+  const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
+  for(const pattern of patterns){
+    const match=String(url).match(pattern);
+    if(match)return match[1];
+  }
+  return null;
+}
+function convertGdriveUrl(url){
+  const id=extractGdriveId(url);
+  return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`:url;
+}
+function normalizePhotoUrl(url){
+  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
+}
+
+function addSpecRow(part="",w="",d="",h=""){
+  workingSpecs.push({part,w,d,h});
+  renderSpecEditor();
+}
+function renderSpecEditor(){
+  const editor=document.getElementById("specEditor");
+  if(!editor)return;
+  editor.innerHTML="";
+  if(!workingSpecs.length){
+    workingSpecs=[
+      {part:"",w:"",d:"",h:""},
+      {part:"",w:"",d:"",h:""},
+      {part:"",w:"",d:"",h:""}
+    ];
+  }
+  const table=document.createElement("table");
+  table.className="spec-table";
+  table.innerHTML=`<thead><tr>
+    <th>部位</th><th>寬（W）</th><th>深（D）</th><th>高（H）</th><th></th>
+  </tr></thead>`;
+  const tbody=document.createElement("tbody");
+  workingSpecs.forEach((spec,index)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="text" value="${escapeHTML(spec.part)}" placeholder="例：椅面"></td>
+      <td><input type="text" value="${escapeHTML(spec.w)}" placeholder="—"></td>
+      <td><input type="text" value="${escapeHTML(spec.d)}" placeholder="—"></td>
+      <td><input type="text" value="${escapeHTML(spec.h)}" placeholder="—"></td>
+      <td><button class="spec-del-btn" type="button">×</button></td>
+    `;
+    const [partInput,wInput,dInput,hInput]=tr.querySelectorAll("input");
+    partInput.style.textAlign="left";
+    partInput.addEventListener("input",()=>workingSpecs[index].part=partInput.value);
+    wInput.addEventListener("input",()=>workingSpecs[index].w=wInput.value);
+    dInput.addEventListener("input",()=>workingSpecs[index].d=dInput.value);
+    hInput.addEventListener("input",()=>workingSpecs[index].h=hInput.value);
+    tr.querySelector(".spec-del-btn").addEventListener("click",()=>{workingSpecs.splice(index,1);renderSpecEditor()});
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  editor.appendChild(table);
+}
+function openProductModal(id){
+  editingProductId=id;
+  workingPhotos=new Array(MAX_PHOTOS).fill("");
+  workingSpecs=[];
+  document.getElementById("productModalTitle").textContent=id?"編輯商品":"新增商品";
+  document.getElementById("urlInput").value="";
+  document.getElementById("gdriveInput").value="";
+  setUploadMethod("file",document.querySelector(".upload-method-btn"));
+  renderCatSelect();
+  if(id){
+    const product=state.products.find(p=>p.id===id);
+    document.getElementById("pMainCat").value=product.mainCat;
+    updateSubSelect();
+    document.getElementById("pSubCat").value=product.subCat||"";
+    document.getElementById("pName").value=product.name;
+    document.getElementById("pSize").value=product.size;
+    document.getElementById("pWidth").value=product.dimensions?.width||"";
+    document.getElementById("pDepth").value=product.dimensions?.depth||"";
+    document.getElementById("pHeight").value=product.dimensions?.height||"";
+    workingSpecs=(product.specs||[]).map(spec=>{
+      // 相容舊格式 {label,value} → 新格式 {part,w,d,h}
+      if("part" in spec)return {...spec};
+      return {part:spec.label||"",w:spec.value||"",d:"",h:""};
+    });
+    document.getElementById("pDesc").value=product.desc||"";
+    (product.photos||[]).slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
+  }else{
+    document.getElementById("pMainCat").value=state.catalog[0]?.id||"";
+    updateSubSelect();
+    ["pName","pSize","pDesc","pWidth","pDepth","pHeight"].forEach(id=>document.getElementById(id).value="");
+  }
+  renderSpecEditor();
+  renderPhotoSlots();
+  openModal("productModal");
+}
+function saveProduct(){
+  const name=document.getElementById("pName").value.trim();
+  const dimensions={
+    width:document.getElementById("pWidth").value.trim(),
+    depth:document.getElementById("pDepth").value.trim(),
+    height:document.getElementById("pHeight").value.trim()
+  };
+  const size=document.getElementById("pSize").value.trim()||getSizeSummary({dimensions,size:""});
+  if(!name){toast("請填寫商品名稱");return}
+  const data={
+    mainCat:document.getElementById("pMainCat").value,
+    subCat:document.getElementById("pSubCat").value||null,
+    name,
+    size,
+    dimensions,
+    specs:workingSpecs.filter(spec=>spec.part||spec.w||spec.d||spec.h).map(spec=>({
+      part:(spec.part||"").trim(),
+      w:(spec.w||"").trim(),
+      d:(spec.d||"").trim(),
+      h:(spec.h||"").trim()
+    })),
+    desc:document.getElementById("pDesc").value.trim(),
+    photos:workingPhotos.filter(Boolean).map(normalizePhotoUrl)
+  };
+  if(editingProductId){
+    const index=state.products.findIndex(p=>p.id===editingProductId);
+    state.products[index]={id:editingProductId,...data};
+  }else{
+    state.products.push({id:uid(),...data});
+  }
+  closeModal("productModal");
+  renderCategories();
+  renderProducts();
+  saveAll();
+  toast(editingProductId?"商品已更新":"商品已新增");
+}
+
+let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null;
+function openProductDetail(id){
+  const product=state.products.find(p=>p.id===id);
+  if(!product)return;
+  lbProduct=product;
+  const photos=(product.photos||[]).filter(Boolean).map(normalizePhotoUrl);
+  lbImages=photos.length?photos:[sampleSvg(product.name||"商品圖片","#8a7b68","#5b5448")];
+  lbCurrent=0;
+  document.getElementById("lightbox").classList.add("open");
+  document.body.style.overflow="hidden";
+  lbRender();
+}
+function closeLightbox(){
+  document.getElementById("lightbox").classList.remove("open");
+  document.body.style.overflow="";
+  resetZoom();
+}
+function lbRender(){
+  const img=document.getElementById("lbImg");
+  const thumbs=document.getElementById("lbThumbs");
+  const counter=document.getElementById("lbCounter");
+  const info=document.getElementById("lbInfo");
+  img.src=lbImages[lbCurrent]||"";
+  resetZoom();
+  document.getElementById("lbPrev").style.display=lbImages.length>1?"grid":"none";
+  document.getElementById("lbNext").style.display=lbImages.length>1?"grid":"none";
+  counter.textContent=lbImages.length>1?`${lbCurrent+1} / ${lbImages.length}`:"";
+  thumbs.innerHTML="";
+  if(lbImages.length>1){
+    lbImages.forEach((src,index)=>{
+      const thumb=document.createElement("img");
+      thumb.className="lb-thumb"+(index===lbCurrent?" active":"");
+      thumb.src=src;
+      thumb.alt="";
+      thumb.onclick=()=>{lbCurrent=index;lbRender()};
+      thumbs.appendChild(thumb);
+    });
+  }
+  if(lbProduct){
+    const d=lbProduct.dimensions||{};
+    const specs=(lbProduct.specs||[]).filter(spec=>spec.part||spec.w||spec.d||spec.h||spec.label);
+    const cat=getSubName(lbProduct.mainCat,lbProduct.subCat)||getMainName(lbProduct.mainCat);
+    const desc=lbProduct.desc||"";
+
+    // 判斷是新格式還是舊格式規格
+    const isNewSpec=specs.length>0&&("part" in specs[0]);
+
+    let specsHtml="";
+    if(isNewSpec){
+      // 檢查哪些欄位有資料，決定要顯示的欄位
+      const hasW=specs.some(s=>s.w);
+      const hasD=specs.some(s=>s.d);
+      const hasH=specs.some(s=>s.h);
+      if(specs.length){
+        specsHtml=`
+          <div class="lb-spec-title">詳細尺寸規格</div>
+          <div class="lb-spec-table-wrap">
+            <table class="lb-spec-table">
+              <thead><tr>
+                <th></th>
+                ${hasW?`<th>寬（W）</th>`:""}
+                ${hasD?`<th>深（D）</th>`:""}
+                ${hasH?`<th>高（H）</th>`:""}
+              </tr></thead>
+              <tbody>
+                ${specs.map(spec=>`<tr>
+                  <td class="lb-spec-part">${escapeHTML(spec.part||"—")}</td>
+                  ${hasW?`<td>${escapeHTML(withCm(spec.w)||"—")}</td>`:""}
+                  ${hasD?`<td>${escapeHTML(withCm(spec.d)||"—")}</td>`:""}
+                  ${hasH?`<td>${escapeHTML(withCm(spec.h)||"—")}</td>`:""}
+                </tr>`).join("")}
+              </tbody>
+            </table>
+          </div>`;
+      }
+    }else if(specs.length){
+      // 舊格式：label/value 列表
+      specsHtml=`
+        <div class="lb-spec-title">詳細規格</div>
+        <div class="lb-detail-list">
+          ${specs.map(spec=>`<div class="lb-detail-row"><span>${escapeHTML(spec.label)}</span><strong>${escapeHTML(withCm(spec.value)||"—")}</strong></div>`).join("")}
+        </div>`;
+    }
+
+    info.innerHTML=`
+      <div class="lb-product-cat">${escapeHTML(cat)}</div>
+      <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
+      <div class="lb-spec-title">基本尺寸</div>
+      <div class="lb-spec-grid">
+        <div class="lb-spec-box"><div class="lb-spec-label">寬 W</div><div class="lb-spec-value">${escapeHTML(withCm(d.width)||"—")}</div></div>
+        <div class="lb-spec-box"><div class="lb-spec-label">深 D</div><div class="lb-spec-value">${escapeHTML(withCm(d.depth)||"—")}</div></div>
+        <div class="lb-spec-box"><div class="lb-spec-label">高 H</div><div class="lb-spec-value">${escapeHTML(withCm(d.height)||"—")}</div></div>
+      </div>
+      ${specsHtml}
+      ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${escapeHTML(desc)}</div>`:""}
+    `;
+  }
+}
+function lbNav(dir){
+  if(!lbImages.length)return;
+  lbCurrent=(lbCurrent+dir+lbImages.length)%lbImages.length;
+  lbRender();
+}
+function applyZoom(){
+  document.getElementById("lbImg").style.transform=`scale(${lbScale})`;
+  document.getElementById("lbStage").classList.toggle("zoomed",lbScale>1);
+}
+function resetZoom(){
+  lbScale=1;
+  document.getElementById("lbImg").style.transformOrigin="center center";
+  applyZoom();
+}
+const lbStage=document.getElementById("lbStage");
+lbStage.addEventListener("mouseenter",()=>{
+  lbScale=2.35;
+  applyZoom();
+});
+lbStage.addEventListener("mousemove",event=>{
+  const rect=lbStage.getBoundingClientRect();
+  const x=((event.clientX-rect.left)/rect.width*100).toFixed(2);
+  const y=((event.clientY-rect.top)/rect.height*100).toFixed(2);
+  document.getElementById("lbImg").style.transformOrigin=`${x}% ${y}%`;
+  if(lbScale===1){
+    lbScale=2.35;
+    applyZoom();
+  }
+});
+lbStage.addEventListener("mouseleave",resetZoom);
+lbStage.addEventListener("wheel",event=>{
+  event.preventDefault();
+  lbScale=Math.max(1.5,Math.min(3.6,lbScale+(event.deltaY<0?.18:-.18)));
+  applyZoom();
+},{passive:false});
+document.getElementById("lightbox").addEventListener("click",event=>{
+  if(event.target.id==="lightbox")closeLightbox();
+});
+document.addEventListener("keydown",event=>{
+  if(!document.getElementById("lightbox").classList.contains("open"))return;
+  if(event.key==="Escape")closeLightbox();
+  if(event.key==="ArrowRight")lbNav(1);
+  if(event.key==="ArrowLeft")lbNav(-1);
+});
+
+function renderContact(){
+  const c=state.contact;
+  document.getElementById("fbLink").href=c.fbUrl||"#";
+  document.getElementById("lineLink").href=c.lineUrl||"#";
+  const icon=d=>`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${d}</svg>`;
+  const items=[
+    {field:"addr",label:"地址",val:c.addr,icon:icon('<path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/>')},
+    {field:"phone",label:"電話",val:c.phone,icon:icon('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>')},
+    {field:"line",label:"LINE",val:c.line,icon:icon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>')},
+    {field:"hours",label:"營業時間",val:c.hours,icon:icon('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>')},
+    {field:"email",label:"電子郵件",val:c.email,icon:icon('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/>')}
+  ];
+  document.getElementById("contactItems").innerHTML=items.map(item=>`<div class="contact-item"><div class="contact-icon">${item.icon}</div><div><div class="contact-item-label">${escapeHTML(item.label)}</div><div class="contact-item-val" data-contact-field="${item.field}" contenteditable="${editMode}">${escapeHTML(item.val||"-")}</div></div></div>`).join("");
+  document.querySelectorAll("[data-contact-field]").forEach(el=>{
+    el.addEventListener("blur",()=>{
+      state.contact[el.dataset.contactField]=el.textContent.trim();
+      saveAll();
+    });
+  });
+  syncEditableState();
+}
+function editContactInfo(){
+  const c=state.contact;
+  document.getElementById("cAddr").value=c.addr||"";
+  document.getElementById("cPhone").value=c.phone||"";
+  document.getElementById("cLine").value=c.line||"";
+  document.getElementById("cHours").value=c.hours||"";
+  document.getElementById("cEmail").value=c.email||"";
+  document.getElementById("cFb").value=c.fbUrl||"";
+  document.getElementById("cLineUrl").value=c.lineUrl||"";
+  openModal("contactModal");
+}
+function saveContactInfo(){
+  state.contact={
+    addr:document.getElementById("cAddr").value,
+    phone:document.getElementById("cPhone").value,
+    line:document.getElementById("cLine").value,
+    hours:document.getElementById("cHours").value,
+    email:document.getElementById("cEmail").value,
+    fbUrl:document.getElementById("cFb").value,
+    lineUrl:document.getElementById("cLineUrl").value
+  };
+  closeModal("contactModal");
+  renderContact();
+  saveAll();
+  toast("聯繫資訊已更新");
+}
+document.querySelectorAll(".modal-overlay").forEach(overlay=>{
+  overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});
+});
+document.querySelectorAll(".social-card").forEach(card=>{
+  card.addEventListener("click",event=>{
+    if(editMode){
+      event.preventDefault();
+      toast("編輯模式中：社群連結請到聯繫資訊修改");
+    }
+  });
+});
+
+/* ── 將函式掛到 window，讓 HTML onclick 可以呼叫（module 作用域限制）── */
+Object.assign(window,{
+  toggleEditMode,
+  verifyPassword,
+  addCategory,
+  openProductModal,
+  editContactInfo,
+  saveAll,
+  toggleFavoritesPanel,
+  closeLightbox,
+  lbNav,
+  closeModal,
+  openModal,
+  addSpecRow,
+  setUploadMethod,
+  addPhotoByUrl,
+  addPhotoByGdrive,
+  saveProduct,
+  saveCategory,
+  saveContactInfo,
+  updateSubSelect,
+  deleteProduct,
+  toggleFavorite,
+  openProductDetail,
+});
+/* ── 啟動：從 Firebase 載入資料 ────────────────────────────────── */
+(async()=>{
+  const loadingEl=document.createElement("div");
+  loadingEl.id="site-loading";
+  loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:'Noto Serif TC',serif;color:var(--muted)";
+  loadingEl.innerHTML='<div style="font-size:28px;letter-spacing:.1em;color:var(--charcoal)">信通家俱行</div><div style="font-size:13px;letter-spacing:.08em">載入中...</div>';
+  document.body.appendChild(loadingEl);
+
+  try{
+    const saved=await Storage.get();
+    if(saved&&saved.products&&saved.products.length){
+      saved.products=saved.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
+      Object.assign(state,saved);
+    }else{
+      // 沒有雲端資料，試試 localStorage
+      const local=localStorage.getItem(STORAGE_KEY);
+      if(local){
+        const data=JSON.parse(local);
+        if(data.products)data.products=data.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
+        Object.assign(state,data);
+        await Storage.set(data);
+        toast("資料已從本機同步到 Firebase ☁️");
+      }
+    }
+  }catch(e){
+    const local=localStorage.getItem(STORAGE_KEY);
+    if(local){try{Object.assign(state,JSON.parse(local))}catch(e2){}}
+  }
+
+  state.products=state.products.map(normalizeProduct);
+  state.favorites=Array.isArray(state.favorites)?state.favorites:[];
+
+  loadingEl.remove();
+  applyPageText();
+  renderCategories();
+  renderProducts();
+  renderContact();
+  renderFavorites();
+})();
+</script>
+</body>
+</html>

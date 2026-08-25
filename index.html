@@ -746,6 +746,10 @@ footer{
   transition:transform .15s;
 }
 .photo-slot.dragging{opacity:.4}
+.product-card.reorderable{cursor:grab}
+.product-card.reorderable:active{cursor:grabbing}
+.product-card.dragging{opacity:.4}
+.product-card.drag-over{outline:2px dashed var(--tan);outline-offset:-4px}
 .modal-actions{display:flex;gap:10px;margin-top:26px}
 .btn-secondary,.btn-primary{
   border-radius:7px;
@@ -1368,6 +1372,7 @@ function sampleSvg(title,color1,color2){
   return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
 }
 function uid(){return Math.random().toString(36).slice(2,10)}
+function nextSortOrder(){return state.products.length?Math.max(...state.products.map(p=>p.sortOrder??0))+1:0}
 function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
@@ -1407,6 +1412,7 @@ function normalizeProduct(product){
 let editMode=false,editingProductId=null,workingPhotos=[],uploadMethod="file",workingSpecs=[],showArchivedOnly=false;
 let quickCatMode=false,quickCatSelected=new Set();
 let searchQuery="";
+let dragProductId=null;
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}
 function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
@@ -1642,7 +1648,7 @@ async function handleBulkFiles(event){
       lines.push(`✓ 比對到「${escapeHTML(name)}」，已${bulkReplaceMode?"取代":"補上"}照片`);
     }else{
       state.products.push({
-        id:uid(),mainCat:"",subCat:null,name,size:"",
+        id:uid(),sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
         dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
         photos,status:"active"
       });
@@ -1946,6 +1952,8 @@ function renderProducts(){
     const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
     return (p.name||"").toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q)||cat.includes(q);
   });
+  list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  const canReorder=editMode&&!quickCatMode&&!showArchivedOnly&&state.activeMain==="全部"&&!q;
   const addBtn2=document.getElementById("archivedToggleBtn");
   if(addBtn2)addBtn2.textContent=showArchivedOnly?"返回商品列表":"查看封存商品";
   if(!list.length){
@@ -2035,6 +2043,31 @@ function renderProducts(){
       if(quickCatMode){toggleQuickCatSelect(product.id);return}
       if(!editMode)openProductDetail(product.id);
     });
+    if(canReorder){
+      card.classList.add("reorderable");
+      card.draggable=true;
+      card.addEventListener("dragstart",e=>{
+        dragProductId=product.id;
+        card.classList.add("dragging");
+        e.dataTransfer.effectAllowed="move";
+      });
+      card.addEventListener("dragend",()=>{
+        card.classList.remove("dragging");
+        grid.querySelectorAll(".product-card").forEach(c=>c.classList.remove("drag-over"));
+      });
+      card.addEventListener("dragover",e=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect="move";
+        if(dragProductId!==product.id)card.classList.add("drag-over");
+      });
+      card.addEventListener("dragleave",()=>card.classList.remove("drag-over"));
+      card.addEventListener("drop",e=>{
+        e.preventDefault();
+        card.classList.remove("drag-over");
+        if(!dragProductId||dragProductId===product.id)return;
+        reorderProduct(dragProductId,product.id);
+      });
+    }
     grid.appendChild(card);
   });
   if(!(editMode&&showArchivedOnly)){
@@ -2044,6 +2077,18 @@ function renderProducts(){
     add.onclick=()=>openProductModal(null);
     grid.appendChild(add);
   }
+}
+function reorderProduct(srcId,targetId){
+  const srcIdx=state.products.findIndex(p=>p.id===srcId);
+  if(srcIdx===-1)return;
+  const [moved]=state.products.splice(srcIdx,1);
+  const targetIdx=state.products.findIndex(p=>p.id===targetId);
+  state.products.splice(targetIdx===-1?state.products.length:targetIdx,0,moved);
+  state.products.forEach((p,i)=>p.sortOrder=i);
+  dragProductId=null;
+  renderProducts();
+  saveAll();
+  toast("商品順序已更新");
 }
 function toggleArchivedView(){
   showArchivedOnly=!showArchivedOnly;
@@ -2421,9 +2466,9 @@ function saveProduct(){
   };
   if(editingProductId){
     const index=state.products.findIndex(p=>p.id===editingProductId);
-    state.products[index]={id:editingProductId,...data};
+    state.products[index]={id:editingProductId,sortOrder:state.products[index].sortOrder,...data};
   }else{
-    state.products.push({id:uid(),...data});
+    state.products.push({id:uid(),sortOrder:nextSortOrder(),...data});
   }
   closeModal("productModal");
   renderCategories();
@@ -2724,6 +2769,7 @@ Object.assign(window,{
   }
 
   state.products=state.products.map(normalizeProduct);
+  state.products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
   // 喜愛清單一律以「這台瀏覽器」的本機資料為準，不使用從雲端讀回來的舊資料
   state.favorites=loadFavoritesLocal();
 

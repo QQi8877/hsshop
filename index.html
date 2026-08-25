@@ -1013,6 +1013,7 @@ body.edit-mode .edit-toolbar{display:flex}
   <span>編輯模式開啟</span>
   <button onclick="openCategoryManage()">分類管理</button>
   <button onclick="openProductModal(null)">新增商品</button>
+  <button onclick="openBulkUploadModal()">批次上傳照片</button>
   <button onclick="toggleArchivedView()" id="archivedToggleBtn">查看封存商品</button>
   <button onclick="editContactInfo()">聯繫資訊</button>
   <button onclick="saveAll()" style="background:var(--tan)">儲存</button>
@@ -1118,6 +1119,29 @@ body.edit-mode .edit-toolbar{display:flex}
     <button class="catmgr-add-main" onclick="addMainCategoryInline()">＋ 新增主分類</button>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeCategoryManage()">完成</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkUploadModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
+    <div class="modal-title">批次上傳照片</div>
+    <p class="catmgr-hint">
+      檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張。
+      檔名跟現有商品名稱<strong>完全一致</strong>才會自動比對進去；比對不到的名稱，系統會自動建立一個只有名稱跟照片的新商品，分類、尺寸等資料再請你事後補上。
+    </p>
+    <div class="upload-method-row">
+      <button class="upload-method-btn active" onclick="setBulkMode('append',this)">附加到空格（不覆蓋）</button>
+      <button class="upload-method-btn" onclick="setBulkMode('replace',this)">取代該商品所有照片</button>
+    </div>
+    <label>選擇照片檔案（可多選）</label>
+    <input type="file" id="bulkFileInput" accept="image/*" multiple>
+    <div class="helper-text">或者直接選整個資料夾：</div>
+    <input type="file" id="bulkFolderInput" accept="image/*" multiple webkitdirectory>
+    <div class="photos-note" id="bulkLog" style="margin-top:14px"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeModal('bulkUploadModal')">完成</button>
     </div>
   </div>
 </div>
@@ -1281,7 +1305,7 @@ function normalizeProduct(product){
 let editMode=false,editingProductId=null,workingPhotos=[],uploadMethod="file",workingSpecs=[],showArchivedOnly=false;
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}
-function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||id)}
+function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
 function getSubName(mainId,subId){return (getMainCat(mainId)?.subs||[]).find(s=>s.id===subId)?.name||""}
 function withCm(value){
   const text=String(value||"").trim();
@@ -1444,6 +1468,89 @@ function closeCategoryManage(){
   renderCategories();
   renderProducts();
   saveAll();
+}
+/* ── 批次上傳照片（依檔名比對商品）───────────────────────────── */
+let bulkReplaceMode=false;
+function setBulkMode(mode,btn){
+  bulkReplaceMode=mode==="replace";
+  btn.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+}
+function parseBulkFilename(filename){
+  const base=filename.replace(/\.[^.]+$/,"");
+  const match=base.match(/^(.*?)[\s_\-\(（]+0*(\d{1,3})[\)）]?$/);
+  if(match&&match[1].trim())return {name:match[1].trim(),index:parseInt(match[2],10)};
+  return {name:base.trim(),index:1};
+}
+function groupBulkFiles(fileList){
+  const groups=new Map();
+  Array.from(fileList).filter(f=>f.type.startsWith("image/")).forEach(file=>{
+    const {name,index}=parseBulkFilename(file.name);
+    if(!name)return;
+    if(!groups.has(name))groups.set(name,[]);
+    groups.get(name).push({file,index});
+  });
+  groups.forEach(items=>items.sort((a,b)=>a.index-b.index));
+  return groups;
+}
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+function openBulkUploadModal(){
+  document.getElementById("bulkFileInput").value="";
+  document.getElementById("bulkFolderInput").value="";
+  document.getElementById("bulkLog").innerHTML="";
+  openModal("bulkUploadModal");
+}
+async function handleBulkFiles(event){
+  const files=event.target.files;
+  if(!files||!files.length)return;
+  const log=document.getElementById("bulkLog");
+  const groups=groupBulkFiles(files);
+  if(!groups.size){log.textContent="沒有找到可用的圖片檔案。";event.target.value="";return}
+  log.textContent="處理中…";
+  const lines=[];
+  let matchedCount=0,createdCount=0;
+  for(const [name,items] of groups){
+    const photos=[];
+    for(const {file} of items.slice(0,MAX_PHOTOS)){
+      const dataUrl=await fileToDataUrl(file);
+      photos.push(await resizeImageToUniform(dataUrl));
+    }
+    const existing=state.products.find(p=>p.status!=="archived"&&p.name.trim()===name);
+    if(existing){
+      if(bulkReplaceMode){
+        existing.photos=photos;
+      }else{
+        const merged=(existing.photos||[]).filter(Boolean);
+        for(const photo of photos){
+          if(merged.length>=MAX_PHOTOS)break;
+          merged.push(photo);
+        }
+        existing.photos=merged;
+      }
+      matchedCount++;
+      lines.push(`✓ 比對到「${escapeHTML(name)}」，已${bulkReplaceMode?"取代":"補上"}照片`);
+    }else{
+      state.products.push({
+        id:uid(),mainCat:"",subCat:null,name,size:"",
+        dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
+        photos,status:"active"
+      });
+      createdCount++;
+      lines.push(`＋ 找不到「${escapeHTML(name)}」，已建立待補資料的新商品`);
+    }
+  }
+  renderCategories();
+  renderProducts();
+  await saveAll();
+  log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
+  event.target.value="";
 }
 function addMainCategoryInline(){
   const name=(prompt("請輸入新主分類名稱：")||"").trim();
@@ -2358,6 +2465,8 @@ function saveContactInfo(){
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});
 });
+document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
+document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
 document.querySelectorAll(".social-card").forEach(card=>{
   card.addEventListener("click",event=>{
     if(editMode){
@@ -2390,6 +2499,8 @@ Object.assign(window,{
   openProductDetail,
   openCategoryManage,
   closeCategoryManage,
+  openBulkUploadModal,
+  setBulkMode,
   addMainCategoryInline,
   confirmCatDelete,
   toggleArchivedView,

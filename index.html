@@ -66,9 +66,11 @@ nav{
   font-weight:700;
   letter-spacing:.08em;
   white-space:nowrap;
+  flex:none;
 }
 .nav-logo span{color:var(--tan)}
-.nav-links{display:flex;gap:28px;list-style:none}
+#navSearchBar{flex:1;min-width:0;max-width:340px;margin:0;padding:7px 12px}
+.nav-links{display:flex;gap:28px;list-style:none;flex:none}
 .nav-links a{
   color:var(--muted);
   text-decoration:none;
@@ -84,6 +86,8 @@ nav{
   padding:8px 15px;
   font-size:12px;
   letter-spacing:.04em;
+  flex:none;
+  white-space:nowrap;
 }
 .nav-edit-btn.active,.nav-edit-btn:hover{background:var(--tan-dark)}
 #hero{
@@ -170,6 +174,7 @@ body.edit-mode [data-product-field="desc"]:empty::before{content:"點此輸入�
 }
 .search-bar input{
   flex:1;
+  min-width:0;
   border:0;
   background:transparent;
   color:var(--ink);
@@ -983,7 +988,7 @@ body.quickcat-mode .favorite-btn{display:none}
   .hero-title{font-size:34px}
   .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:14px}
   .categories-bar,.sub-categories-bar{padding-left:15px;padding-right:15px}
-  .search-bar{margin-left:15px;margin-right:15px;max-width:none}
+  #navSearchBar{max-width:none}
   .contact-inner{grid-template-columns:1fr;gap:34px}
   .social-links{grid-template-columns:1fr}
   #contact{padding:54px 22px}
@@ -1014,6 +1019,11 @@ body.quickcat-mode .favorite-btn{display:none}
 <body>
 <nav>
   <div class="nav-logo">信通<span>家俱行</span></div>
+  <div class="search-bar" id="navSearchBar">
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="productSearch" placeholder="搜尋商品名稱、說明或分類…" oninput="handleSearchInput()">
+    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" style="display:none" aria-label="清除搜尋">×</button>
+  </div>
   <ul class="nav-links">
     <li><a href="#hero">首頁</a></li>
     <li><a href="#categories">商品</a></li>
@@ -1037,11 +1047,6 @@ body.quickcat-mode .favorite-btn{display:none}
     <div class="section-label">PRODUCTS</div>
     <h2 class="section-title" data-editable data-page-field="productsTitle" contenteditable="false">精選商品</h2>
     <div class="section-line"></div>
-  </div>
-  <div class="search-bar">
-    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input type="text" id="productSearch" placeholder="搜尋商品名稱或說明…" oninput="handleSearchInput()">
-    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" style="display:none" aria-label="清除搜尋">×</button>
   </div>
   <div class="categories-bar" id="categoriesBar">
     <button class="add-cat-btn" onclick="openCategoryManage()">分類管理</button>
@@ -1909,9 +1914,11 @@ function updateSubSelect(){
 }
 
 function handleSearchInput(){
+  const prev=searchQuery;
   searchQuery=document.getElementById("productSearch").value;
   document.getElementById("searchClearBtn").style.display=searchQuery?"block":"none";
   renderProducts();
+  if(searchQuery&&!prev)document.getElementById("categories").scrollIntoView({behavior:"smooth"});
 }
 function clearSearch(){
   searchQuery="";
@@ -1935,7 +1942,10 @@ function renderProducts(){
     }
   }
   const q=searchQuery.trim().toLowerCase();
-  if(q)list=list.filter(p=>(p.name||"").toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q));
+  if(q)list=list.filter(p=>{
+    const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
+    return (p.name||"").toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q)||cat.includes(q);
+  });
   const addBtn2=document.getElementById("archivedToggleBtn");
   if(addBtn2)addBtn2.textContent=showArchivedOnly?"返回商品列表":"查看封存商品";
   if(!list.length){

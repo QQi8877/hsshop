@@ -752,6 +752,47 @@ body.edit-mode .edit-toolbar{display:flex}
   font-size:12px;
 }
 .edit-toolbar button:hover{background:var(--tan-dark)}
+.quickcat-bar{
+  display:none;
+  position:fixed;
+  top:62px;
+  left:0;
+  right:0;
+  z-index:170;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:10px 20px;
+  background:var(--charcoal);
+  color:rgba(255,255,255,.86);
+  box-shadow:0 10px 26px rgba(0,0,0,.2);
+  font-size:13px;
+}
+.quickcat-bar.open{display:flex}
+.quickcat-bar select{border:0;border-radius:6px;padding:6px 8px;font-size:13px}
+.quickcat-bar label{display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.7)}
+.quickcat-bar button{border:0;border-radius:999px;background:rgba(255,255,255,.14);color:var(--white);padding:7px 14px;font-size:12px}
+.quickcat-bar button:hover{background:var(--tan-dark)}
+.quickcat-check{
+  display:none;
+  position:absolute;
+  top:10px;
+  right:10px;
+  z-index:9;
+  width:24px;
+  height:24px;
+  border-radius:6px;
+  border:2px solid var(--white);
+  background:rgba(43,39,34,.5);
+  color:var(--white);
+  text-align:center;
+  line-height:20px;
+  font-size:14px;
+}
+body.quickcat-mode .quickcat-check{display:block}
+body.quickcat-mode .card-edit-controls,
+body.quickcat-mode .favorite-btn{display:none}
+.quickcat-check.checked{background:var(--tan);border-color:var(--tan)}
 .toast{
   position:fixed;
   right:24px;
@@ -1014,9 +1055,18 @@ body.edit-mode .edit-toolbar{display:flex}
   <button onclick="openCategoryManage()">分類管理</button>
   <button onclick="openProductModal(null)">新增商品</button>
   <button onclick="openBulkUploadModal()">批次上傳照片</button>
+  <button onclick="toggleQuickCatMode()">快速分類</button>
   <button onclick="toggleArchivedView()" id="archivedToggleBtn">查看封存商品</button>
   <button onclick="editContactInfo()">聯繫資訊</button>
   <button onclick="saveAll()" style="background:var(--tan)">儲存</button>
+</div>
+<div class="quickcat-bar" id="quickCatBar">
+  <span id="quickCatCount">已選 0 個</span>
+  <select id="quickCatMain" onchange="updateQuickCatSubSelect()"></select>
+  <select id="quickCatSub"></select>
+  <label><input type="checkbox" id="quickCatOnlyUncat" checked onchange="renderProducts()"> 只顯示待分類商品</label>
+  <button onclick="applyQuickCat()">套用到已選商品</button>
+  <button onclick="toggleQuickCatMode(false)">結束快速分類</button>
 </div>
 <div class="toast" id="toast"></div>
 <button class="favorites-fab" onclick="toggleFavoritesPanel()">
@@ -1320,6 +1370,7 @@ function normalizeProduct(product){
   return product;
 }
 let editMode=false,editingProductId=null,workingPhotos=[],uploadMethod="file",workingSpecs=[],showArchivedOnly=false;
+let quickCatMode=false,quickCatSelected=new Set();
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}
 function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
@@ -1569,6 +1620,59 @@ async function handleBulkFiles(event){
   log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
   event.target.value="";
 }
+/* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
+function toggleQuickCatMode(force){
+  quickCatMode=typeof force==="boolean"?force:!quickCatMode;
+  quickCatSelected.clear();
+  document.body.classList.toggle("quickcat-mode",quickCatMode);
+  document.getElementById("quickCatBar").classList.toggle("open",quickCatMode);
+  if(quickCatMode){
+    renderQuickCatSelect();
+    document.getElementById("quickCatOnlyUncat").checked=true;
+    updateQuickCatCount();
+  }
+  renderProducts();
+}
+function renderQuickCatSelect(){
+  const main=document.getElementById("quickCatMain");
+  main.innerHTML=state.catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+  updateQuickCatSubSelect();
+}
+function updateQuickCatSubSelect(){
+  const mainId=document.getElementById("quickCatMain").value;
+  const sub=document.getElementById("quickCatSub");
+  const main=getMainCat(mainId);
+  if(main?.subs?.length){
+    sub.innerHTML=`<option value="">（不指定子分類）</option>`+main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
+    sub.style.display="";
+  }else{
+    sub.innerHTML="";
+    sub.style.display="none";
+  }
+}
+function toggleQuickCatSelect(id){
+  if(quickCatSelected.has(id))quickCatSelected.delete(id);
+  else quickCatSelected.add(id);
+  updateQuickCatCount();
+  renderProducts();
+}
+function updateQuickCatCount(){
+  document.getElementById("quickCatCount").textContent=`已選 ${quickCatSelected.size} 個`;
+}
+function applyQuickCat(){
+  if(!quickCatSelected.size){toast("請先勾選商品");return}
+  const mainId=document.getElementById("quickCatMain").value;
+  const subId=document.getElementById("quickCatSub").value||null;
+  state.products.forEach(p=>{
+    if(quickCatSelected.has(p.id)){p.mainCat=mainId;p.subCat=subId}
+  });
+  toast(`已將 ${quickCatSelected.size} 個商品分類為「${getMainName(mainId)}」`);
+  quickCatSelected.clear();
+  updateQuickCatCount();
+  renderCategories();
+  renderProducts();
+  saveAll();
+}
 function addMainCategoryInline(){
   const name=(prompt("請輸入新主分類名稱：")||"").trim();
   if(!name)return;
@@ -1781,7 +1885,9 @@ function renderProducts(){
     list=state.products.filter(p=>p.status==="archived");
   }else{
     list=state.products.filter(p=>editMode?true:p.status!=="archived");
-    if(state.activeMain!=="全部"){
+    if(quickCatMode){
+      if(document.getElementById("quickCatOnlyUncat")?.checked)list=list.filter(p=>!p.mainCat);
+    }else if(state.activeMain!=="全部"){
       list=list.filter(p=>p.mainCat===state.activeMain);
       if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
     }
@@ -1870,7 +1976,16 @@ function renderProducts(){
       controls.innerHTML=`<button class="btn-edit-card" title="編輯" onclick="event.stopPropagation();openProductModal('${product.id}')">編</button><button class="btn-del-card" title="封存" onclick="event.stopPropagation();archiveProduct('${product.id}')">封</button>`;
     }
     card.appendChild(controls);
-    card.addEventListener("click",()=>{if(!editMode)openProductDetail(product.id)});
+    if(quickCatMode){
+      const check=document.createElement("div");
+      check.className="quickcat-check"+(quickCatSelected.has(product.id)?" checked":"");
+      check.textContent=quickCatSelected.has(product.id)?"✓":"";
+      card.appendChild(check);
+    }
+    card.addEventListener("click",()=>{
+      if(quickCatMode){toggleQuickCatSelect(product.id);return}
+      if(!editMode)openProductDetail(product.id);
+    });
     grid.appendChild(card);
   });
   if(!(editMode&&showArchivedOnly)){
@@ -2518,6 +2633,9 @@ Object.assign(window,{
   closeCategoryManage,
   openBulkUploadModal,
   setBulkMode,
+  toggleQuickCatMode,
+  updateQuickCatSubSelect,
+  applyQuickCat,
   addMainCategoryInline,
   confirmCatDelete,
   toggleArchivedView,

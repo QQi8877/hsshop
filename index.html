@@ -582,6 +582,57 @@ footer{
 }
 .modal textarea{min-height:78px;resize:vertical}
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
+.rte-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
+.rte-toolbar button{
+  border:1px solid var(--line);
+  background:var(--white);
+  color:var(--muted);
+  border-radius:6px;
+  padding:6px 10px;
+  font-size:12px;
+}
+.rte-toolbar button:hover{border-color:var(--tan);color:var(--tan-dark)}
+.modal .rte-toolbar select{
+  width:auto;
+  border:1px solid var(--line);
+  border-radius:6px;
+  background:var(--white);
+  color:var(--muted);
+  padding:5px 6px;
+  font-size:12px;
+}
+.modal .rte-toolbar label{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin:0;
+  font-size:11px;
+  color:var(--soft);
+}
+.modal .rte-toolbar input[type="color"]{
+  width:26px;
+  height:26px;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:0;
+  background:none;
+  cursor:pointer;
+}
+.rte-editor{
+  min-height:90px;
+  max-height:260px;
+  overflow:auto;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--cream);
+  color:var(--ink);
+  padding:10px 12px;
+  outline:none;
+  line-height:1.6;
+  font-size:14px;
+}
+.rte-editor:focus{border-color:var(--tan)}
+.rte-editor:empty:before{content:attr(data-placeholder);color:var(--soft)}
 .photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
 .photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
 .photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
@@ -1166,7 +1217,20 @@ body.quickcat-mode .favorite-btn{display:none}
     <div class="spec-editor" id="specEditor"></div>
     <button class="add-spec-btn" onclick="addSpecRow()">＋ 新增部位列</button>
     <label>商品說明（選填）</label>
-    <textarea id="pDesc" placeholder="材質、特色說明"></textarea>
+    <div class="rte-toolbar">
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
+      <select onmousedown="event.preventDefault()" onchange="if(this.value){rteApply('pDesc','fontSize',this.value);this.value=''}">
+        <option value="">文字大小</option>
+        <option value="12px">小</option>
+        <option value="15px">標準</option>
+        <option value="18px">大</option>
+        <option value="24px">特大</option>
+      </select>
+      <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
+      <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
+    </div>
+    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="材質、特色說明"></div>
 
     <div class="photos-section">
       <div class="photos-section-title">商品照片（最多 5 張）</div>
@@ -1952,7 +2016,8 @@ function renderProducts(){
   const q=searchQuery.trim().toLowerCase();
   if(q)list=list.filter(p=>{
     const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
-    return (p.name||"").toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q)||cat.includes(q);
+    const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
+    return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
   });
   list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
   const canReorder=editMode&&!quickCatMode&&!showArchivedOnly&&state.activeMain==="全部"&&!q;
@@ -2365,6 +2430,66 @@ function normalizePhotoUrl(url){
   return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
 }
 
+/* ── 商品說明簡易富文本編輯器（底線／文字大小／文字顏色／網底）─── */
+const rteSavedRange={};
+function rteInit(id){
+  const editor=document.getElementById(id);
+  if(!editor||editor.dataset.rteReady)return;
+  editor.dataset.rteReady="1";
+  const saveSel=()=>{
+    const sel=window.getSelection();
+    if(sel.rangeCount&&editor.contains(sel.anchorNode))rteSavedRange[id]=sel.getRangeAt(0).cloneRange();
+  };
+  editor.addEventListener("mouseup",saveSel);
+  editor.addEventListener("keyup",saveSel);
+  editor.addEventListener("keydown",e=>{
+    if(e.key==="Enter"){
+      e.preventDefault();
+      document.execCommand("insertHTML",false,"<br>");
+    }
+  });
+  editor.addEventListener("paste",e=>{
+    e.preventDefault();
+    const text=(e.clipboardData||window.clipboardData).getData("text/plain");
+    const html=escapeHTML(text).replace(/\r\n|\r|\n/g,"<br>");
+    document.execCommand("insertHTML",false,html);
+  });
+}
+function rteApply(id,styleProp,value){
+  const editor=document.getElementById(id);
+  const range=rteSavedRange[id];
+  if(!editor||!range)return;
+  const sel=window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  if(sel.isCollapsed)return;
+  const span=document.createElement("span");
+  span.style[styleProp]=value;
+  try{
+    range.surroundContents(span);
+  }catch(e){
+    const contents=range.extractContents();
+    span.appendChild(contents);
+    range.insertNode(span);
+  }
+  sel.removeAllRanges();
+  editor.focus();
+}
+function rteClear(id){
+  const editor=document.getElementById(id);
+  const range=rteSavedRange[id];
+  if(!editor||!range)return;
+  const sel=window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  if(sel.isCollapsed)return;
+  const text=range.toString();
+  range.deleteContents();
+  range.insertNode(document.createTextNode(text));
+  sel.removeAllRanges();
+  editor.focus();
+}
+
 function addSpecRow(part="",w="",d="",h=""){
   workingSpecs.push({part,w,d,h});
   renderSpecEditor();
@@ -2407,6 +2532,17 @@ function renderSpecEditor(){
   table.appendChild(tbody);
   editor.appendChild(table);
 }
+function sanitizeRichText(html){
+  const div=document.createElement("div");
+  div.innerHTML=html;
+  div.querySelectorAll("script,iframe,object,embed,link,style").forEach(el=>el.remove());
+  div.querySelectorAll("*").forEach(el=>{
+    [...el.attributes].forEach(attr=>{
+      if(/^on/i.test(attr.name)||(attr.name==="style"&&/expression|javascript:/i.test(attr.value)))el.removeAttribute(attr.name);
+    });
+  });
+  return div.innerHTML;
+}
 function openProductModal(id){
   editingProductId=id;
   workingPhotos=new Array(MAX_PHOTOS).fill("");
@@ -2416,6 +2552,7 @@ function openProductModal(id){
   document.getElementById("gdriveInput").value="";
   setUploadMethod("file",document.querySelector(".upload-method-btn"));
   renderCatSelect();
+  rteInit("pDesc");
   if(id){
     const product=state.products.find(p=>p.id===id);
     document.getElementById("pMainCat").value=product.mainCat;
@@ -2431,12 +2568,13 @@ function openProductModal(id){
       if("part" in spec)return {...spec};
       return {part:spec.label||"",w:spec.value||"",d:"",h:""};
     });
-    document.getElementById("pDesc").value=product.desc||"";
+    document.getElementById("pDesc").innerHTML=product.desc||"";
     (product.photos||[]).slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
   }else{
     document.getElementById("pMainCat").value=state.catalog[0]?.id||"";
     updateSubSelect();
-    ["pName","pSize","pDesc","pWidth","pDepth","pHeight"].forEach(id=>document.getElementById(id).value="");
+    ["pName","pSize","pWidth","pDepth","pHeight"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("pDesc").innerHTML="";
   }
   renderSpecEditor();
   renderPhotoSlots();
@@ -2463,7 +2601,7 @@ function saveProduct(){
       d:(spec.d||"").trim(),
       h:(spec.h||"").trim()
     })),
-    desc:document.getElementById("pDesc").value.trim(),
+    desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim()),
     photos:workingPhotos.filter(Boolean).map(normalizePhotoUrl)
   };
   if(editingProductId){
@@ -2531,7 +2669,8 @@ function lbRender(){
     const d=lbProduct.dimensions||{};
     const specs=(lbProduct.specs||[]).filter(spec=>spec.part||spec.w||spec.d||spec.h||spec.label);
     const cat=getSubName(lbProduct.mainCat,lbProduct.subCat)||getMainName(lbProduct.mainCat);
-    const desc=lbProduct.desc||"";
+    const rawDesc=lbProduct.desc||"";
+    const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?rawDesc:escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
 
     // 判斷是新格式還是舊格式規格
     const isNewSpec=specs.length>0&&("part" in specs[0]);
@@ -2583,7 +2722,7 @@ function lbRender(){
         <div class="lb-spec-box"><div class="lb-spec-label">高 H</div><div class="lb-spec-value">${escapeHTML(withCm(d.height)||"—")}</div></div>
       </div>
       ${specsHtml}
-      ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${escapeHTML(desc)}</div>`:""}
+      ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
     `;
   }
 }
@@ -2720,6 +2859,8 @@ Object.assign(window,{
   setUploadMethod,
   addPhotoByUrl,
   addPhotoByGdrive,
+  rteApply,
+  rteClear,
   saveProduct,
   saveContactInfo,
   updateSubSelect,

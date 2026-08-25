@@ -196,6 +196,7 @@ header{
   display:inline-flex;
   align-items:center;
   gap:6px;
+  white-space:nowrap;
 }
 .filter-chip .n{font-size:10.5px;background:rgba(0,0,0,.07);border-radius:999px;padding:0 6px}
 .filter-chip.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
@@ -265,7 +266,7 @@ tbody tr.is-archived{opacity:.55}
 }
 .row-actions a:hover{border-color:var(--tan);background:rgba(185,146,99,.08)}
 .empty-state{padding:60px 20px;text-align:center;color:var(--soft)}
-.summary{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--soft);font-size:12.5px;margin-bottom:14px}
+.summary{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;color:var(--soft);font-size:12.5px;margin-bottom:14px}
 .loading{padding:60px 20px;text-align:center;color:var(--soft)}
 .sync-btn{
   border:1px solid var(--tan);
@@ -274,6 +275,7 @@ tbody tr.is-archived{opacity:.55}
   border-radius:999px;
   padding:6px 14px;
   font-size:12px;
+  white-space:nowrap;
 }
 .sync-btn:hover{background:var(--tan);color:var(--white)}
 .sync-btn:disabled{opacity:.5;cursor:default}
@@ -549,6 +551,17 @@ tbody tr.is-archived{opacity:.55}
 .btn-secondary{border:1px solid var(--line);background:transparent;color:var(--muted)}
 .btn-primary{flex:1;border:0;background:var(--charcoal);color:var(--white)}
 .btn-primary:hover{background:var(--tan-dark)}
+
+@media(max-width:760px){
+  header{padding:14px 15px}
+  .layout{flex-direction:column;padding:16px 15px 40px;gap:14px}
+  .sidebar{width:100%;position:static;top:auto}
+  .cat-subs.open{max-height:600px}
+  main,.content{width:100%}
+  table{min-width:680px}
+  .modal{padding:22px 18px}
+  .photo-slots{grid-template-columns:repeat(3,1fr)}
+}
 </style>
 </head>
 <body>
@@ -1170,7 +1183,7 @@ async function boot(){
     return;
   }
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
-  catalog.forEach(c=>openMainCats.add(c.id));
+  if(window.innerWidth>760)catalog.forEach(c=>openMainCats.add(c.id));
   renderSidebar();
   renderTable();
 }

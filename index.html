@@ -216,19 +216,6 @@ body.edit-mode .add-cat-btn{display:inline-flex}
 .product-card:hover .img-primary.has-secondary{opacity:0}
 .product-card:hover .img-secondary{opacity:1;transform:scale(1.03)}
 .product-card:hover .img-primary:not(.has-secondary){transform:scale(1.04)}
-.product-cat-badge{
-  position:absolute;
-  top:12px;
-  left:12px;
-  z-index:4;
-  background:rgba(43,39,34,.74);
-  color:var(--white);
-  border-radius:999px;
-  padding:3px 10px;
-  font-size:11px;
-  letter-spacing:.05em;
-  backdrop-filter:blur(6px);
-}
 .img-count-badge,.img-zoom-hint{
   position:absolute;
   z-index:4;
@@ -1915,7 +1902,6 @@ function renderProducts(){
     }
     const wrap=document.createElement("div");
     wrap.className="product-img-wrap";
-    const subName=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
     const fav=document.createElement("button");
     fav.className="favorite-btn"+(state.favorites.includes(product.id)?" active":"");
     fav.title="加入喜愛清單";
@@ -1955,10 +1941,6 @@ function renderProducts(){
     }else{
       wrap.innerHTML=placeholderMarkup("尚無圖片");
     }
-    const badge=document.createElement("span");
-    badge.className="product-cat-badge";
-    badge.textContent=subName;
-    wrap.appendChild(badge);
     card.appendChild(wrap);
     const info=document.createElement("div");
     info.className="product-info";

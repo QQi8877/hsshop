@@ -105,7 +105,67 @@ header{
 .header-links a{color:var(--muted);text-decoration:none}
 .header-links a:hover{color:var(--tan-dark)}
 
-main{padding:22px 28px 60px;max-width:1400px;margin:auto}
+.layout{display:flex;align-items:flex-start;gap:24px;padding:22px 28px 60px;max-width:1500px;margin:auto}
+
+/* ── 左側分類收合列表 ───────────────────────────── */
+.sidebar{
+  width:220px;
+  flex:none;
+  position:sticky;
+  top:96px;
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:10px;
+}
+.sidebar-title{font-size:11px;letter-spacing:.08em;color:var(--soft);padding:6px 8px 10px}
+.cat-node{margin-bottom:2px}
+.cat-row{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 8px;
+  border-radius:7px;
+  font-size:13px;
+  color:var(--muted);
+}
+.cat-row:hover{background:rgba(185,146,99,.08)}
+.cat-row.active{background:var(--charcoal);color:var(--white)}
+.cat-toggle{
+  width:16px;
+  height:16px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--soft);
+  border:0;
+  background:transparent;
+  padding:0;
+  transition:transform .15s;
+}
+.cat-toggle.open{transform:rotate(90deg)}
+.cat-row.active .cat-toggle{color:rgba(255,255,255,.7)}
+.cat-label{flex:1;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-count{font-size:10.5px;color:var(--soft)}
+.cat-row.active .cat-count{color:rgba(255,255,255,.6)}
+.cat-subs{margin-left:20px;overflow:hidden;max-height:0;transition:max-height .18s ease}
+.cat-subs.open{max-height:400px}
+.cat-sub-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:6px;
+  padding:6px 8px;
+  border-radius:7px;
+  font-size:12.5px;
+  color:var(--muted);
+  cursor:pointer;
+}
+.cat-sub-row:hover{background:rgba(185,146,99,.08)}
+.cat-sub-row.active{background:var(--tan);color:var(--white)}
+
+.content{flex:1;min-width:0}
 
 .toolbar{
   display:flex;
@@ -205,8 +265,34 @@ tbody tr.is-archived{opacity:.55}
 }
 .row-actions a:hover{border-color:var(--tan);background:rgba(185,146,99,.08)}
 .empty-state{padding:60px 20px;text-align:center;color:var(--soft)}
-.summary{color:var(--soft);font-size:12.5px;margin-bottom:14px}
+.summary{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--soft);font-size:12.5px;margin-bottom:14px}
 .loading{padding:60px 20px;text-align:center;color:var(--soft)}
+.sync-btn{
+  border:1px solid var(--tan);
+  background:rgba(185,146,99,.1);
+  color:var(--tan-dark);
+  border-radius:999px;
+  padding:6px 14px;
+  font-size:12px;
+}
+.sync-btn:hover{background:var(--tan);color:var(--white)}
+.sync-btn:disabled{opacity:.5;cursor:default}
+.toast{
+  position:fixed;
+  right:24px;
+  bottom:24px;
+  z-index:500;
+  border-radius:8px;
+  background:var(--charcoal);
+  color:var(--white);
+  padding:12px 18px;
+  font-size:13px;
+  opacity:0;
+  transform:translateY(8px);
+  pointer-events:none;
+  transition:.25s;
+}
+.toast.show{opacity:1;transform:translateY(0)}
 </style>
 </head>
 <body>
@@ -231,43 +317,53 @@ tbody tr.is-archived{opacity:.55}
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
     </div>
   </header>
-  <main>
-    <div class="toolbar">
-      <div class="search-box">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" id="searchBox" placeholder="搜尋商品名稱、說明或分類…" oninput="renderTable()">
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-title">分類</div>
+      <div id="catTree"></div>
+    </aside>
+    <div class="content">
+      <div class="toolbar">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="searchBox" placeholder="搜尋商品名稱、說明或分類…" oninput="renderTable()">
+        </div>
+        <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">全部 <span class="n" id="fc-all"></span></button>
+        <button class="filter-chip warn" data-filter="noCat" onclick="setFilter('noCat')">缺分類 <span class="n" id="fc-noCat"></span></button>
+        <button class="filter-chip warn" data-filter="noSize" onclick="setFilter('noSize')">缺尺寸 <span class="n" id="fc-noSize"></span></button>
+        <button class="filter-chip warn" data-filter="noDesc" onclick="setFilter('noDesc')">缺說明 <span class="n" id="fc-noDesc"></span></button>
+        <button class="filter-chip warn" data-filter="noPhoto" onclick="setFilter('noPhoto')">缺照片 <span class="n" id="fc-noPhoto"></span></button>
+        <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
       </div>
-      <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">全部 <span class="n" id="fc-all"></span></button>
-      <button class="filter-chip warn" data-filter="noCat" onclick="setFilter('noCat')">缺分類 <span class="n" id="fc-noCat"></span></button>
-      <button class="filter-chip warn" data-filter="noSize" onclick="setFilter('noSize')">缺尺寸 <span class="n" id="fc-noSize"></span></button>
-      <button class="filter-chip warn" data-filter="noDesc" onclick="setFilter('noDesc')">缺說明 <span class="n" id="fc-noDesc"></span></button>
-      <button class="filter-chip warn" data-filter="noPhoto" onclick="setFilter('noPhoto')">缺照片 <span class="n" id="fc-noPhoto"></span></button>
-      <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
+      <div class="summary">
+        <span id="summaryLine"></span>
+        <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()">套用目前排序到前台 →</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px">縮圖</th>
+              <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
+              <th data-sort="cat">分類</th>
+              <th data-sort="size">尺寸</th>
+              <th data-sort="desc">說明</th>
+              <th data-sort="photos">照片</th>
+              <th data-sort="status">狀態</th>
+              <th style="width:80px"></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
     </div>
-    <div class="summary" id="summaryLine"></div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th style="width:60px">縮圖</th>
-            <th data-sort="name">商品名稱</th>
-            <th data-sort="cat">分類</th>
-            <th data-sort="size">尺寸</th>
-            <th data-sort="desc">說明</th>
-            <th data-sort="photos">照片</th>
-            <th data-sort="status">狀態</th>
-            <th style="width:80px"></th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </main>
+  </div>
 </div>
+<div class="toast" id="toast"></div>
 
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,collection,getDocs}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -306,8 +402,20 @@ function escapeHTML(str=""){
 let catalog=[];
 let products=[];
 let currentFilter="all";
-let sortKey="order";
+let sortKey="name";
 let sortDir=1;
+let catFilterMain=null;
+let catFilterSub=null;
+let openMainCats=new Set();
+let strokeCollator;
+try{strokeCollator=new Intl.Collator("zh-Hant-u-co-stroke",{numeric:true})}catch(e){strokeCollator=new Intl.Collator("zh-Hant")}
+function toast(msg,dur=2600){
+  const el=document.getElementById("toast");
+  el.textContent=msg;
+  el.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>el.classList.remove("show"),dur);
+}
 
 function getMainCat(id){return catalog.find(c=>c.id===id)}
 function getMainName(id){return getMainCat(id)?.name||(id?id:"待分類")}
@@ -321,6 +429,39 @@ function hasSize(p){
   const d=p.dimensions||{};
   return !!(d.width||d.depth||d.height||p.size);
 }
+const sorters={
+  order:(a,b)=>(a.sortOrder??0)-(b.sortOrder??0),
+  name:(a,b)=>strokeCollator.compare(a.name||"",b.name||""),
+  cat:(a,b)=>strokeCollator.compare(categoryLabel(a),categoryLabel(b)),
+  size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
+  desc:(a,b)=>Number(!!b.desc)-Number(!!a.desc),
+  photos:(a,b)=>(b.photos||[]).filter(Boolean).length-(a.photos||[]).filter(Boolean).length,
+  status:(a,b)=>(a.status||"").localeCompare(b.status||"")
+};
+function sortCompare(a,b){return sorters[sortKey]?sorters[sortKey](a,b):0}
+async function syncOrderToFrontend(){
+  const btn=document.getElementById("syncBtn");
+  const active=products.filter(p=>p.status!=="archived");
+  const archived=products.filter(p=>p.status==="archived");
+  const sorted=active.slice().sort((a,b)=>sortDir*sortCompare(a,b));
+  if(!confirm(`將以目前排序方式（${document.querySelector("thead th.sorted")?.textContent.trim()||"商品名稱・筆畫"}）覆蓋前台商品的顯示順序，共 ${sorted.length} 個商品。確定要套用嗎？`))return;
+  btn.disabled=true;
+  btn.textContent="同步中…";
+  try{
+    const all=[...sorted,...archived];
+    all.forEach((p,i)=>p.sortOrder=i);
+    const productsCol=collection(db,"sitedata",SITE_DOC,"products");
+    const batch=writeBatch(db);
+    all.forEach(p=>batch.set(doc(productsCol,p.id),p));
+    await batch.commit();
+    toast("已套用到前台，前台重新整理後就會是這個順序 ☁️");
+  }catch(e){
+    toast("同步失敗："+(e.message||String(e)),4000);
+  }
+  btn.disabled=false;
+  btn.textContent="套用目前排序到前台 →";
+}
+window.syncOrderToFrontend=syncOrderToFrontend;
 function missingFlags(p){
   return {
     noCat: !p.mainCat,
@@ -343,8 +484,51 @@ async function boot(){
     return;
   }
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  catalog.forEach(c=>openMainCats.add(c.id));
+  renderSidebar();
   renderTable();
 }
+
+function renderSidebar(){
+  const activeProducts=products.filter(p=>p.status!=="archived");
+  const allRow=`
+    <div class="cat-row ${catFilterMain===null?"active":""}" onclick="setCatFilter(null,null)">
+      <span class="cat-toggle"></span>
+      <span class="cat-label">全部分類</span>
+      <span class="cat-count">${activeProducts.length}</span>
+    </div>`;
+  const nodes=catalog.map(c=>{
+    const mainCount=activeProducts.filter(p=>p.mainCat===c.id).length;
+    const isOpen=openMainCats.has(c.id);
+    const subs=(c.subs||[]).map(s=>{
+      const subCount=activeProducts.filter(p=>p.mainCat===c.id&&p.subCat===s.id).length;
+      const active=catFilterMain===c.id&&catFilterSub===s.id;
+      return `<div class="cat-sub-row ${active?"active":""}" onclick="setCatFilter('${c.id}','${s.id}')">
+        <span>${escapeHTML(s.name)}</span><span class="cat-count">${subCount}</span>
+      </div>`;
+    }).join("");
+    return `
+      <div class="cat-node">
+        <div class="cat-row ${catFilterMain===c.id&&!catFilterSub?"active":""}">
+          <button class="cat-toggle ${isOpen?"open":""}" onclick="event.stopPropagation();toggleCatNode('${c.id}')">▸</button>
+          <span class="cat-label" onclick="setCatFilter('${c.id}',null)">${escapeHTML(c.name)}</span>
+          <span class="cat-count">${mainCount}</span>
+        </div>
+        <div class="cat-subs ${isOpen?"open":""}">${subs}</div>
+      </div>`;
+  }).join("");
+  document.getElementById("catTree").innerHTML=allRow+nodes;
+}
+window.toggleCatNode=function(id){
+  if(openMainCats.has(id))openMainCats.delete(id);else openMainCats.add(id);
+  renderSidebar();
+};
+window.setCatFilter=function(mainId,subId){
+  catFilterMain=mainId;
+  catFilterSub=subId;
+  renderSidebar();
+  renderTable();
+};
 
 window.setFilter=function(f){
   currentFilter=f;
@@ -385,6 +569,10 @@ window.renderTable=function(){
       list=list.filter(p=>missingFlags(p)[currentFilter]);
     }
   }
+  if(catFilterMain){
+    list=list.filter(p=>p.mainCat===catFilterMain);
+    if(catFilterSub)list=list.filter(p=>p.subCat===catFilterSub);
+  }
   if(q){
     list=list.filter(p=>{
       const cat=categoryLabel(p).toLowerCase();
@@ -392,16 +580,7 @@ window.renderTable=function(){
     });
   }
 
-  const sorters={
-    order:(a,b)=>(a.sortOrder??0)-(b.sortOrder??0),
-    name:(a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"),
-    cat:(a,b)=>categoryLabel(a).localeCompare(categoryLabel(b),"zh-Hant"),
-    size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
-    desc:(a,b)=>Number(!!b.desc)-Number(!!a.desc),
-    photos:(a,b)=>(b.photos||[]).filter(Boolean).length-(a.photos||[]).filter(Boolean).length,
-    status:(a,b)=>(a.status||"").localeCompare(b.status||"")
-  };
-  list.sort((a,b)=>sortDir*(sorters[sortKey]?sorters[sortKey](a,b):0));
+  list.sort((a,b)=>sortDir*sortCompare(a,b));
 
   document.getElementById("summaryLine").textContent=`顯示 ${list.length} 個商品`;
 

@@ -1078,9 +1078,11 @@ body.quickcat-mode .favorite-btn{display:none}
 </section>
 
 <footer>
-  <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
+    <button class="footer-edit-link" id="editToggleBtn" onclick="toggleEditMode()">管理</button>
+  </div>
   <div>© 2026 信通家俱行</div>
-  <button class="footer-edit-link" id="editToggleBtn" onclick="toggleEditMode()">管理</button>
 </footer>
 
 <div class="edit-toolbar">

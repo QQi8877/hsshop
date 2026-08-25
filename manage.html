@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>商品管理後台 | 信通家俱行</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --charcoal:#343331;
+  --ink:#262523;
+  --muted:#67625b;
+  --soft:#8d867b;
+  --tan:#b99263;
+  --tan-dark:#967244;
+  --sage:#7f9076;
+  --cream:#f3eee6;
+  --paper:#fffaf3;
+  --line:#ddd2c4;
+  --white:#fff;
+  --danger:#b84236;
+  --warn:#c78a3a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:"Noto Sans TC",system-ui,sans-serif;
+  background:var(--cream);
+  color:var(--ink);
+  font-size:14px;
+  line-height:1.6;
+}
+button,input,select{font:inherit}
+button{cursor:pointer}
+a{color:inherit}
+
+/* ── 密碼閘門 ───────────────────────────────────── */
+#gate{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.gate-card{
+  width:min(360px,100%);
+  background:var(--paper);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:32px;
+  box-shadow:0 24px 70px rgba(0,0,0,.1);
+}
+.gate-card h1{
+  font-family:"Noto Serif TC",serif;
+  font-size:20px;
+  color:var(--charcoal);
+  margin-bottom:6px;
+}
+.gate-card p{color:var(--soft);font-size:13px;margin-bottom:20px}
+.gate-card input{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--cream);
+  color:var(--ink);
+  padding:10px 12px;
+  outline:none;
+  margin-bottom:10px;
+}
+.gate-card input:focus{border-color:var(--tan)}
+.gate-card button{
+  width:100%;
+  border:0;
+  border-radius:7px;
+  background:var(--charcoal);
+  color:var(--white);
+  padding:11px;
+}
+.gate-card button:hover{background:var(--tan-dark)}
+.gate-error{display:none;color:var(--danger);font-size:12px;margin-bottom:10px}
+
+/* ── 主畫面 ───────────────────────────────────── */
+#app{display:none}
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  padding:16px 28px;
+  background:rgba(243,238,230,.96);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(10px);
+}
+.header-title{display:flex;align-items:baseline;gap:10px}
+.header-title h1{font-family:"Noto Serif TC",serif;font-size:19px;color:var(--charcoal)}
+.header-title span{font-size:12px;color:var(--soft)}
+.header-links{display:flex;gap:14px;align-items:center;font-size:13px}
+.header-links a{color:var(--muted);text-decoration:none}
+.header-links a:hover{color:var(--tan-dark)}
+
+main{padding:22px 28px 60px;max-width:1400px;margin:auto}
+
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-bottom:16px;
+}
+.search-box{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--paper);
+  padding:8px 14px;
+  min-width:220px;
+  color:var(--soft);
+}
+.search-box input{flex:1;border:0;background:transparent;outline:none;color:var(--ink)}
+.filter-chip{
+  border:1px solid var(--line);
+  background:var(--paper);
+  color:var(--muted);
+  border-radius:999px;
+  padding:7px 14px;
+  font-size:12.5px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.filter-chip .n{font-size:10.5px;background:rgba(0,0,0,.07);border-radius:999px;padding:0 6px}
+.filter-chip.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
+.filter-chip.active .n{background:rgba(255,255,255,.22)}
+.filter-chip.warn.active{background:var(--warn);border-color:var(--warn)}
+
+.table-wrap{
+  overflow-x:auto;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--paper);
+}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:820px}
+thead th{
+  position:sticky;
+  top:0;
+  background:var(--cream);
+  color:var(--muted);
+  font-weight:500;
+  font-size:11.5px;
+  letter-spacing:.04em;
+  text-align:left;
+  padding:10px 12px;
+  border-bottom:1px solid var(--line);
+  white-space:nowrap;
+  cursor:pointer;
+  user-select:none;
+}
+thead th:hover{color:var(--tan-dark)}
+thead th.sorted{color:var(--tan-dark)}
+tbody td{
+  padding:9px 12px;
+  border-bottom:1px solid var(--line);
+  vertical-align:middle;
+}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:rgba(185,146,99,.06)}
+tbody tr.is-archived{opacity:.55}
+.cell-thumb{width:52px;height:52px;border-radius:6px;object-fit:cover;background:var(--cream);display:block}
+.cell-thumb-empty{
+  width:52px;height:52px;border-radius:6px;background:var(--cream);
+  display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:10px;text-align:center;
+}
+.cell-name{font-weight:500;color:var(--charcoal)}
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  border-radius:999px;
+  padding:3px 9px;
+  font-size:11.5px;
+}
+.pill-ok{background:rgba(127,144,118,.15);color:var(--sage)}
+.pill-missing{background:rgba(199,138,58,.15);color:var(--warn)}
+.pill-archived{background:rgba(184,66,54,.12);color:var(--danger)}
+.pill-active{background:rgba(127,144,118,.15);color:var(--sage)}
+.missing-dots{display:flex;gap:4px;margin-top:3px}
+.missing-dot{width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.row-actions a{
+  font-size:12px;
+  color:var(--tan-dark);
+  text-decoration:none;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:4px 9px;
+  white-space:nowrap;
+}
+.row-actions a:hover{border-color:var(--tan);background:rgba(185,146,99,.08)}
+.empty-state{padding:60px 20px;text-align:center;color:var(--soft)}
+.summary{color:var(--soft);font-size:12.5px;margin-bottom:14px}
+.loading{padding:60px 20px;text-align:center;color:var(--soft)}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gate-card">
+    <h1>🔒 商品管理後台</h1>
+    <p>請輸入管理員密碼</p>
+    <div class="gate-error" id="gateError">密碼錯誤，請再試一次</div>
+    <input type="password" id="gatePw" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlockGate()">
+    <button onclick="unlockGate()">進入後台</button>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="header-title">
+      <h1>信通家俱行 · 商品管理後台</h1>
+      <span id="totalCount"></span>
+    </div>
+    <div class="header-links">
+      <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
+    </div>
+  </header>
+  <main>
+    <div class="toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchBox" placeholder="搜尋商品名稱、說明或分類…" oninput="renderTable()">
+      </div>
+      <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">全部 <span class="n" id="fc-all"></span></button>
+      <button class="filter-chip warn" data-filter="noCat" onclick="setFilter('noCat')">缺分類 <span class="n" id="fc-noCat"></span></button>
+      <button class="filter-chip warn" data-filter="noSize" onclick="setFilter('noSize')">缺尺寸 <span class="n" id="fc-noSize"></span></button>
+      <button class="filter-chip warn" data-filter="noDesc" onclick="setFilter('noDesc')">缺說明 <span class="n" id="fc-noDesc"></span></button>
+      <button class="filter-chip warn" data-filter="noPhoto" onclick="setFilter('noPhoto')">缺照片 <span class="n" id="fc-noPhoto"></span></button>
+      <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
+    </div>
+    <div class="summary" id="summaryLine"></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:60px">縮圖</th>
+            <th data-sort="name">商品名稱</th>
+            <th data-sort="cat">分類</th>
+            <th data-sort="size">尺寸</th>
+            <th data-sort="desc">說明</th>
+            <th data-sort="photos">照片</th>
+            <th data-sort="status">狀態</th>
+            <th style="width:80px"></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+import{getFirestore,doc,getDoc,collection,getDocs}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
+  authDomain:"hsshop-10bd9.firebaseapp.com",
+  projectId:"hsshop-10bd9",
+  storageBucket:"hsshop-10bd9.firebasestorage.app",
+  messagingSenderId:"693625648338",
+  appId:"1:693625648338:web:7460e5aa1c5e9e55b1a90b"
+};
+const fbApp=initializeApp(firebaseConfig);
+const db=getFirestore(fbApp);
+const SITE_DOC="hsshop-10bd9";
+
+const ADMIN_HASH="fb2495b0307d8ea473eef24e55c4c6a4b264074ef206122f79631ad9940a73a8";
+async function sha256(str){
+  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+window.unlockGate=async function(){
+  const pw=document.getElementById("gatePw").value;
+  const hash=await sha256(pw);
+  if(hash===ADMIN_HASH){
+    document.getElementById("gate").style.display="none";
+    document.getElementById("app").style.display="block";
+    boot();
+  }else{
+    document.getElementById("gateError").style.display="block";
+    document.getElementById("gatePw").select();
+  }
+};
+
+function escapeHTML(str=""){
+  return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+
+let catalog=[];
+let products=[];
+let currentFilter="all";
+let sortKey="order";
+let sortDir=1;
+
+function getMainCat(id){return catalog.find(c=>c.id===id)}
+function getMainName(id){return getMainCat(id)?.name||(id?id:"待分類")}
+function getSubName(mainId,subId){return (getMainCat(mainId)?.subs||[]).find(s=>s.id===subId)?.name||""}
+function categoryLabel(p){
+  const sub=getSubName(p.mainCat,p.subCat);
+  const main=getMainName(p.mainCat);
+  return sub?`${main} / ${sub}`:main;
+}
+function hasSize(p){
+  const d=p.dimensions||{};
+  return !!(d.width||d.depth||d.height||p.size);
+}
+function missingFlags(p){
+  return {
+    noCat: !p.mainCat,
+    noSize: !hasSize(p),
+    noDesc: !p.desc,
+    noPhoto: !(p.photos||[]).filter(Boolean).length
+  };
+}
+
+async function boot(){
+  document.getElementById("tbody").innerHTML='<tr><td colspan="8" class="loading">載入中…</td></tr>';
+  try{
+    const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
+    catalog=metaSnap.exists()?(metaSnap.data().catalog||[]):[];
+    const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
+    products=productsSnap.docs.map(d=>d.data());
+    products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
+  }catch(e){
+    document.getElementById("tbody").innerHTML=`<tr><td colspan="8" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
+    return;
+  }
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderTable();
+}
+
+window.setFilter=function(f){
+  currentFilter=f;
+  document.querySelectorAll(".filter-chip").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));
+  renderTable();
+};
+
+document.querySelectorAll("thead th[data-sort]").forEach(th=>{
+  th.addEventListener("click",()=>{
+    const key=th.dataset.sort;
+    if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=1}
+    document.querySelectorAll("thead th").forEach(t=>t.classList.remove("sorted"));
+    th.classList.add("sorted");
+    renderTable();
+  });
+});
+
+window.renderTable=function(){
+  const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
+  const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,archived:0};
+  products.forEach(p=>{
+    if(p.status==="archived"){counts.archived++;return}
+    counts.all++;
+    const m=missingFlags(p);
+    if(m.noCat)counts.noCat++;
+    if(m.noSize)counts.noSize++;
+    if(m.noDesc)counts.noDesc++;
+    if(m.noPhoto)counts.noPhoto++;
+  });
+  Object.keys(counts).forEach(k=>{const el=document.getElementById("fc-"+k);if(el)el.textContent=counts[k]});
+
+  let list=products.slice();
+  if(currentFilter==="archived"){
+    list=list.filter(p=>p.status==="archived");
+  }else{
+    list=list.filter(p=>p.status!=="archived");
+    if(currentFilter!=="all"){
+      list=list.filter(p=>missingFlags(p)[currentFilter]);
+    }
+  }
+  if(q){
+    list=list.filter(p=>{
+      const cat=categoryLabel(p).toLowerCase();
+      return (p.name||"").toLowerCase().includes(q)||(p.desc||"").toLowerCase().includes(q)||cat.includes(q);
+    });
+  }
+
+  const sorters={
+    order:(a,b)=>(a.sortOrder??0)-(b.sortOrder??0),
+    name:(a,b)=>(a.name||"").localeCompare(b.name||"","zh-Hant"),
+    cat:(a,b)=>categoryLabel(a).localeCompare(categoryLabel(b),"zh-Hant"),
+    size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
+    desc:(a,b)=>Number(!!b.desc)-Number(!!a.desc),
+    photos:(a,b)=>(b.photos||[]).filter(Boolean).length-(a.photos||[]).filter(Boolean).length,
+    status:(a,b)=>(a.status||"").localeCompare(b.status||"")
+  };
+  list.sort((a,b)=>sortDir*(sorters[sortKey]?sorters[sortKey](a,b):0));
+
+  document.getElementById("summaryLine").textContent=`顯示 ${list.length} 個商品`;
+
+  const tbody=document.getElementById("tbody");
+  if(!list.length){
+    tbody.innerHTML='<tr><td colspan="8" class="empty-state">沒有符合條件的商品</td></tr>';
+    return;
+  }
+  tbody.innerHTML=list.map(p=>{
+    const m=missingFlags(p);
+    const photos=(p.photos||[]).filter(Boolean);
+    const thumb=photos.length
+      ? `<img class="cell-thumb" src="${escapeHTML(photos[0])}" alt="">`
+      : `<div class="cell-thumb-empty">無圖</div>`;
+    const dots=[m.noCat,m.noSize,m.noDesc,m.noPhoto].filter(Boolean).length
+      ? `<div class="missing-dots">${[m.noCat&&"分類",m.noSize&&"尺寸",m.noDesc&&"說明",m.noPhoto&&"照片"].filter(Boolean).map(()=>'<span class="missing-dot"></span>').join("")}</div>`
+      : "";
+    return `
+      <tr class="${p.status==="archived"?"is-archived":""}">
+        <td>${thumb}</td>
+        <td>
+          <div class="cell-name">${escapeHTML(p.name||"（未命名）")}</div>
+          ${dots}
+        </td>
+        <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':escapeHTML(categoryLabel(p))}</td>
+        <td>${m.noSize?'<span class="pill pill-missing">缺尺寸</span>':'<span class="pill pill-ok">已填</span>'}</td>
+        <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
+        <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':photos.length+' 張'}</td>
+        <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
+        <td class="row-actions"><a href="index.html" target="_blank" rel="noopener">去前台編輯</a></td>
+      </tr>
+    `;
+  }).join("");
+};
+</script>
+</body>
+</html>

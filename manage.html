@@ -293,6 +293,262 @@ tbody tr.is-archived{opacity:.55}
   transition:.25s;
 }
 .toast.show{opacity:1;transform:translateY(0)}
+
+/* ── 新增商品按鈕 ───────────────────────────────── */
+.add-btn{
+  border:0;
+  border-radius:999px;
+  background:var(--charcoal);
+  color:var(--white);
+  padding:8px 16px;
+  font-size:12.5px;
+}
+.add-btn:hover{background:var(--tan-dark)}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap}
+.row-actions button{
+  font-size:12px;
+  color:var(--tan-dark);
+  background:transparent;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:4px 9px;
+  white-space:nowrap;
+}
+.row-actions button:hover{border-color:var(--tan);background:rgba(185,146,99,.08)}
+.row-actions button.danger{color:var(--danger)}
+.row-actions button.danger:hover{border-color:var(--danger);background:rgba(184,66,54,.08)}
+
+/* ── 商品編輯 Modal（沿用前台樣式）───────────────── */
+.modal-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:240;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  background:rgba(34,29,24,.72);
+}
+.modal-overlay.open{display:flex}
+.modal{
+  width:min(590px,100%);
+  max-height:92vh;
+  overflow:auto;
+  background:var(--paper);
+  border-radius:14px;
+  padding:32px;
+  position:relative;
+  box-shadow:0 24px 80px rgba(0,0,0,.22);
+}
+.modal-title{
+  font-family:"Noto Serif TC",serif;
+  font-size:21px;
+  color:var(--charcoal);
+  margin-bottom:22px;
+}
+.modal-close{
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:32px;
+  height:32px;
+  border:0;
+  border-radius:50%;
+  color:var(--muted);
+  background:#ece3d8;
+}
+.modal label{
+  display:block;
+  margin:15px 0 6px;
+  font-size:12px;
+  color:var(--muted);
+  letter-spacing:.06em;
+}
+.modal input,.modal textarea,.modal select{
+  width:100%;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--cream);
+  color:var(--ink);
+  padding:10px 12px;
+  outline:none;
+}
+.modal textarea{min-height:78px;resize:vertical}
+.modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
+.photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
+.photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
+.photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
+.upload-method-row{display:flex;gap:5px;margin-bottom:10px}
+.upload-method-btn{
+  flex:1;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--white);
+  color:var(--muted);
+  padding:7px 4px;
+  font-size:11px;
+}
+.upload-method-btn.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
+.url-input-row{display:flex;gap:7px;margin-bottom:8px}
+.url-input-row input{margin:0}
+.url-input-row button{
+  white-space:nowrap;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--white);
+  color:var(--muted);
+  padding:0 14px;
+}
+.helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
+.dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.spec-editor{margin-top:8px;overflow-x:auto}
+.spec-table{width:100%;border-collapse:collapse;font-size:13px}
+.spec-table th{
+  padding:7px 10px;
+  background:var(--cream);
+  color:var(--muted);
+  font-weight:500;
+  font-size:11px;
+  letter-spacing:.08em;
+  border:1px solid var(--line);
+  text-align:center;
+  white-space:nowrap;
+}
+.spec-table th:first-child{text-align:left;min-width:90px}
+.spec-table td{
+  border:1px solid var(--line);
+  padding:4px 6px;
+}
+.spec-table td:first-child{padding:4px 8px}
+.spec-table input{
+  width:100%;
+  border:none;
+  background:transparent;
+  color:var(--ink);
+  font-size:13px;
+  text-align:center;
+  padding:3px 4px;
+  outline:none;
+  min-width:52px;
+}
+.spec-table input:first-child,.spec-table td:first-child input{text-align:left}
+.spec-table input:focus{background:rgba(185,146,99,.1);border-radius:4px}
+.spec-table .spec-del-btn{
+  border:0;
+  background:transparent;
+  color:var(--soft);
+  cursor:pointer;
+  font-size:15px;
+  padding:2px 5px;
+  border-radius:4px;
+  display:block;
+  margin:auto;
+}
+.spec-table .spec-del-btn:hover{background:#fce8e8;color:var(--danger)}
+.add-spec-btn{
+  border:1px dashed var(--tan);
+  border-radius:7px;
+  background:rgba(185,146,99,.08);
+  color:var(--tan-dark);
+  padding:8px 10px;
+  font-size:12px;
+  margin-top:6px;
+}
+.photo-slots{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:8px;
+  margin:10px 0 8px;
+}
+.photo-slot{
+  position:relative;
+  aspect-ratio:1;
+  overflow:hidden;
+  border:1.5px dashed var(--line);
+  border-radius:8px;
+  background:var(--cream);
+}
+.photo-slot.has-img{border-style:solid}
+.photo-slot:hover{border-color:var(--tan)}
+.slot-img{width:100%;height:100%;object-fit:cover;display:block}
+.slot-num{
+  position:absolute;
+  top:3px;
+  left:5px;
+  z-index:3;
+  font-size:10px;
+  color:var(--soft);
+}
+.has-img .slot-num{color:rgba(255,255,255,.72)}
+.slot-overlay{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  display:grid;
+  place-items:center;
+  color:var(--tan-dark);
+  font-size:10px;
+  text-align:center;
+}
+.has-img .slot-overlay{opacity:0;background:rgba(0,0,0,.44);color:var(--white);transition:opacity .18s}
+.has-img:hover .slot-overlay{opacity:1}
+.slot-file-input{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  width:100%;
+  height:100%;
+  opacity:0;
+  cursor:pointer;
+}
+.slot-del{
+  display:none;
+  position:absolute;
+  top:4px;
+  right:4px;
+  z-index:6;
+  width:19px;
+  height:19px;
+  border:0;
+  border-radius:50%;
+  background:var(--danger);
+  color:var(--white);
+  line-height:1;
+}
+.has-img:hover .slot-del{display:grid;place-items:center}
+.slot-drag-handle{
+  display:none;
+  position:absolute;
+  bottom:4px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:6;
+  background:rgba(0,0,0,.52);
+  color:#fff;
+  border-radius:4px;
+  padding:2px 6px;
+  font-size:10px;
+  letter-spacing:.04em;
+  cursor:grab;
+  white-space:nowrap;
+  pointer-events:all;
+}
+.has-img:hover .slot-drag-handle{display:block}
+.photo-slot.drag-over{
+  border:2px solid var(--tan);
+  background:rgba(185,146,99,.12);
+  transform:scale(1.04);
+  transition:transform .15s;
+}
+.photo-slot.dragging{opacity:.4}
+.modal-actions{display:flex;gap:10px;margin-top:26px}
+.btn-secondary,.btn-primary{
+  border-radius:7px;
+  padding:12px 18px;
+}
+.btn-secondary{border:1px solid var(--line);background:transparent;color:var(--muted)}
+.btn-primary{flex:1;border:0;background:var(--charcoal);color:var(--white)}
+.btn-primary:hover{background:var(--tan-dark)}
 </style>
 </head>
 <body>
@@ -314,6 +570,7 @@ tbody tr.is-archived{opacity:.55}
       <span id="totalCount"></span>
     </div>
     <div class="header-links">
+      <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
     </div>
   </header>
@@ -361,9 +618,73 @@ tbody tr.is-archived{opacity:.55}
 </div>
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('productModal')">×</button>
+    <div class="modal-title" id="productModalTitle">新增商品</div>
+    <label>主分類</label>
+    <select id="pMainCat" onchange="updateSubSelect()"></select>
+    <label>子分類</label>
+    <div id="pSubCatWrap"><select id="pSubCat"></select></div>
+    <label>商品名稱 *</label>
+    <input type="text" id="pName" placeholder="例：北歐實木餐桌">
+    <input type="hidden" id="pSize">
+    <div class="dimension-grid">
+      <div>
+        <label>寬 W（cm）</label>
+        <input type="text" id="pWidth" placeholder="例：120">
+      </div>
+      <div>
+        <label>深 D（cm）</label>
+        <input type="text" id="pDepth" placeholder="例：60">
+      </div>
+      <div>
+        <label>高 H（cm）</label>
+        <input type="text" id="pHeight" placeholder="例：75">
+      </div>
+    </div>
+    <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
+    <div class="spec-editor" id="specEditor"></div>
+    <button class="add-spec-btn" type="button" onclick="addSpecRow()">＋ 新增部位列</button>
+    <label>商品說明（選填）</label>
+    <textarea id="pDesc" placeholder="材質、特色說明"></textarea>
+
+    <div class="photos-section">
+      <div class="photos-section-title">商品照片（最多 5 張）</div>
+      <div class="photos-note">
+        第 1 張是封面，第 2 張是滑鼠移過商品時的切換圖片。Google Drive 連結請先設定為「知道連結的任何人都可以檢視」。
+      </div>
+      <div class="upload-method-row">
+        <button class="upload-method-btn active" type="button" onclick="setUploadMethod('file',this)">本機上傳</button>
+        <button class="upload-method-btn" type="button" onclick="setUploadMethod('gdrive',this)">Google 雲端</button>
+        <button class="upload-method-btn" type="button" onclick="setUploadMethod('url',this)">圖片網址</button>
+      </div>
+      <div id="urlInputPanel" style="display:none">
+        <div class="url-input-row">
+          <input type="text" id="urlInput" placeholder="https://example.com/image.jpg">
+          <button type="button" onclick="addPhotoByUrl()">新增</button>
+        </div>
+      </div>
+      <div id="gdriveInputPanel" style="display:none">
+        <div class="url-input-row">
+          <input type="text" id="gdriveInput" placeholder="貼上 Google Drive 分享連結">
+          <button type="button" onclick="addPhotoByGdrive()">新增</button>
+        </div>
+        <div class="helper-text">支援 /file/d/ID/view 與 open?id=ID 等常見格式，會自動轉成圖片可讀取網址。</div>
+      </div>
+      <div class="photo-slots" id="photoSlots"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" type="button" onclick="closeModal('productModal')">取消</button>
+      <button class="btn-primary" type="button" onclick="saveProduct()">儲存商品</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -462,6 +783,371 @@ async function syncOrderToFrontend(){
   btn.textContent="套用目前排序到前台 →";
 }
 window.syncOrderToFrontend=syncOrderToFrontend;
+
+/* ── 商品新增／編輯（照片處理沿用前台邏輯）───────────────────── */
+const MAX_PHOTOS=5;
+let editingProductId=null;
+let workingPhotos=[];
+let workingSpecs=[];
+let uploadMethod="file";
+
+function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function nextSortOrder(){return products.length?Math.max(...products.map(p=>p.sortOrder??0))+1:0}
+
+window.openModal=function(id){document.getElementById(id).classList.add("open")};
+window.closeModal=function(id){document.getElementById(id).classList.remove("open")};
+
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.crossOrigin="anonymous";
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1500;
+function resizeImageToUniform(src){
+  return loadImage(src).then(img=>{
+    try{
+      const canvas=document.createElement("canvas");
+      canvas.width=PHOTO_TARGET_W;
+      canvas.height=PHOTO_TARGET_H;
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#fffaf3";
+      ctx.fillRect(0,0,PHOTO_TARGET_W,PHOTO_TARGET_H);
+      const scale=Math.min(PHOTO_TARGET_W/img.width,PHOTO_TARGET_H/img.height);
+      const w=img.width*scale,h=img.height*scale;
+      ctx.drawImage(img,(PHOTO_TARGET_W-w)/2,(PHOTO_TARGET_H-h)/2,w,h);
+      return canvas.toDataURL("image/jpeg",0.86);
+    }catch(e){
+      return src;
+    }
+  }).catch(()=>src);
+}
+function extractGdriveId(url){
+  const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
+  for(const pattern of patterns){
+    const match=String(url).match(pattern);
+    if(match)return match[1];
+  }
+  return null;
+}
+function convertGdriveUrl(url){
+  const id=extractGdriveId(url);
+  return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`:url;
+}
+function normalizePhotoUrl(url){
+  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
+}
+
+window.renderCatSelect=function(){
+  const main=document.getElementById("pMainCat");
+  main.innerHTML=catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+  updateSubSelect();
+};
+window.updateSubSelect=function(){
+  const mainId=document.getElementById("pMainCat").value;
+  const sub=document.getElementById("pSubCat");
+  const wrap=document.getElementById("pSubCatWrap");
+  const main=getMainCat(mainId);
+  if(main?.subs?.length){
+    sub.innerHTML=main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
+    wrap.style.display="block";
+  }else{
+    sub.innerHTML="";
+    wrap.style.display="none";
+  }
+};
+
+window.addSpecRow=function(part="",w="",d="",h=""){
+  workingSpecs.push({part,w,d,h});
+  renderSpecEditor();
+};
+function renderSpecEditor(){
+  const editor=document.getElementById("specEditor");
+  if(!editor)return;
+  editor.innerHTML="";
+  if(!workingSpecs.length){
+    workingSpecs=[{part:"",w:"",d:"",h:""},{part:"",w:"",d:"",h:""},{part:"",w:"",d:"",h:""}];
+  }
+  const table=document.createElement("table");
+  table.className="spec-table";
+  table.innerHTML=`<thead><tr><th>部位</th><th>寬（W）</th><th>深（D）</th><th>高（H）</th><th></th></tr></thead>`;
+  const tbody=document.createElement("tbody");
+  workingSpecs.forEach((spec,index)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><input type="text" value="${escapeHTML(spec.part)}" placeholder="例：椅面"></td>
+      <td><input type="text" value="${escapeHTML(spec.w)}" placeholder="—"></td>
+      <td><input type="text" value="${escapeHTML(spec.d)}" placeholder="—"></td>
+      <td><input type="text" value="${escapeHTML(spec.h)}" placeholder="—"></td>
+      <td><button class="spec-del-btn" type="button">×</button></td>
+    `;
+    const [partInput,wInput,dInput,hInput]=tr.querySelectorAll("input");
+    partInput.style.textAlign="left";
+    partInput.addEventListener("input",()=>workingSpecs[index].part=partInput.value);
+    wInput.addEventListener("input",()=>workingSpecs[index].w=wInput.value);
+    dInput.addEventListener("input",()=>workingSpecs[index].d=dInput.value);
+    hInput.addEventListener("input",()=>workingSpecs[index].h=hInput.value);
+    tr.querySelector(".spec-del-btn").addEventListener("click",()=>{workingSpecs.splice(index,1);renderSpecEditor()});
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+  editor.appendChild(table);
+}
+
+window.setUploadMethod=function(method,el){
+  uploadMethod=method;
+  document.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
+  document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
+  renderPhotoSlots();
+};
+function renderPhotoSlots(){
+  const container=document.getElementById("photoSlots");
+  container.innerHTML="";
+  let dragSrcIdx=null;
+  for(let i=0;i<MAX_PHOTOS;i++){
+    const src=workingPhotos[i];
+    const slot=document.createElement("div");
+    slot.className="photo-slot"+(src?" has-img":"");
+    slot.dataset.idx=i;
+    if(src){
+      const img=document.createElement("img");
+      img.className="slot-img";
+      img.src=normalizePhotoUrl(src);
+      img.alt="";
+      slot.appendChild(img);
+      slot.draggable=true;
+      slot.addEventListener("dragstart",e=>{
+        dragSrcIdx=i;
+        slot.classList.add("dragging");
+        e.dataTransfer.effectAllowed="move";
+      });
+      slot.addEventListener("dragend",()=>{
+        slot.classList.remove("dragging");
+        container.querySelectorAll(".photo-slot").forEach(s=>s.classList.remove("drag-over"));
+      });
+      slot.addEventListener("dragover",e=>{
+        e.preventDefault();
+        e.dataTransfer.dropEffect="move";
+        if(dragSrcIdx!==i)slot.classList.add("drag-over");
+      });
+      slot.addEventListener("dragleave",()=>slot.classList.remove("drag-over"));
+      slot.addEventListener("drop",e=>{
+        e.preventDefault();
+        slot.classList.remove("drag-over");
+        if(dragSrcIdx===null||dragSrcIdx===i)return;
+        const tmp=workingPhotos[dragSrcIdx];
+        workingPhotos[dragSrcIdx]=workingPhotos[i];
+        workingPhotos[i]=tmp;
+        dragSrcIdx=null;
+        renderPhotoSlots();
+        toast("圖片順序已更新");
+      });
+      const handle=document.createElement("div");
+      handle.className="slot-drag-handle";
+      handle.textContent="⠿ 拖曳排序";
+      handle.addEventListener("mousedown",e=>e.stopPropagation());
+      slot.appendChild(handle);
+    }
+    const num=document.createElement("span");
+    num.className="slot-num";
+    num.textContent=i+1;
+    slot.appendChild(num);
+    const overlay=document.createElement("div");
+    overlay.className="slot-overlay";
+    overlay.innerHTML=src?"更換":"新增";
+    if(uploadMethod==="file"){
+      const file=document.createElement("input");
+      file.type="file";
+      file.accept="image/*";
+      file.className="slot-file-input";
+      file.addEventListener("change",event=>handleSlotFile(i,event));
+      slot.appendChild(file);
+    }else{
+      overlay.style.cursor="pointer";
+      overlay.addEventListener("click",()=>promptUrlForSlot(i));
+    }
+    slot.appendChild(overlay);
+    if(src){
+      const del=document.createElement("button");
+      del.className="slot-del";
+      del.textContent="×";
+      del.addEventListener("click",event=>{
+        event.stopPropagation();
+        workingPhotos[i]="";
+        const filled=workingPhotos.filter(Boolean);
+        workingPhotos=new Array(MAX_PHOTOS).fill("");
+        filled.forEach((photo,index)=>workingPhotos[index]=photo);
+        renderPhotoSlots();
+      });
+      slot.appendChild(del);
+    }
+    container.appendChild(slot);
+  }
+}
+function handleSlotFile(slotIdx,event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    workingPhotos[slotIdx]=await resizeImageToUniform(e.target.result);
+    renderPhotoSlots();
+  };
+  reader.readAsDataURL(file);
+}
+async function promptUrlForSlot(slotIdx){
+  const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
+  const raw=document.getElementById(inputId).value.trim();
+  if(!raw){toast("請先在上方輸入連結");return}
+  workingPhotos[slotIdx]=await resizeImageToUniform(normalizePhotoUrl(raw));
+  renderPhotoSlots();
+  toast("圖片已設定");
+}
+window.addPhotoByUrl=async function(){
+  const raw=document.getElementById("urlInput").value.trim();
+  if(!raw){toast("請輸入圖片網址");return}
+  await addWorkingPhoto(normalizePhotoUrl(raw));
+};
+window.addPhotoByGdrive=async function(){
+  const raw=document.getElementById("gdriveInput").value.trim();
+  if(!raw){toast("請輸入 Google Drive 連結");return}
+  await addWorkingPhoto(convertGdriveUrl(raw));
+};
+async function addWorkingPhoto(url){
+  const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
+  if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
+  workingPhotos[empty]=await resizeImageToUniform(url);
+  renderPhotoSlots();
+  toast("圖片已新增");
+}
+
+window.openProductModal=function(id){
+  editingProductId=id;
+  workingPhotos=new Array(MAX_PHOTOS).fill("");
+  workingSpecs=[];
+  document.getElementById("productModalTitle").textContent=id?"編輯商品":"新增商品";
+  document.getElementById("urlInput").value="";
+  document.getElementById("gdriveInput").value="";
+  setUploadMethod("file",document.querySelector(".upload-method-btn"));
+  renderCatSelect();
+  if(id){
+    const product=products.find(p=>p.id===id);
+    if(!product)return;
+    document.getElementById("pMainCat").value=product.mainCat||"";
+    updateSubSelect();
+    document.getElementById("pSubCat").value=product.subCat||"";
+    document.getElementById("pName").value=product.name||"";
+    document.getElementById("pSize").value=product.size||"";
+    document.getElementById("pWidth").value=product.dimensions?.width||"";
+    document.getElementById("pDepth").value=product.dimensions?.depth||"";
+    document.getElementById("pHeight").value=product.dimensions?.height||"";
+    workingSpecs=(product.specs||[]).map(spec=>{
+      if("part" in spec)return {...spec};
+      return {part:spec.label||"",w:spec.value||"",d:"",h:""};
+    });
+    document.getElementById("pDesc").value=product.desc||"";
+    (product.photos||[]).slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
+  }else{
+    document.getElementById("pMainCat").value=catalog[0]?.id||"";
+    updateSubSelect();
+    ["pName","pSize","pDesc","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
+  }
+  renderSpecEditor();
+  renderPhotoSlots();
+  openModal("productModal");
+};
+
+function getSizeSummary(dimensions,size){
+  const parts=[];
+  if(dimensions.width)parts.push(`寬 ${dimensions.width}cm`);
+  if(dimensions.depth)parts.push(`深 ${dimensions.depth}cm`);
+  if(dimensions.height)parts.push(`高 ${dimensions.height}cm`);
+  return parts.length?parts.join(" x "):(size||"");
+}
+
+window.saveProduct=async function(){
+  const name=document.getElementById("pName").value.trim();
+  if(!name){toast("請填寫商品名稱");return}
+  const dimensions={
+    width:document.getElementById("pWidth").value.trim(),
+    depth:document.getElementById("pDepth").value.trim(),
+    height:document.getElementById("pHeight").value.trim()
+  };
+  const size=document.getElementById("pSize").value.trim()||getSizeSummary(dimensions,"");
+  const data={
+    mainCat:document.getElementById("pMainCat").value,
+    subCat:document.getElementById("pSubCat").value||null,
+    name,
+    size,
+    dimensions,
+    specs:workingSpecs.filter(spec=>spec.part||spec.w||spec.d||spec.h).map(spec=>({
+      part:(spec.part||"").trim(),
+      w:(spec.w||"").trim(),
+      d:(spec.d||"").trim(),
+      h:(spec.h||"").trim()
+    })),
+    desc:document.getElementById("pDesc").value.trim(),
+    photos:workingPhotos.filter(Boolean).map(normalizePhotoUrl)
+  };
+  let product;
+  if(editingProductId){
+    const index=products.findIndex(p=>p.id===editingProductId);
+    product={id:editingProductId,status:products[index].status,sortOrder:products[index].sortOrder,...data};
+    products[index]=product;
+  }else{
+    product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
+    products.push(product);
+  }
+  try{
+    await setDoc(doc(productsCol(),product.id),product);
+    toast(editingProductId?"商品已更新 ☁️":"商品已新增 ☁️");
+  }catch(e){
+    toast("儲存失敗："+(e.message||String(e)),4000);
+  }
+  closeModal("productModal");
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
+  renderTable();
+};
+
+window.archiveProductRow=async function(id){
+  const p=products.find(p=>p.id===id);
+  if(!p)return;
+  if(!confirm(`確定要封存「${p.name}」嗎？封存後前台不會顯示，可以隨時還原。`))return;
+  p.status="archived";
+  await setDoc(doc(productsCol(),id),p);
+  toast("已封存");
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
+  renderTable();
+};
+window.restoreProductRow=async function(id){
+  const p=products.find(p=>p.id===id);
+  if(!p)return;
+  p.status="active";
+  await setDoc(doc(productsCol(),id),p);
+  toast("已還原上架");
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
+  renderTable();
+};
+window.deleteProductRow=async function(id){
+  const p=products.find(p=>p.id===id);
+  if(!p)return;
+  if(!confirm(`此操作無法復原，確定要永久刪除「${p.name}」嗎？`))return;
+  await deleteDoc(doc(productsCol(),id));
+  products=products.filter(p=>p.id!==id);
+  toast("已永久刪除");
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
+  renderTable();
+};
+
 function missingFlags(p){
   return {
     noCat: !p.mainCat,
@@ -610,7 +1296,12 @@ window.renderTable=function(){
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':photos.length+' 張'}</td>
         <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
-        <td class="row-actions"><a href="index.html" target="_blank" rel="noopener">去前台編輯</a></td>
+        <td class="row-actions">
+          <button onclick="openProductModal('${p.id}')">編輯</button>
+          ${p.status==="archived"
+            ? `<button onclick="restoreProductRow('${p.id}')">還原</button><button class="danger" onclick="deleteProductRow('${p.id}')">刪除</button>`
+            : `<button onclick="archiveProductRow('${p.id}')">封存</button>`}
+        </td>
       </tr>
     `;
   }).join("");

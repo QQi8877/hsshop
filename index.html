@@ -1206,7 +1206,7 @@ body.edit-mode .edit-toolbar{display:flex}
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1220,12 +1220,19 @@ const fbApp=initializeApp(firebaseConfig);
 const db=getFirestore(fbApp);
 const SITE_DOC="hsshop-10bd9";
 
+function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
 const Storage={
+  // 商品各自存成一份文件（sitedata/{SITE_DOC}/products/{id}），避免全站塞進單一文件撞到
+  // Firestore 每份文件 1MB 的上限（商品一多、照片一多很容易超過）。
+  // catalog／contact／pageText 資料量小，仍合併存在主文件裡。
   async get(){
     try{
-      const snap=await getDoc(doc(db,"sitedata",SITE_DOC));
-      if(snap.exists())return snap.data();
-      return null;
+      const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
+      const meta=metaSnap.exists()?metaSnap.data():null;
+      const productsSnap=await getDocs(productsCol());
+      const products=productsSnap.docs.map(d=>d.data());
+      if(!meta&&!products.length)return null;
+      return {...meta,products};
     }catch(e){
       console.warn("Firestore 讀取失敗，改用 localStorage",e);
       try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null}catch(e2){return null}
@@ -1233,7 +1240,17 @@ const Storage={
   },
   async set(data){
     try{
-      await setDoc(doc(db,"sitedata",SITE_DOC),data);
+      const {products,...meta}=data;
+      const batch=writeBatch(db);
+      batch.set(doc(db,"sitedata",SITE_DOC),meta);
+      const existingSnap=await getDocs(productsCol());
+      const staleIds=new Set(existingSnap.docs.map(d=>d.id));
+      (products||[]).forEach(p=>{
+        batch.set(doc(productsCol(),p.id),p);
+        staleIds.delete(p.id);
+      });
+      staleIds.forEach(id=>batch.delete(doc(productsCol(),id)));
+      await batch.commit();
       // 同時備份 localStorage
       try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(e){}
       return true;

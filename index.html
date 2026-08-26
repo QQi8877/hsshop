@@ -177,13 +177,6 @@ nav{
   font-size:13px;
 }
 .hero-cta:hover{background:rgba(255,255,255,.12)}
-body.edit-mode [data-editable]:hover,
-body.edit-mode [data-product-field]:hover,
-body.edit-mode [data-contact-field]:hover{outline:2px dashed var(--tan);outline-offset:4px}
-body.edit-mode [data-editable]:focus,
-body.edit-mode [data-product-field]:focus,
-body.edit-mode [data-contact-field]:focus{outline:2px solid var(--tan);outline-offset:4px;background:rgba(255,255,255,.08)}
-body.edit-mode [data-product-field="desc"]:empty::before{content:"點此輸入商品說明";color:var(--soft)}
 .section-header{text-align:center;padding:58px 24px 28px}
 .section-label{font-size:11px;letter-spacing:.18em;color:var(--tan-dark);margin-bottom:8px}
 .section-title{
@@ -233,7 +226,7 @@ body.edit-mode [data-product-field="desc"]:empty::before{content:"點此輸入�
   padding:0 38px 18px;
 }
 .sub-categories-bar{display:none;padding-bottom:24px}
-.cat-tab,.sub-tab,.add-cat-btn{
+.cat-tab,.sub-tab{
   border:1px solid var(--line);
   background:var(--paper);
   color:var(--muted);
@@ -250,8 +243,6 @@ body.edit-mode [data-product-field="desc"]:empty::before{content:"點此輸入�
 .sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
 .tab-count{font-size:11px;background:rgba(0,0,0,.08);border-radius:999px;padding:0 7px}
 .active .tab-count{background:rgba(255,255,255,.22)}
-.add-cat-btn{display:none;border-style:dashed;color:var(--tan-dark);background:transparent}
-body.edit-mode .add-cat-btn{display:inline-flex}
 .products-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(255px,1fr));
@@ -334,7 +325,6 @@ body.edit-mode .add-cat-btn{display:inline-flex}
 }
 .product-size{font-size:12px;color:var(--tan-dark);margin-bottom:6px}
 .product-price{font-size:15px;color:var(--charcoal);font-weight:600;margin-top:2px}
-.product-desc{font-size:13px;color:var(--soft)}
 .favorite-btn{
   position:absolute;
   top:10px;
@@ -430,61 +420,6 @@ body.edit-mode .add-cat-btn{display:inline-flex}
 }
 .favorites-inquire-btn:hover{background:#05a648}
 .favorites-inquire-btn svg{flex-shrink:0}
-.card-edit-controls{
-  display:none;
-  position:absolute;
-  top:8px;
-  right:8px;
-  z-index:8;
-  gap:6px;
-}
-body.edit-mode .card-edit-controls{display:flex}
-.card-edit-controls button{
-  border:0;
-  width:30px;
-  height:30px;
-  border-radius:6px;
-  color:var(--white);
-}
-.btn-edit-card{background:var(--charcoal)}
-.btn-del-card{background:var(--danger)}
-.btn-restore-card{background:var(--sage)}
-.product-card.is-archived{opacity:.6}
-.archived-badge{position:absolute;top:8px;left:8px;z-index:8;background:var(--danger);color:var(--white);font-size:11px;padding:3px 9px;border-radius:999px;letter-spacing:.04em}
-.cat-tab.is-hidden,.sub-tab.is-hidden{opacity:.5;border-style:dashed}
-.hidden-tag{font-size:10px;background:rgba(184,66,54,.12);color:var(--danger);border-radius:999px;padding:0 6px;margin-left:3px}
-/* ── 分類管理 Modal ── */
-.catmgr-list{display:flex;flex-direction:column;gap:10px;margin:10px 0 16px}
-.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--paper)}
-.catmgr-row-top{display:flex;align-items:center;gap:6px}
-.catmgr-row-top input[type="text"]{flex:1;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:6px}
-.catmgr-icon-btn{border:1px solid var(--line);background:var(--white);width:30px;height:30px;border-radius:6px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
-.catmgr-icon-btn:hover{border-color:var(--tan);color:var(--tan-dark)}
-.catmgr-icon-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
-.catmgr-icon-btn.on{background:var(--sage);border-color:var(--sage);color:var(--white)}
-.catmgr-subs{margin:8px 0 0 18px;display:flex;flex-direction:column;gap:6px}
-.catmgr-sub-row{display:flex;align-items:center;gap:6px}
-.catmgr-sub-row input[type="text"]{flex:1;padding:6px 9px;font-size:13px;border:1px solid var(--line);border-radius:6px}
-.catmgr-add-sub{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:6px;padding:6px 10px;font-size:12px;margin-top:4px;align-self:flex-start}
-.catmgr-add-main{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:8px;padding:10px;font-size:13px;width:100%;text-align:center}
-.catmgr-hint{font-size:12px;color:var(--soft);margin:-4px 0 10px}
-.catdel-choice{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
-.catdel-choice input{margin-top:3px}
-.catdel-choice select{margin-top:6px;width:100%}
-.upload-progress{position:absolute;inset:0;background:rgba(38,37,35,.55);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:6px}
-.add-product-card{
-  display:none;
-  min-height:225px;
-  align-items:center;
-  justify-content:center;
-  flex-direction:column;
-  gap:10px;
-  border:2px dashed var(--line);
-  border-radius:8px;
-  color:var(--tan-dark);
-  background:transparent;
-}
-body.edit-mode .add-product-card{display:flex}
 #contact{background:var(--charcoal);padding:70px 38px}
 .contact-inner{
   max-width:940px;
@@ -558,8 +493,6 @@ body.edit-mode .add-product-card{display:flex}
 }
 .social-card-title{font-family:"Noto Serif TC",serif;font-size:22px;margin-bottom:5px}
 .social-card-text{font-size:13px;color:rgba(255,255,255,.78)}
-.social-edit-note{display:none;margin-top:12px;font-size:12px;color:rgba(255,255,255,.46)}
-body.edit-mode .social-edit-note{display:block}
 footer{
   background:#232220;
   color:rgba(255,255,255,.42);
@@ -639,302 +572,6 @@ footer{
 }
 .modal textarea{min-height:78px;resize:vertical}
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
-.rte-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
-.rte-toolbar button{
-  border:1px solid var(--line);
-  background:var(--white);
-  color:var(--muted);
-  border-radius:6px;
-  padding:6px 10px;
-  font-size:12px;
-}
-.rte-toolbar button:hover{border-color:var(--tan);color:var(--tan-dark)}
-.modal .rte-toolbar select{
-  width:auto;
-  border:1px solid var(--line);
-  border-radius:6px;
-  background:var(--white);
-  color:var(--muted);
-  padding:5px 6px;
-  font-size:12px;
-}
-.modal .rte-toolbar label{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  margin:0;
-  font-size:11px;
-  color:var(--soft);
-}
-.modal .rte-toolbar input[type="color"]{
-  width:26px;
-  height:26px;
-  border:1px solid var(--line);
-  border-radius:6px;
-  padding:0;
-  background:none;
-  cursor:pointer;
-}
-.rte-editor{
-  min-height:90px;
-  max-height:260px;
-  overflow:auto;
-  border:1px solid var(--line);
-  border-radius:7px;
-  background:var(--cream);
-  color:var(--ink);
-  padding:10px 12px;
-  outline:none;
-  line-height:1.6;
-  font-size:14px;
-}
-.rte-editor:focus{border-color:var(--tan)}
-.rte-editor:empty:before{content:attr(data-placeholder);color:var(--soft)}
-.photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
-.photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
-.photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
-.upload-method-row{display:flex;gap:5px;margin-bottom:10px}
-.upload-method-btn{
-  flex:1;
-  border:1px solid var(--line);
-  border-radius:7px;
-  background:var(--white);
-  color:var(--muted);
-  padding:7px 4px;
-  font-size:11px;
-}
-.upload-method-btn.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
-.url-input-row{display:flex;gap:7px;margin-bottom:8px}
-.url-input-row input{margin:0}
-.url-input-row button{
-  white-space:nowrap;
-  border:1px solid var(--line);
-  border-radius:7px;
-  background:var(--white);
-  color:var(--muted);
-  padding:0 14px;
-}
-.helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
-.dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.spec-editor{margin-top:8px;overflow-x:auto}
-.spec-table{width:100%;border-collapse:collapse;font-size:13px}
-.spec-table th{
-  padding:7px 10px;
-  background:var(--cream);
-  color:var(--muted);
-  font-weight:500;
-  font-size:11px;
-  letter-spacing:.08em;
-  border:1px solid var(--line);
-  text-align:center;
-  white-space:nowrap;
-}
-.spec-table th:first-child{text-align:left;min-width:90px}
-.spec-table td{
-  border:1px solid var(--line);
-  padding:4px 6px;
-}
-.spec-table td:first-child{padding:4px 8px}
-.spec-table input{
-  width:100%;
-  border:none;
-  background:transparent;
-  color:var(--ink);
-  font-size:13px;
-  text-align:center;
-  padding:3px 4px;
-  outline:none;
-  min-width:52px;
-}
-.spec-table input:first-child,.spec-table td:first-child input{text-align:left}
-.spec-table input:focus{background:rgba(185,146,99,.1);border-radius:4px}
-.spec-table .spec-del-btn{
-  border:0;
-  background:transparent;
-  color:var(--soft);
-  cursor:pointer;
-  font-size:15px;
-  padding:2px 5px;
-  border-radius:4px;
-  display:block;
-  margin:auto;
-}
-.spec-table .spec-del-btn:hover{background:#fce8e8;color:var(--danger)}
-.add-spec-btn{
-  border:1px dashed var(--tan);
-  border-radius:7px;
-  background:rgba(185,146,99,.08);
-  color:var(--tan-dark);
-  padding:8px 10px;
-  font-size:12px;
-  margin-top:6px;
-}
-.photo-slots{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:8px;
-  margin:10px 0 8px;
-}
-.photo-slot{
-  position:relative;
-  aspect-ratio:1;
-  overflow:hidden;
-  border:1.5px dashed var(--line);
-  border-radius:8px;
-  background:var(--cream);
-}
-.photo-slot.has-img{border-style:solid}
-.photo-slot:hover{border-color:var(--tan)}
-.slot-img{width:100%;height:100%;object-fit:cover;display:block}
-.slot-num{
-  position:absolute;
-  top:3px;
-  left:5px;
-  z-index:3;
-  font-size:10px;
-  color:var(--soft);
-}
-.has-img .slot-num{color:rgba(255,255,255,.72)}
-.slot-overlay{
-  position:absolute;
-  inset:0;
-  z-index:2;
-  display:grid;
-  place-items:center;
-  color:var(--tan-dark);
-  font-size:10px;
-  text-align:center;
-}
-.has-img .slot-overlay{opacity:0;background:rgba(0,0,0,.44);color:var(--white);transition:opacity .18s}
-.has-img:hover .slot-overlay{opacity:1}
-.slot-file-input{
-  position:absolute;
-  inset:0;
-  z-index:4;
-  width:100%;
-  height:100%;
-  opacity:0;
-  cursor:pointer;
-}
-.slot-del{
-  display:none;
-  position:absolute;
-  top:4px;
-  right:4px;
-  z-index:6;
-  width:19px;
-  height:19px;
-  border:0;
-  border-radius:50%;
-  background:var(--danger);
-  color:var(--white);
-  line-height:1;
-}
-.has-img:hover .slot-del{display:grid;place-items:center}
-.slot-drag-handle{
-  display:none;
-  position:absolute;
-  bottom:4px;
-  left:50%;
-  transform:translateX(-50%);
-  z-index:6;
-  background:rgba(0,0,0,.52);
-  color:#fff;
-  border-radius:4px;
-  padding:2px 6px;
-  font-size:10px;
-  letter-spacing:.04em;
-  cursor:grab;
-  white-space:nowrap;
-  pointer-events:all;
-}
-.has-img:hover .slot-drag-handle{display:block}
-.photo-slot.drag-over{
-  border:2px solid var(--tan);
-  background:rgba(185,146,99,.12);
-  transform:scale(1.04);
-  transition:transform .15s;
-}
-.photo-slot.dragging{opacity:.4}
-.product-card.reorderable{cursor:grab}
-.product-card.reorderable:active{cursor:grabbing}
-.product-card.dragging{opacity:.4}
-.product-card.drag-over{outline:2px dashed var(--tan);outline-offset:-4px}
-.modal-actions{display:flex;gap:10px;margin-top:26px}
-.btn-secondary,.btn-primary{
-  border-radius:7px;
-  padding:12px 18px;
-}
-.btn-secondary{border:1px solid var(--line);background:transparent;color:var(--muted)}
-.btn-primary{flex:1;border:0;background:var(--charcoal);color:var(--white)}
-.btn-primary:hover{background:var(--tan-dark)}
-.edit-toolbar{
-  display:none;
-  position:fixed;
-  left:50%;
-  bottom:24px;
-  transform:translateX(-50%);
-  z-index:180;
-  align-items:center;
-  gap:7px;
-  border-radius:999px;
-  padding:10px 16px;
-  background:var(--charcoal);
-  color:rgba(255,255,255,.82);
-  box-shadow:0 16px 42px rgba(0,0,0,.3);
-  font-size:13px;
-}
-body.edit-mode .edit-toolbar{display:flex}
-.edit-toolbar button{
-  border:0;
-  border-radius:999px;
-  background:rgba(255,255,255,.12);
-  color:var(--white);
-  padding:6px 13px;
-  font-size:12px;
-}
-.edit-toolbar button:hover{background:var(--tan-dark)}
-.quickcat-bar{
-  display:none;
-  position:fixed;
-  top:62px;
-  left:0;
-  right:0;
-  z-index:170;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-  padding:10px 20px;
-  background:var(--charcoal);
-  color:rgba(255,255,255,.86);
-  box-shadow:0 10px 26px rgba(0,0,0,.2);
-  font-size:13px;
-}
-.quickcat-bar.open{display:flex}
-.quickcat-bar select{border:0;border-radius:6px;padding:6px 8px;font-size:13px}
-.quickcat-bar label{display:flex;align-items:center;gap:5px;font-size:12px;color:rgba(255,255,255,.7)}
-.quickcat-bar button{border:0;border-radius:999px;background:rgba(255,255,255,.14);color:var(--white);padding:7px 14px;font-size:12px}
-.quickcat-bar button:hover{background:var(--tan-dark)}
-.quickcat-check{
-  display:none;
-  position:absolute;
-  top:10px;
-  right:10px;
-  z-index:9;
-  width:24px;
-  height:24px;
-  border-radius:6px;
-  border:2px solid var(--white);
-  background:rgba(43,39,34,.5);
-  color:var(--white);
-  text-align:center;
-  line-height:20px;
-  font-size:14px;
-}
-body.quickcat-mode .quickcat-check{display:block}
-body.quickcat-mode .card-edit-controls,
-body.quickcat-mode .favorite-btn{display:none}
-.quickcat-check.checked{background:var(--tan);border-color:var(--tan)}
 .toast{
   position:fixed;
   right:24px;
@@ -1059,7 +696,6 @@ body.quickcat-mode .favorite-btn{display:none}
 }
 .lb-inquire-btn:hover{background:#05a648}
 .lb-inquire-btn svg{flex-shrink:0}
-.lb-product-desc{font-size:14px;margin-bottom:18px}
 .lb-product-note{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:14px;color:var(--muted)}
 .lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
 .lb-spec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
@@ -1160,7 +796,6 @@ body.quickcat-mode .favorite-btn{display:none}
   .favorites-fab{right:14px;bottom:14px}
 }
 @media(max-width:470px){
-  .photo-slots{grid-template-columns:repeat(3,1fr)}
   .lb-arrow{display:none!important}
 }
 </style>
@@ -1191,18 +826,18 @@ body.quickcat-mode .favorite-btn{display:none}
 
 <section id="hero">
   <div class="hero-content">
-    <div class="hero-tag" data-editable data-page-field="heroTag" contenteditable="false">XIN TONG FURNITURE</div>
-    <h1 class="hero-title" data-editable data-page-field="heroTitle" contenteditable="false">信通家俱行</h1>
-    <p class="hero-sub" data-editable data-page-field="heroSub" contenteditable="false">讓家，更有溫度</p>
-    <p class="hero-desc" data-editable data-page-field="heroDesc" contenteditable="false">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
-    <a href="#categories" class="hero-cta" data-editable data-page-field="heroCta" contenteditable="false">探索商品</a>
+    <div class="hero-tag" data-page-field="heroTag">XIN TONG FURNITURE</div>
+    <h1 class="hero-title" data-page-field="heroTitle">信通家俱行</h1>
+    <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
+    <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
+    <a href="#categories" class="hero-cta" data-page-field="heroCta">探索商品</a>
   </div>
 </section>
 
 <section id="categories">
   <div class="section-header">
     <div class="section-label">PRODUCTS</div>
-    <h2 class="section-title" data-editable data-page-field="productsTitle" contenteditable="false">精選商品</h2>
+    <h2 class="section-title" data-page-field="productsTitle">精選商品</h2>
     <div class="section-line"></div>
   </div>
   <div class="categories-bar" id="categoriesBar"></div>
@@ -1213,24 +848,23 @@ body.quickcat-mode .favorite-btn{display:none}
 <section id="contact">
   <div class="contact-inner">
     <div>
-      <h2 class="contact-heading" data-editable data-page-field="contactTitle" contenteditable="false">聯繫我們</h2>
-      <p class="contact-sub" data-editable data-page-field="contactSub" contenteditable="false">CONTACT US</p>
+      <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
+      <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
       <div class="contact-items" id="contactItems"></div>
     </div>
     <div>
       <div class="social-links">
         <a class="social-card fb-card" id="fbLink" href="#" target="_blank" rel="noopener">
           <div class="social-mark">f</div>
-          <div class="social-card-title" data-editable data-page-field="fbTitle" contenteditable="false">Facebook</div>
-          <div class="social-card-text" data-editable data-page-field="fbText" contenteditable="false">查看新品與門市消息</div>
+          <div class="social-card-title" data-page-field="fbTitle">Facebook</div>
+          <div class="social-card-text" data-page-field="fbText">查看新品與門市消息</div>
         </a>
         <a class="social-card line-card" id="lineLink" href="#" target="_blank" rel="noopener">
           <div class="social-mark">LINE</div>
-          <div class="social-card-title" data-editable data-page-field="lineTitle" contenteditable="false">LINE</div>
-          <div class="social-card-text" data-editable data-page-field="lineText" contenteditable="false">加入好友快速詢問</div>
+          <div class="social-card-title" data-page-field="lineTitle">LINE</div>
+          <div class="social-card-text" data-page-field="lineText">加入好友快速詢問</div>
         </a>
       </div>
-      <div class="social-edit-note">連結網址可在「聯繫資訊」中修改。</div>
     </div>
   </div>
 </section>
@@ -1386,7 +1020,6 @@ function sampleSvg(title,color1,color2){
   return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
 }
 function uid(){return Math.random().toString(36).slice(2,10)}
-function nextSortOrder(){return state.products.length?Math.max(...state.products.map(p=>p.sortOrder??0))+1:0}
 function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
@@ -1974,10 +1607,8 @@ Object.assign(window,{
   lbNav,
   closeModal,
   openModal,
-  toggleFavorite,
   toggleLbFavorite,
   inquireAllFavorites,
-  openProductDetail,
   handleSearchInput,
   clearSearch,
   toggleMobileNav,

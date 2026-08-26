@@ -311,6 +311,12 @@ tbody tr.is-archived{opacity:.55}
 .add-btn:hover{background:var(--tan-dark)}
 .qc-cell{display:none}
 body.quickcat-mode .qc-cell{display:table-cell;text-align:center}
+.qc-cell input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:var(--tan-dark)}
+.drag-handle-cell{text-align:center;color:var(--soft)}
+.drag-handle{cursor:grab;font-size:16px;user-select:none}
+tr.reorderable{cursor:grab}
+tr.dragging{opacity:.4}
+tr.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .quickcat-bar{
   display:none;
   align-items:center;
@@ -725,7 +731,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <table>
           <thead>
             <tr>
-              <th class="qc-cell" style="width:34px"></th>
+              <th class="qc-cell" style="width:34px"><input type="checkbox" id="qcSelectAll" onchange="toggleQuickCatSelectAll(this)"></th>
+              <th data-sort="order" style="width:30px" title="拖曳商品列可調整順序">⠿</th>
               <th style="width:60px">縮圖</th>
               <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
               <th data-sort="cat">分類</th>
@@ -830,6 +837,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 <div class="modal-overlay" id="catMgrModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('catMgrModal')">×</button>
+    <div class="modal-scroll">
     <div class="modal-title">分類管理</div>
     <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可重新命名、排序（▲▼）、隱藏／顯示（顧客端）、刪除主分類與子分類。</p>
     <div id="catmgrList" style="display:flex;flex-direction:column;gap:10px;margin:10px 0 16px"></div>
@@ -837,12 +845,14 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeCategoryManage()">完成</button>
     </div>
+    </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="catDeleteModal">
   <div class="modal" style="max-width:420px">
     <button class="modal-close" onclick="closeModal('catDeleteModal')">×</button>
+    <div class="modal-scroll">
     <div class="modal-title" id="catDeleteTitle">刪除分類</div>
     <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px" id="catDeleteDesc"></p>
     <div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">
@@ -860,12 +870,14 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button class="btn-secondary" onclick="closeModal('catDeleteModal')">取消</button>
       <button class="btn-primary" style="background:var(--danger)" onclick="confirmCatDelete()">確認刪除分類</button>
     </div>
+    </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="contactModal">
   <div class="modal" style="max-width:440px">
     <button class="modal-close" onclick="closeModal('contactModal')">×</button>
+    <div class="modal-scroll">
     <div class="modal-title">聯繫資訊</div>
     <label>地址</label><input type="text" id="cAddr">
     <label>電話</label><input type="text" id="cPhone">
@@ -877,6 +889,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
       <button class="btn-primary" onclick="saveContactManage()">儲存</button>
+    </div>
     </div>
   </div>
 </div>
@@ -910,6 +923,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 <div class="modal-overlay" id="bulkUploadModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
+    <div class="modal-scroll">
     <div class="modal-title">批次上傳照片</div>
     <p class="catmgr-hint">
       檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張。
@@ -926,6 +940,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="photos-note" id="bulkLog" style="margin-top:14px"></div>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeModal('bulkUploadModal')">完成</button>
+    </div>
     </div>
   </div>
 </div>
@@ -1446,6 +1461,13 @@ window.toggleQuickCatSelect=function(id){
   else quickCatSelected.add(id);
   updateQuickCatCount();
 };
+window.toggleQuickCatSelectAll=function(checkbox){
+  const visibleIds=[...document.querySelectorAll("#tbody tr[data-id]")].map(tr=>tr.dataset.id);
+  if(checkbox.checked)visibleIds.forEach(id=>quickCatSelected.add(id));
+  else visibleIds.forEach(id=>quickCatSelected.delete(id));
+  updateQuickCatCount();
+  renderTable();
+};
 function updateQuickCatCount(){
   document.getElementById("quickCatCount").textContent=`已選 ${quickCatSelected.size} 個`;
 }
@@ -1468,6 +1490,58 @@ window.applyQuickCat=async function(){
   renderSidebar();
   renderTable();
 };
+
+/* ── 表格列拖曳排序（只在依顯示順序、無篩選時開放）─────────────── */
+let dragProductId=null;
+const tbodyEl=document.getElementById("tbody");
+tbodyEl.addEventListener("dragstart",e=>{
+  const tr=e.target.closest("tr[draggable='true']");
+  if(!tr)return;
+  dragProductId=tr.dataset.id;
+  tr.classList.add("dragging");
+});
+tbodyEl.addEventListener("dragend",()=>{
+  document.querySelectorAll("#tbody tr").forEach(tr=>tr.classList.remove("dragging","drag-over"));
+  dragProductId=null;
+});
+tbodyEl.addEventListener("dragover",e=>{
+  const tr=e.target.closest("tr[draggable='true']");
+  if(!tr||!dragProductId||tr.dataset.id===dragProductId)return;
+  e.preventDefault();
+  tr.classList.add("drag-over");
+});
+tbodyEl.addEventListener("dragleave",e=>{
+  const tr=e.target.closest("tr");
+  if(tr)tr.classList.remove("drag-over");
+});
+tbodyEl.addEventListener("drop",async e=>{
+  const tr=e.target.closest("tr[draggable='true']");
+  if(!tr||!dragProductId)return;
+  e.preventDefault();
+  tr.classList.remove("drag-over");
+  const targetId=tr.dataset.id;
+  const srcId=dragProductId;
+  dragProductId=null;
+  if(targetId===srcId)return;
+  await reorderProductRow(srcId,targetId);
+});
+async function reorderProductRow(srcId,targetId){
+  const list=products.filter(p=>p.status!=="archived").sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  const srcIdx=list.findIndex(p=>p.id===srcId);
+  const targetIdx=list.findIndex(p=>p.id===targetId);
+  if(srcIdx<0||targetIdx<0)return;
+  const [moved]=list.splice(srcIdx,1);
+  list.splice(targetIdx,0,moved);
+  list.forEach((p,i)=>p.sortOrder=i);
+  renderTable();
+  try{
+    const batch=writeBatch(db);
+    list.forEach(p=>batch.set(doc(productsCol(),p.id),p));
+    await batch.commit();
+  }catch(e){
+    toast("排序更新失敗："+(e.message||String(e)),4000);
+  }
+}
 
 /* ── 商品新增／編輯（照片處理沿用前台邏輯）───────────────────── */
 const MAX_PHOTOS=5;
@@ -2060,7 +2134,7 @@ function missingFlags(p){
 }
 
 async function boot(){
-  document.getElementById("tbody").innerHTML='<tr><td colspan="10" class="loading">載入中…</td></tr>';
+  document.getElementById("tbody").innerHTML='<tr><td colspan="11" class="loading">載入中…</td></tr>';
   try{
     const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
     metaRaw=metaSnap.exists()?metaSnap.data():{};
@@ -2071,7 +2145,7 @@ async function boot(){
     products=productsSnap.docs.map(d=>d.data());
     products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
   }catch(e){
-    document.getElementById("tbody").innerHTML=`<tr><td colspan="10" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
+    document.getElementById("tbody").innerHTML=`<tr><td colspan="11" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;
   }
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
@@ -2183,9 +2257,11 @@ window.renderTable=function(){
 
   const tbody=document.getElementById("tbody");
   if(!list.length){
-    tbody.innerHTML='<tr><td colspan="10" class="empty-state">沒有符合條件的商品</td></tr>';
+    tbody.innerHTML='<tr><td colspan="11" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
+  // 拖曳排序只在「未篩選、依顯示順序排列」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂
+  const canReorder=sortKey==="order"&&!quickCatMode&&!q&&!catFilterMain&&currentFilter==="all";
   tbody.innerHTML=list.map(p=>{
     const m=missingFlags(p);
     const photos=(p.photos||[]).filter(Boolean);
@@ -2196,8 +2272,9 @@ window.renderTable=function(){
       ? `<div class="missing-dots">${[m.noCat&&"分類",m.noSize&&"尺寸",m.noDesc&&"說明",m.noPhoto&&"照片"].filter(Boolean).map(()=>'<span class="missing-dot"></span>').join("")}</div>`
       : "";
     return `
-      <tr class="${p.status==="archived"?"is-archived":""}">
+      <tr class="${p.status==="archived"?"is-archived":""}${canReorder?" reorderable":""}" data-id="${p.id}"${canReorder?' draggable="true"':""}>
         <td class="qc-cell"><input type="checkbox" ${quickCatSelected.has(p.id)?"checked":""} onchange="toggleQuickCatSelect('${p.id}')"></td>
+        <td class="drag-handle-cell">${canReorder?'<span class="drag-handle" title="拖曳調整順序">⠿</span>':""}</td>
         <td>${thumb}</td>
         <td>
           <div class="cell-name cell-name-link" onclick="openProductModal('${p.id}')">${escapeHTML(p.name||"（未命名）")}</div>

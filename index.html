@@ -778,16 +778,21 @@ footer{
   #contact{padding:54px 22px}
   footer{padding:20px 22px}
   .modal-scroll{padding:28px 20px}
-  .edit-toolbar{left:12px;right:12px;transform:none;overflow:auto;border-radius:14px}
   #lightbox{
     align-items:flex-start;
     justify-content:flex-start;
+    padding:76px 16px 24px;
+  }
+  .lb-layout{
+    width:min(100%,560px);
+    grid-template-columns:1fr;
+    gap:14px;
+    margin:auto;
+    max-height:calc(100svh - 100px);
     overflow-y:auto;
     overscroll-behavior:contain;
     -webkit-overflow-scrolling:touch;
-    padding:76px 16px 24px;
   }
-  .lb-layout{width:min(100%,560px);grid-template-columns:1fr;gap:14px;margin:auto}
   .lb-stage,.lb-stage img{max-height:55svh}
   .lb-info{max-height:none;width:100%;overflow:visible}
   .lb-hint{display:none}

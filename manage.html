@@ -307,7 +307,25 @@ tbody tr.is-archived{opacity:.55}
   padding:8px 16px;
   font-size:12.5px;
 }
+.add-btn.active{background:var(--sage)}
 .add-btn:hover{background:var(--tan-dark)}
+.qc-cell{display:none}
+body.quickcat-mode .qc-cell{display:table-cell;text-align:center}
+.quickcat-bar{
+  display:none;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  background:rgba(185,146,99,.1);
+  border:1px solid var(--tan);
+  border-radius:10px;
+  padding:10px 14px;
+  margin-bottom:14px;
+  font-size:13px;
+  color:var(--tan-dark);
+}
+body.quickcat-mode .quickcat-bar{display:flex}
+.quickcat-bar select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--paper);color:var(--ink)}
 .row-actions{display:flex;gap:6px;flex-wrap:nowrap}
 .row-actions button{
   font-size:12px;
@@ -462,6 +480,7 @@ tbody tr.is-archived{opacity:.55}
   padding:0 14px;
 }
 .helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
+.catmgr-hint{font-size:12px;color:var(--soft);margin:-4px 0 14px;line-height:1.6}
 .dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .spec-editor{margin-top:8px}
 .spec-table{width:100%;min-width:0;border-collapse:collapse;font-size:13px;table-layout:fixed}
@@ -663,6 +682,9 @@ tbody tr.is-archived{opacity:.55}
     <div class="header-links">
       <button class="add-btn" onclick="openCategoryManage()" style="background:var(--tan-dark)">🗂 分類管理</button>
       <button class="add-btn" onclick="openContactManage()" style="background:var(--tan-dark)">📇 聯繫資訊</button>
+      <button class="add-btn" onclick="openPageTextManage()" style="background:var(--tan-dark)">📝 頁面文字</button>
+      <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
+      <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
     </div>
@@ -692,10 +714,18 @@ tbody tr.is-archived{opacity:.55}
           <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()">套用目前排序到前台 →</button>
         </div>
       </div>
+      <div class="quickcat-bar" id="quickCatBar">
+        <span id="quickCatCount">已選 0 個</span>
+        <select id="quickCatMain" onchange="updateQuickCatSubSelect()"></select>
+        <select id="quickCatSub"></select>
+        <button class="sync-btn" onclick="applyQuickCat()">套用分類</button>
+        <button class="btn-secondary" onclick="toggleQuickCatMode(false)">取消</button>
+      </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th class="qc-cell" style="width:34px"></th>
               <th style="width:60px">縮圖</th>
               <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
               <th data-sort="cat">分類</th>
@@ -851,6 +881,55 @@ tbody tr.is-archived{opacity:.55}
   </div>
 </div>
 
+<div class="modal-overlay" id="pageTextModal">
+  <div class="modal" style="max-width:520px">
+    <button class="modal-close" onclick="closeModal('pageTextModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">頁面文字</div>
+    <p class="catmgr-hint">首頁上的標語、標題等文字，留空就會顯示預設文字（灰色小字提示的內容）。</p>
+    <label>首頁英文小標</label><input type="text" id="ptHeroTag" placeholder="XIN TONG FURNITURE">
+    <label>首頁大標題</label><input type="text" id="ptHeroTitle" placeholder="信通家俱行">
+    <label>首頁副標</label><input type="text" id="ptHeroSub" placeholder="讓家，更有溫度">
+    <label>首頁說明文字</label><input type="text" id="ptHeroDesc" placeholder="用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。">
+    <label>首頁按鈕文字</label><input type="text" id="ptHeroCta" placeholder="探索商品">
+    <label>商品區標題</label><input type="text" id="ptProductsTitle" placeholder="精選商品">
+    <label>聯繫區標題</label><input type="text" id="ptContactTitle" placeholder="聯繫我們">
+    <label>聯繫區英文小標</label><input type="text" id="ptContactSub" placeholder="CONTACT US">
+    <label>Facebook 卡片標題</label><input type="text" id="ptFbTitle" placeholder="Facebook">
+    <label>Facebook 卡片說明</label><input type="text" id="ptFbText" placeholder="查看新品與門市消息">
+    <label>LINE 卡片標題</label><input type="text" id="ptLineTitle" placeholder="LINE">
+    <label>LINE 卡片說明</label><input type="text" id="ptLineText" placeholder="加入好友快速詢問">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('pageTextModal')">取消</button>
+      <button class="btn-primary" onclick="savePageTextManage()">儲存</button>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="bulkUploadModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
+    <div class="modal-title">批次上傳照片</div>
+    <p class="catmgr-hint">
+      檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張。
+      檔名跟現有商品名稱<strong>完全一致</strong>才會自動比對進去；比對不到的名稱，系統會自動建立一個只有名稱跟照片的新商品，分類、尺寸等資料再請你事後補上。
+    </p>
+    <div class="upload-method-row">
+      <button class="upload-method-btn active" onclick="setBulkMode('append',this)">附加到空格（不覆蓋）</button>
+      <button class="upload-method-btn" onclick="setBulkMode('replace',this)">取代該商品所有照片</button>
+    </div>
+    <label>選擇照片檔案（可多選）</label>
+    <input type="file" id="bulkFileInput" accept="image/*" multiple>
+    <div class="helper-text">或者直接選整個資料夾：</div>
+    <input type="file" id="bulkFolderInput" accept="image/*" multiple webkitdirectory>
+    <div class="photos-note" id="bulkLog" style="margin-top:14px"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeModal('bulkUploadModal')">完成</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
@@ -892,12 +971,15 @@ function escapeHTML(str=""){
 let catalog=[];
 let products=[];
 let contact={};
+let pageText={};
 let metaRaw={};
 let currentFilter="all";
 let sortKey="name";
 let sortDir=1;
 let catFilterMain=null;
 let catFilterSub=null;
+let quickCatMode=false;
+let quickCatSelected=new Set();
 let openMainCats=new Set();
 let strokeCollator;
 try{strokeCollator=new Intl.Collator("zh-Hant-u-co-stroke",{numeric:true})}catch(e){strokeCollator=new Intl.Collator("zh-Hant")}
@@ -959,6 +1041,7 @@ window.syncOrderToFrontend=syncOrderToFrontend;
 async function saveMeta(){
   metaRaw.catalog=catalog;
   metaRaw.contact=contact;
+  metaRaw.pageText=pageText;
   try{
     await setDoc(doc(db,"sitedata",SITE_DOC),metaRaw);
     return true;
@@ -1203,6 +1286,188 @@ async function saveContactManage(){
   toast(ok?"聯繫資訊已更新 ☁️":"儲存失敗，請檢查網路連線");
 }
 window.saveContactManage=saveContactManage;
+
+/* ── 頁面文字（首頁標語等） ───────────────────────────────────── */
+const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","productsTitle","contactTitle","contactSub","fbTitle","fbText","lineTitle","lineText"];
+const PAGE_TEXT_INPUT_IDS={
+  heroTag:"ptHeroTag",heroTitle:"ptHeroTitle",heroSub:"ptHeroSub",heroDesc:"ptHeroDesc",heroCta:"ptHeroCta",
+  productsTitle:"ptProductsTitle",contactTitle:"ptContactTitle",contactSub:"ptContactSub",
+  fbTitle:"ptFbTitle",fbText:"ptFbText",lineTitle:"ptLineTitle",lineText:"ptLineText"
+};
+function openPageTextManage(){
+  PAGE_TEXT_FIELDS.forEach(key=>{
+    document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value=pageText[key]||"";
+  });
+  openModal("pageTextModal");
+}
+window.openPageTextManage=openPageTextManage;
+async function savePageTextManage(){
+  const next={};
+  PAGE_TEXT_FIELDS.forEach(key=>{
+    const value=document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value.trim();
+    if(value)next[key]=value;
+  });
+  pageText=next;
+  closeModal("pageTextModal");
+  const ok=await saveMeta();
+  toast(ok?"頁面文字已更新 ☁️":"儲存失敗，請檢查網路連線");
+}
+window.savePageTextManage=savePageTextManage;
+
+/* ── 批次上傳照片（依檔名比對商品，沿用前台邏輯）───────────────── */
+let bulkReplaceMode=false;
+window.setBulkMode=function(mode,btn){
+  bulkReplaceMode=mode==="replace";
+  btn.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+};
+function parseBulkFilename(filename){
+  const base=filename.replace(/\.[^.]+$/,"");
+  const match=base.match(/^(.*?)[\s_\-\(（]+0*(\d{1,3})[\)）]?$/);
+  if(match&&match[1].trim())return {name:match[1].trim(),index:parseInt(match[2],10)};
+  return {name:base.trim(),index:1};
+}
+function groupBulkFiles(fileList){
+  const groups=new Map();
+  Array.from(fileList).filter(f=>f.type.startsWith("image/")).forEach(file=>{
+    const {name,index}=parseBulkFilename(file.name);
+    if(!name)return;
+    if(!groups.has(name))groups.set(name,[]);
+    groups.get(name).push({file,index});
+  });
+  groups.forEach(items=>items.sort((a,b)=>a.index-b.index));
+  return groups;
+}
+function fileToDataUrl(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>resolve(e.target.result);
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+window.openBulkUploadModal=function(){
+  document.getElementById("bulkFileInput").value="";
+  document.getElementById("bulkFolderInput").value="";
+  document.getElementById("bulkLog").innerHTML="";
+  openModal("bulkUploadModal");
+};
+async function handleBulkFiles(event){
+  const files=event.target.files;
+  if(!files||!files.length)return;
+  const log=document.getElementById("bulkLog");
+  const groups=groupBulkFiles(files);
+  if(!groups.size){log.textContent="沒有找到可用的圖片檔案。";event.target.value="";return}
+  log.textContent="處理中…";
+  const lines=[];
+  let matchedCount=0,createdCount=0;
+  for(const [name,items] of groups){
+    const photos=[];
+    for(const {file} of items.slice(0,MAX_PHOTOS)){
+      const dataUrl=await fileToDataUrl(file);
+      photos.push(await resizeImageToUniform(dataUrl));
+    }
+    const existing=products.find(p=>p.status!=="archived"&&(p.name||"").trim()===name);
+    let fullPhotos,targetId,product;
+    if(existing){
+      targetId=existing.id;
+      if(bulkReplaceMode){
+        fullPhotos=photos;
+      }else{
+        const cachedCount=(existing.photos||[]).filter(Boolean).length;
+        const totalCount=existing.photoCount??cachedCount;
+        const existingFull=totalCount>cachedCount?await loadGallery(existing.id):(existing.photos||[]).filter(Boolean);
+        fullPhotos=existingFull.slice();
+        for(const photo of photos){
+          if(fullPhotos.length>=MAX_PHOTOS)break;
+          fullPhotos.push(photo);
+        }
+      }
+      existing.photos=[await resizeToThumb(fullPhotos[0])];
+      existing.photoCount=fullPhotos.length;
+      product=existing;
+      matchedCount++;
+      lines.push(`✓ 比對到「${escapeHTML(name)}」，已${bulkReplaceMode?"取代":"補上"}照片`);
+    }else{
+      targetId=uid();
+      fullPhotos=photos;
+      product={
+        id:targetId,status:"active",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
+        dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
+        photos:[await resizeToThumb(fullPhotos[0])],photoCount:fullPhotos.length
+      };
+      products.push(product);
+      createdCount++;
+      lines.push(`＋ 找不到「${escapeHTML(name)}」，已建立待補資料的新商品`);
+    }
+    try{
+      await setDoc(doc(productsCol(),product.id),product);
+      await saveGallery(targetId,fullPhotos);
+    }catch(e){
+      console.warn("商品／圖庫寫入失敗",e);
+    }
+  }
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
+  renderTable();
+  log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
+  event.target.value="";
+}
+document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
+document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
+
+/* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
+window.toggleQuickCatMode=function(force){
+  quickCatMode=typeof force==="boolean"?force:!quickCatMode;
+  quickCatSelected.clear();
+  document.body.classList.toggle("quickcat-mode",quickCatMode);
+  document.getElementById("quickCatToggleBtn").classList.toggle("active",quickCatMode);
+  if(quickCatMode){
+    document.getElementById("quickCatMain").innerHTML=catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+    updateQuickCatSubSelect();
+  }
+  updateQuickCatCount();
+  renderTable();
+};
+window.updateQuickCatSubSelect=function(){
+  const mainId=document.getElementById("quickCatMain").value;
+  const sub=document.getElementById("quickCatSub");
+  const main=getMainCat(mainId);
+  if(main?.subs?.length){
+    sub.innerHTML=`<option value="">（不指定子分類）</option>`+main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
+    sub.style.display="";
+  }else{
+    sub.innerHTML="";
+    sub.style.display="none";
+  }
+};
+window.toggleQuickCatSelect=function(id){
+  if(quickCatSelected.has(id))quickCatSelected.delete(id);
+  else quickCatSelected.add(id);
+  updateQuickCatCount();
+};
+function updateQuickCatCount(){
+  document.getElementById("quickCatCount").textContent=`已選 ${quickCatSelected.size} 個`;
+}
+window.applyQuickCat=async function(){
+  if(!quickCatSelected.size){toast("請先勾選商品");return}
+  const mainId=document.getElementById("quickCatMain").value;
+  const subId=document.getElementById("quickCatSub").value||null;
+  const targets=products.filter(p=>quickCatSelected.has(p.id));
+  targets.forEach(p=>{p.mainCat=mainId;p.subCat=subId});
+  try{
+    const batch=writeBatch(db);
+    targets.forEach(p=>batch.set(doc(productsCol(),p.id),p));
+    await batch.commit();
+    toast(`已將 ${quickCatSelected.size} 個商品分類為「${getMainName(mainId)}」☁️`);
+  }catch(e){
+    toast("套用失敗："+(e.message||String(e)),4000);
+  }
+  quickCatSelected.clear();
+  updateQuickCatCount();
+  renderSidebar();
+  renderTable();
+};
 
 /* ── 商品新增／編輯（照片處理沿用前台邏輯）───────────────────── */
 const MAX_PHOTOS=5;
@@ -1795,17 +2060,18 @@ function missingFlags(p){
 }
 
 async function boot(){
-  document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="loading">載入中…</td></tr>';
+  document.getElementById("tbody").innerHTML='<tr><td colspan="10" class="loading">載入中…</td></tr>';
   try{
     const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
     metaRaw=metaSnap.exists()?metaSnap.data():{};
     catalog=metaRaw.catalog||[];
     contact=metaRaw.contact||{};
+    pageText=metaRaw.pageText||{};
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
     products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
   }catch(e){
-    document.getElementById("tbody").innerHTML=`<tr><td colspan="9" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
+    document.getElementById("tbody").innerHTML=`<tr><td colspan="10" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;
   }
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
@@ -1917,7 +2183,7 @@ window.renderTable=function(){
 
   const tbody=document.getElementById("tbody");
   if(!list.length){
-    tbody.innerHTML='<tr><td colspan="9" class="empty-state">沒有符合條件的商品</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
   tbody.innerHTML=list.map(p=>{
@@ -1931,6 +2197,7 @@ window.renderTable=function(){
       : "";
     return `
       <tr class="${p.status==="archived"?"is-archived":""}">
+        <td class="qc-cell"><input type="checkbox" ${quickCatSelected.has(p.id)?"checked":""} onchange="toggleQuickCatSelect('${p.id}')"></td>
         <td>${thumb}</td>
         <td>
           <div class="cell-name cell-name-link" onclick="openProductModal('${p.id}')">${escapeHTML(p.name||"（未命名）")}</div>

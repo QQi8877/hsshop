@@ -592,16 +592,18 @@ footer{
 .modal{
   width:min(590px,100%);
   max-height:92vh;
-  overflow:auto;
+  overflow:hidden;
   background:var(--paper);
   border-radius:14px;
-  padding:32px;
   position:relative;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
   transform:scale(.96);
   transition:transform .2s ease;
+  display:flex;
+  flex-direction:column;
 }
 .modal-overlay.open .modal{transform:scale(1)}
+.modal-scroll{flex:1;min-height:0;overflow-y:auto;padding:32px}
 .modal-title{
   font-family:"Noto Serif TC",serif;
   font-size:21px;
@@ -1128,7 +1130,7 @@ body.quickcat-mode .favorite-btn{display:none}
   .social-links{grid-template-columns:1fr}
   #contact{padding:54px 22px}
   footer{padding:20px 22px}
-  .modal{padding:28px 20px}
+  .modal-scroll{padding:28px 20px}
   .edit-toolbar{left:12px;right:12px;transform:none;overflow:auto;border-radius:14px}
   #lightbox{
     align-items:flex-start;
@@ -1246,6 +1248,16 @@ body.quickcat-mode .favorite-btn{display:none}
     LINE 詢問所有收藏商品
   </button>
 </aside>
+
+<div class="modal-overlay" id="wishlistModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('wishlistModal')">×</button>
+    <div class="modal-scroll">
+      <div class="modal-title">顧客的收藏清單</div>
+      <div id="wishlistItems" style="display:flex;flex-direction:column;gap:12px"></div>
+    </div>
+  </div>
+</div>
 
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">
   <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
@@ -1838,10 +1850,35 @@ function inquireAllFavorites(){
   if(!lineId){toast("店家尚未設定 LINE");return}
   const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
   if(!products.length){toast("喜愛清單是空的");return}
-  const lines=products.map((p,i)=>`${i+1}. ${p.name||""}\n${location.origin}${location.pathname}#product-${p.id}`);
-  const msg=`您好，我想詢問以下收藏商品：\n\n${lines.join("\n\n")}`;
+  // 一個連結打包整個收藏清單，賣家點開會看到清單裡所有商品，不用一個個點
+  const wishlistUrl=`${location.origin}${location.pathname}#wishlist=${products.map(p=>p.id).join(",")}`;
+  const msg=`您好，我想詢問以下收藏商品（共 ${products.length} 件）：\n${wishlistUrl}`;
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
   window.open(url,"_blank","noopener");
+}
+function renderSharedWishlist(ids){
+  const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
+  const container=document.getElementById("wishlistItems");
+  if(!products.length){
+    container.innerHTML='<div class="favorites-empty">找不到這些商品，可能已下架。</div>';
+  }else{
+    container.innerHTML=products.map(p=>{
+      const photo=normalizePhotoUrl((p.photos||[])[0]||"");
+      return `
+        <div class="favorite-item" data-id="${escapeHTML(p.id)}" style="cursor:pointer">
+          <img src="${photo}" alt="">
+          <div>
+            <div class="favorite-item-name">${escapeHTML(p.name||"")}</div>
+            <div class="favorite-item-size">${escapeHTML(getSizeSummary(p))}</div>
+          </div>
+          <button title="查看商品">→</button>
+        </div>`;
+    }).join("");
+    container.querySelectorAll(".favorite-item").forEach(el=>{
+      el.addEventListener("click",()=>openProductDetail(el.dataset.id));
+    });
+  }
+  openModal("wishlistModal");
 }
 function lbNav(dir){
   if(!lbImages.length)return;
@@ -1972,11 +2009,15 @@ Object.assign(window,{
   renderProducts();
   renderContact();
   renderFavorites();
-  // 分享出去的商品連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應商品的燈箱
+  // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面
   const hashMatch=location.hash.match(/^#product-(.+)$/);
+  const wishlistMatch=location.hash.match(/^#wishlist=(.+)$/);
   if(hashMatch){
     const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
     if(sharedProduct)openProductDetail(sharedProduct.id);
+  }else if(wishlistMatch){
+    const ids=wishlistMatch[1].split(",").filter(Boolean);
+    if(ids.length)renderSharedWishlist(ids);
   }
 })();
 </script>

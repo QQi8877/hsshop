@@ -35,6 +35,14 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+}
 body{
   font-family:"Noto Sans TC",system-ui,sans-serif;
   background:var(--cream);
@@ -527,7 +535,7 @@ footer{
 }
 .footer-brand{font-family:"Noto Serif TC",serif;letter-spacing:.08em}
 .modal-overlay{
-  display:none;
+  display:flex;
   position:fixed;
   inset:0;
   z-index:240;
@@ -535,8 +543,15 @@ footer{
   justify-content:center;
   padding:18px;
   background:rgba(34,29,24,.72);
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .2s ease,visibility 0s linear .2s;
 }
-.modal-overlay.open{display:flex}
+.modal-overlay.open{
+  opacity:1;
+  visibility:visible;
+  transition:opacity .2s ease;
+}
 .modal{
   width:min(590px,100%);
   max-height:92vh;
@@ -546,7 +561,10 @@ footer{
   padding:32px;
   position:relative;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
+  transform:scale(.96);
+  transition:transform .2s ease;
 }
+.modal-overlay.open .modal{transform:scale(1)}
 .modal-title{
   font-family:"Noto Serif TC",serif;
   font-size:21px;
@@ -895,7 +913,7 @@ body.quickcat-mode .favorite-btn{display:none}
 }
 .toast.show{opacity:1;transform:translateY(0)}
 #lightbox{
-  display:none;
+  display:flex;
   position:fixed;
   inset:0;
   z-index:600;
@@ -909,8 +927,17 @@ body.quickcat-mode .favorite-btn{display:none}
   flex-direction:column;
   gap:12px;
   padding:18px;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .22s ease,visibility 0s linear .22s;
 }
-#lightbox.open{display:flex}
+#lightbox.open{
+  opacity:1;
+  visibility:visible;
+  transition:opacity .22s ease;
+}
+#lightbox .lb-layout{transform:scale(.97);transition:transform .22s ease}
+#lightbox.open .lb-layout{transform:scale(1)}
 .lb-close,.lb-arrow{
   position:fixed;
   z-index:3;

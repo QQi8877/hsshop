@@ -991,13 +991,24 @@ body.quickcat-mode .favorite-btn{display:none}
   place-items:center;
 }
 .lb-close{top:18px;right:22px;width:42px;height:42px;font-size:25px}
-.lb-favorite{top:18px;right:74px;width:42px;height:42px;font-size:20px}
 .lb-arrow{top:50%;width:46px;height:46px;font-size:27px;transform:translateY(-50%)}
 #lbPrev{left:18px}
 #lbNext{right:18px}
 .lb-close:hover,.lb-arrow:hover{background:var(--tan);color:var(--white)}
-.lb-favorite:hover{background:var(--tan);color:var(--white)}
-.lb-favorite.active{background:var(--danger);color:#fff}
+.lb-cat-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.lb-cat-row .lb-product-cat{margin-bottom:0}
+.lb-favorite{
+  border:1px solid var(--line);
+  border-radius:50%;
+  width:34px;height:34px;
+  display:grid;place-items:center;
+  background:var(--paper);
+  color:var(--charcoal);
+  font-size:16px;
+  flex-shrink:0;
+}
+.lb-favorite:hover{border-color:var(--tan);color:var(--tan-dark)}
+.lb-favorite.active{background:var(--danger);border-color:var(--danger);color:#fff}
 .lb-stage{
   position:relative;
   width:100%;
@@ -1125,7 +1136,7 @@ body.quickcat-mode .favorite-btn{display:none}
   .hero-title{font-size:34px}
   .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:14px}
   .categories-bar,.sub-categories-bar{padding-left:15px;padding-right:15px}
-  #navSearchBar{width:auto}
+  #navSearchBar{width:100%}
   .contact-inner{grid-template-columns:1fr;gap:34px}
   .social-links{grid-template-columns:1fr}
   #contact{padding:54px 22px}
@@ -1260,7 +1271,6 @@ body.quickcat-mode .favorite-btn{display:none}
 </div>
 
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">
-  <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
   <button class="lb-close" onclick="closeLightbox()" aria-label="關閉商品詳細資訊">×</button>
   <button class="lb-arrow" id="lbPrev" onclick="lbNav(-1)" aria-label="上一張">‹</button>
   <button class="lb-arrow" id="lbNext" onclick="lbNav(1)" aria-label="下一張">›</button>
@@ -1752,7 +1762,6 @@ function lbRender(){
   const thumbs=document.getElementById("lbThumbs");
   const counter=document.getElementById("lbCounter");
   const info=document.getElementById("lbInfo");
-  updateLbFavoriteBtn();
   img.src=lbImages[lbCurrent]||"";
   img.alt=lbProduct?.name?`${lbProduct.name} 商品照片 ${lbCurrent+1}`:"商品照片";
   resetZoom();
@@ -1818,7 +1827,10 @@ function lbRender(){
     }
 
     info.innerHTML=`
-      <div class="lb-product-cat">${escapeHTML(cat)}</div>
+      <div class="lb-cat-row">
+        <div class="lb-product-cat">${escapeHTML(cat)}</div>
+        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
+      </div>
       <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
       ${lbProduct.price?`<div class="lb-product-price">${escapeHTML(formatPrice(lbProduct.price))}</div>`:""}
       ${lineInquireBtnHtml(lbProduct)}
@@ -1831,6 +1843,7 @@ function lbRender(){
       ${specsHtml}
       ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
     `;
+    updateLbFavoriteBtn();
   }
 }
 function lineInquireBtnHtml(product){

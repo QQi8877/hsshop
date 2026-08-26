@@ -1275,6 +1275,7 @@ function renderProducts(){
   });
 }
 const FAVORITES_KEY="xintong_favorites_v1";
+const FAVORITES_TTL_MS=4*60*60*1000; // 收藏清單超過 4 小時沒更新就視為過期
 function placeholderMarkup(text){
   return `<div class="placeholder"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><div>${escapeHTML(text)}</div></div></div>`;
 }
@@ -1283,10 +1284,17 @@ function showBrokenImage(wrap,img){
   if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片無法載入<br><small>請確認 Drive 已公開分享</small></div></div>`);
 }
 function loadFavoritesLocal(){
-  try{const s=localStorage.getItem(FAVORITES_KEY);return s?JSON.parse(s):[]}catch(e){return []}
+  try{
+    const s=localStorage.getItem(FAVORITES_KEY);
+    if(!s)return [];
+    const data=JSON.parse(s);
+    if(!data||!Array.isArray(data.items)||!data.savedAt)return []; // 舊格式或缺時間戳記一律視為過期
+    if(Date.now()-data.savedAt>FAVORITES_TTL_MS)return [];
+    return data.items;
+  }catch(e){return []}
 }
 function saveFavoritesLocal(){
-  try{localStorage.setItem(FAVORITES_KEY,JSON.stringify(state.favorites))}catch(e){}
+  try{localStorage.setItem(FAVORITES_KEY,JSON.stringify({items:state.favorites,savedAt:Date.now()}))}catch(e){}
 }
 function toggleFavorite(id){
   if(state.favorites.includes(id)){

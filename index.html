@@ -924,7 +924,7 @@ footer{
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -955,9 +955,6 @@ const Storage={
       console.warn("圖庫讀取失敗",e);
       return [];
     }
-  },
-  async setGallery(id,photos){
-    await setDoc(galleryDocRef(id),{photos:(photos||[]).filter(Boolean)});
   },
   async get(){
     try{
@@ -999,7 +996,6 @@ const Storage={
 };
 /* ─────────────────────────────────────────────────────────────── */
 const STORAGE_KEY="xintong_furniture_site_v1";
-const MAX_PHOTOS=5;
 const DEFAULT_CATALOG=[
   {id:"cat-bed",name:"寢具",subs:[{id:"sub-bed-frame",name:"床架"},{id:"sub-bed-mattress",name:"床墊"},{id:"sub-bed-head",name:"床頭板"},{id:"sub-bed-side",name:"床邊桌"}]},
   {id:"cat-table",name:"桌子",subs:[{id:"sub-tbl-dining",name:"餐桌"},{id:"sub-tbl-coffee",name:"茶几／邊桌"},{id:"sub-tbl-desk",name:"書桌／工作桌"},{id:"sub-tbl-dressing",name:"梳妝台"}]},

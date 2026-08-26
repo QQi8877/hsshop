@@ -421,6 +421,15 @@ body.edit-mode .add-cat-btn{display:inline-flex}
 .favorite-item-size{font-size:12px;color:var(--soft)}
 .favorite-item button{border:0;background:transparent;color:var(--danger);font-size:18px}
 .favorites-empty{padding:34px 18px;text-align:center;color:var(--soft);font-size:14px}
+.favorites-inquire-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin:0 18px 18px;padding:13px 16px;
+  background:#06c755;color:#fff;border:0;border-radius:8px;
+  font-size:14px;font-weight:500;
+  transition:background .18s ease;
+}
+.favorites-inquire-btn:hover{background:#05a648}
+.favorites-inquire-btn svg{flex-shrink:0}
 .card-edit-controls{
   display:none;
   position:absolute;
@@ -980,10 +989,13 @@ body.quickcat-mode .favorite-btn{display:none}
   place-items:center;
 }
 .lb-close{top:18px;right:22px;width:42px;height:42px;font-size:25px}
+.lb-favorite{top:18px;right:74px;width:42px;height:42px;font-size:20px}
 .lb-arrow{top:50%;width:46px;height:46px;font-size:27px;transform:translateY(-50%)}
 #lbPrev{left:18px}
 #lbNext{right:18px}
 .lb-close:hover,.lb-arrow:hover{background:var(--tan);color:var(--white)}
+.lb-favorite:hover{background:var(--tan);color:var(--white)}
+.lb-favorite.active{background:var(--danger);color:#fff}
 .lb-stage{
   position:relative;
   width:100%;
@@ -1229,9 +1241,14 @@ body.quickcat-mode .favorite-btn{display:none}
     <button class="favorites-close" onclick="toggleFavoritesPanel(false)">×</button>
   </div>
   <div class="favorites-list" id="favoritesList"></div>
+  <button class="favorites-inquire-btn" id="favoritesInquireBtn" onclick="inquireAllFavorites()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    LINE 詢問所有收藏商品
+  </button>
 </aside>
 
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">
+  <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
   <button class="lb-close" onclick="closeLightbox()" aria-label="關閉商品詳細資訊">×</button>
   <button class="lb-arrow" id="lbPrev" onclick="lbNav(-1)" aria-label="上一張">‹</button>
   <button class="lb-arrow" id="lbNext" onclick="lbNav(1)" aria-label="下一張">›</button>
@@ -1639,8 +1656,10 @@ function toggleFavoritesPanel(force){
 function renderFavorites(){
   const list=document.getElementById("favoritesList");
   const count=document.getElementById("favoritesCount");
+  const inquireBtn=document.getElementById("favoritesInquireBtn");
   const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
   count.textContent=products.length;
+  if(inquireBtn)inquireBtn.style.display=products.length?"flex":"none";
   if(!products.length){
     list.innerHTML='<div class="favorites-empty">尚未加入商品。點商品卡右上角愛心即可收藏。</div>';
     return;
@@ -1703,11 +1722,25 @@ function closeLightbox(){
   lastFocusedElement=null;
   if(location.hash.startsWith("#product-"))history.replaceState(null,"",location.pathname+location.search);
 }
+function updateLbFavoriteBtn(){
+  const btn=document.getElementById("lbFavoriteBtn");
+  if(!btn||!lbProduct)return;
+  const active=state.favorites.includes(lbProduct.id);
+  btn.classList.toggle("active",active);
+  btn.textContent=active?"♥":"♡";
+  btn.setAttribute("aria-label",active?"從喜愛清單移除":"加入喜愛清單");
+}
+function toggleLbFavorite(){
+  if(!lbProduct)return;
+  toggleFavorite(lbProduct.id);
+  updateLbFavoriteBtn();
+}
 function lbRender(){
   const img=document.getElementById("lbImg");
   const thumbs=document.getElementById("lbThumbs");
   const counter=document.getElementById("lbCounter");
   const info=document.getElementById("lbInfo");
+  updateLbFavoriteBtn();
   img.src=lbImages[lbCurrent]||"";
   img.alt=lbProduct?.name?`${lbProduct.name} 商品照片 ${lbCurrent+1}`:"商品照片";
   resetZoom();
@@ -1800,6 +1833,16 @@ function lineInquireBtnHtml(product){
     LINE 詢問這件商品
   </a>`;
 }
+function inquireAllFavorites(){
+  const lineId=(state.contact?.line||"").trim();
+  if(!lineId){toast("店家尚未設定 LINE");return}
+  const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
+  if(!products.length){toast("喜愛清單是空的");return}
+  const lines=products.map((p,i)=>`${i+1}. ${p.name||""}\n${location.origin}${location.pathname}#product-${p.id}`);
+  const msg=`您好，我想詢問以下收藏商品：\n\n${lines.join("\n\n")}`;
+  const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
+  window.open(url,"_blank","noopener");
+}
 function lbNav(dir){
   if(!lbImages.length)return;
   lbCurrent=(lbCurrent+dir+lbImages.length)%lbImages.length;
@@ -1882,6 +1925,8 @@ Object.assign(window,{
   closeModal,
   openModal,
   toggleFavorite,
+  toggleLbFavorite,
+  inquireAllFavorites,
   openProductDetail,
   handleSearchInput,
   clearSearch,

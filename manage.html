@@ -837,7 +837,7 @@ const sorters={
   cat:(a,b)=>strokeCollator.compare(categoryLabel(a),categoryLabel(b)),
   size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
   desc:(a,b)=>Number(!!b.desc)-Number(!!a.desc),
-  photos:(a,b)=>(b.photos||[]).filter(Boolean).length-(a.photos||[]).filter(Boolean).length,
+  photos:(a,b)=>(b.photoCount??(b.photos||[]).filter(Boolean).length)-(a.photoCount??(a.photos||[]).filter(Boolean).length),
   status:(a,b)=>(a.status||"").localeCompare(b.status||"")
 };
 function sortCompare(a,b){return sorters[sortKey]?sorters[sortKey](a,b):0}
@@ -873,8 +873,23 @@ let workingSpecs=[];
 let uploadMethod="file";
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
+function galleryDocRef(id){return doc(db,"sitedata",SITE_DOC,"products",id,"gallery","full")}
 function uid(){return Math.random().toString(36).slice(2,10)}
 function nextSortOrder(){return products.length?Math.max(...products.map(p=>p.sortOrder??0))+1:0}
+// 商品文件只存封面照＋photoCount，完整多張照片存在 products/{id}/gallery/full 子文件，
+// 編輯商品時才讀取，前台清單／表格讀取才不會把所有照片都抓下來。
+async function loadGallery(id){
+  try{
+    const snap=await getDoc(galleryDocRef(id));
+    return snap.exists()?(snap.data().photos||[]).filter(Boolean):[];
+  }catch(e){
+    console.warn("圖庫讀取失敗",e);
+    return [];
+  }
+}
+async function saveGallery(id,photos){
+  await setDoc(galleryDocRef(id),{photos:(photos||[]).filter(Boolean)});
+}
 
 window.openModal=function(id){document.getElementById(id).classList.add("open")};
 window.closeModal=function(id){document.getElementById(id).classList.remove("open")};
@@ -1063,6 +1078,27 @@ function resizeImageToUniform(src){
       const w=img.width*scale,h=img.height*scale;
       ctx.drawImage(img,(PHOTO_TARGET_W-w)/2,(PHOTO_TARGET_H-h)/2,w,h);
       return canvas.toDataURL("image/jpeg",0.86);
+    }catch(e){
+      return src;
+    }
+  }).catch(()=>src);
+}
+const THUMB_W=480,THUMB_H=600;
+function resizeToThumb(src){
+  // 只給商品列表封面用的小尺寸版本，畫質跟原圖無關——原圖仍完整存在圖庫子文件裡，
+  // 編輯商品/前台燈箱看到的還是未經過這層縮圖的原始照片。
+  return loadImage(src).then(img=>{
+    try{
+      const canvas=document.createElement("canvas");
+      canvas.width=THUMB_W;
+      canvas.height=THUMB_H;
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#fffaf3";
+      ctx.fillRect(0,0,THUMB_W,THUMB_H);
+      const scale=Math.min(THUMB_W/img.width,THUMB_H/img.height);
+      const w=img.width*scale,h=img.height*scale;
+      ctx.drawImage(img,(THUMB_W-w)/2,(THUMB_H-h)/2,w,h);
+      return canvas.toDataURL("image/jpeg",0.82);
     }catch(e){
       return src;
     }
@@ -1268,7 +1304,7 @@ async function addWorkingPhoto(url){
   toast("圖片已新增");
 }
 
-window.openProductModal=function(id){
+window.openProductModal=async function(id){
   editingProductId=id;
   workingPhotos=new Array(MAX_PHOTOS).fill("");
   workingSpecs=[];
@@ -1294,7 +1330,17 @@ window.openProductModal=function(id){
       return {part:spec.label||"",w:spec.value||"",d:"",h:""};
     });
     document.getElementById("pDesc").innerHTML=product.desc||"";
-    (product.photos||[]).slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
+    let cover=(product.photos||[]).filter(Boolean);
+    // 商品文件的封面只是縮圖，編輯時一律要換成 gallery 子文件裡的原始畫質照片
+    const totalCount=product.photoCount??cover.length;
+    if(totalCount>0){
+      renderPhotoSlots();
+      openModal("productModal");
+      const full=await loadGallery(id);
+      if(editingProductId!==id)return; // 使用者切換到別的商品了，不要覆蓋畫面
+      if(full.length)cover=full;
+    }
+    cover.slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
   }else{
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
@@ -1335,9 +1381,12 @@ window.saveProduct=async function(){
       d:(spec.d||"").trim(),
       h:(spec.h||"").trim()
     })),
-    desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim()),
-    photos:workingPhotos.filter(Boolean).map(normalizePhotoUrl)
+    desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
+  const fullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
+  // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
+  data.photos=fullPhotos.length?[await resizeToThumb(fullPhotos[0])]:[];
+  data.photoCount=fullPhotos.length;
   let product;
   if(editingProductId){
     const index=products.findIndex(p=>p.id===editingProductId);
@@ -1349,6 +1398,7 @@ window.saveProduct=async function(){
   }
   try{
     await setDoc(doc(productsCol(),product.id),product);
+    await saveGallery(product.id,fullPhotos);
     toast(editingProductId?"商品已更新 ☁️":"商品已新增 ☁️");
   }catch(e){
     toast("儲存失敗："+(e.message||String(e)),4000);
@@ -1385,6 +1435,7 @@ window.deleteProductRow=async function(id){
   if(!p)return;
   if(!confirm(`此操作無法復原，確定要永久刪除「${p.name}」嗎？`))return;
   await deleteDoc(doc(productsCol(),id));
+  try{await deleteDoc(galleryDocRef(id))}catch(e){}
   products=products.filter(p=>p.id!==id);
   toast("已永久刪除");
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
@@ -1539,7 +1590,7 @@ window.renderTable=function(){
         <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':escapeHTML(categoryLabel(p))}</td>
         <td>${m.noSize?'<span class="pill pill-missing">缺尺寸</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
-        <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':photos.length+' 張'}</td>
+        <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
         <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
         <td class="row-actions">
           <button onclick="openProductModal('${p.id}')">編輯</button>

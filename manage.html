@@ -14,9 +14,9 @@
   --charcoal:#343331;
   --ink:#262523;
   --muted:#67625b;
-  --soft:#8d867b;
+  --soft:#6e675c;
   --tan:#b99263;
-  --tan-dark:#967244;
+  --tan-dark:#8a6435;
   --sage:#7f9076;
   --cream:#f3eee6;
   --paper:#fffaf3;
@@ -610,6 +610,18 @@ tbody tr.is-archived{opacity:.55}
 }
 .photo-slot.dragging{opacity:.4}
 .modal-actions{display:flex;gap:10px;margin-top:26px}
+.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--cream)}
+.catmgr-row-top{display:flex;align-items:center;gap:6px}
+.catmgr-row-top input[type="text"]{flex:1;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:6px}
+.catmgr-icon-btn{border:1px solid var(--line);background:var(--white);width:30px;height:30px;border-radius:6px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.catmgr-icon-btn:hover{border-color:var(--tan);color:var(--tan-dark)}
+.catmgr-icon-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
+.catmgr-icon-btn.on{background:var(--sage);border-color:var(--sage);color:var(--white)}
+.catmgr-subs{margin:8px 0 0 18px;display:flex;flex-direction:column;gap:6px}
+.catmgr-sub-row{display:flex;align-items:center;gap:6px}
+.catmgr-sub-row input[type="text"]{flex:1;padding:6px 9px;font-size:13px;border:1px solid var(--line);border-radius:6px}
+.catmgr-add-sub{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:6px;padding:6px 10px;font-size:12px;margin-top:4px;align-self:flex-start}
+.hidden-tag{font-size:10px;background:rgba(184,66,54,.12);color:var(--danger);border-radius:999px;padding:0 6px;margin-left:6px}
 .btn-secondary,.btn-primary{
   border-radius:7px;
   padding:12px 18px;
@@ -649,6 +661,8 @@ tbody tr.is-archived{opacity:.55}
       <span id="totalCount"></span>
     </div>
     <div class="header-links">
+      <button class="add-btn" onclick="openCategoryManage()" style="background:var(--tan-dark)">🗂 分類管理</button>
+      <button class="add-btn" onclick="openContactManage()" style="background:var(--tan-dark)">📇 聯繫資訊</button>
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
     </div>
@@ -686,6 +700,7 @@ tbody tr.is-archived{opacity:.55}
               <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
               <th data-sort="cat">分類</th>
               <th data-sort="size">尺寸</th>
+              <th>參考售價</th>
               <th data-sort="desc">說明</th>
               <th data-sort="photos">照片</th>
               <th data-sort="status">狀態</th>
@@ -711,6 +726,8 @@ tbody tr.is-archived{opacity:.55}
     <div id="pSubCatWrap"><select id="pSubCat"></select></div>
     <label>商品名稱 *</label>
     <input type="text" id="pName" placeholder="例：北歐實木餐桌">
+    <label>參考售價（選填，格式自由，例如 3,200 或 洽詢）</label>
+    <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
     <input type="hidden" id="pSize">
     <div class="dimension-grid">
       <div>
@@ -780,6 +797,60 @@ tbody tr.is-archived{opacity:.55}
   </div>
 </div>
 
+<div class="modal-overlay" id="catMgrModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('catMgrModal')">×</button>
+    <div class="modal-title">分類管理</div>
+    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可重新命名、排序（▲▼）、隱藏／顯示（顧客端）、刪除主分類與子分類。</p>
+    <div id="catmgrList" style="display:flex;flex-direction:column;gap:10px;margin:10px 0 16px"></div>
+    <button onclick="addMainCategoryInline()" style="border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:8px;padding:10px;font-size:13px;width:100%;text-align:center">＋ 新增主分類</button>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeCategoryManage()">完成</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="catDeleteModal">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="closeModal('catDeleteModal')">×</button>
+    <div class="modal-title" id="catDeleteTitle">刪除分類</div>
+    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px" id="catDeleteDesc"></p>
+    <div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">
+      <input type="radio" name="catDelAction" id="catDelMove" value="move" checked style="margin-top:3px">
+      <div style="flex:1">
+        <label for="catDelMove" style="display:inline;margin:0">移到其他分類</label>
+        <select id="catDelTarget" style="margin-top:6px;width:100%"></select>
+      </div>
+    </div>
+    <div style="border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start">
+      <input type="radio" name="catDelAction" id="catDelArchive" value="archive" style="margin-top:3px">
+      <label for="catDelArchive" style="display:inline;margin:0">將這些商品連同分類一併封存（可日後還原）</label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('catDeleteModal')">取消</button>
+      <button class="btn-primary" style="background:var(--danger)" onclick="confirmCatDelete()">確認刪除分類</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="contactModal">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="closeModal('contactModal')">×</button>
+    <div class="modal-title">聯繫資訊</div>
+    <label>地址</label><input type="text" id="cAddr">
+    <label>電話</label><input type="text" id="cPhone">
+    <label>LINE ID（例如 @xintong，用於「詢問這件商品」按鈕）</label><input type="text" id="cLine">
+    <label>營業時間</label><input type="text" id="cHours">
+    <label>電子郵件</label><input type="text" id="cEmail">
+    <label>Facebook 連結</label><input type="text" id="cFb" placeholder="https://facebook.com/...">
+    <label>LINE 加好友連結</label><input type="text" id="cLineUrl" placeholder="https://line.me/...">
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
+      <button class="btn-primary" onclick="saveContactManage()">儲存</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
@@ -820,6 +891,8 @@ function escapeHTML(str=""){
 
 let catalog=[];
 let products=[];
+let contact={};
+let metaRaw={};
 let currentFilter="all";
 let sortKey="name";
 let sortDir=1;
@@ -881,6 +954,255 @@ async function syncOrderToFrontend(){
   btn.textContent="套用目前排序到前台 →";
 }
 window.syncOrderToFrontend=syncOrderToFrontend;
+
+/* ── 儲存 catalog／contact（存在 sitedata/{SITE_DOC} 主文件）───── */
+async function saveMeta(){
+  metaRaw.catalog=catalog;
+  metaRaw.contact=contact;
+  try{
+    await setDoc(doc(db,"sitedata",SITE_DOC),metaRaw);
+    return true;
+  }catch(e){
+    toast("儲存失敗："+(e.message||String(e)),4000);
+    return false;
+  }
+}
+window.saveMeta=saveMeta;
+
+/* ── 分類管理（新增／改名／排序／隱藏／刪除，主分類與子分類）───── */
+function openCategoryManage(){
+  renderCatMgrList();
+  openModal("catMgrModal");
+}
+window.openCategoryManage=openCategoryManage;
+function closeCategoryManage(){
+  closeModal("catMgrModal");
+  renderSidebar();
+  renderCatSelect();
+  saveMeta();
+  toast("分類已儲存 ☁️");
+}
+window.closeCategoryManage=closeCategoryManage;
+function addMainCategoryInline(){
+  const name=(prompt("請輸入新主分類名稱：")||"").trim();
+  if(!name)return;
+  catalog.push({id:"cat-"+uid(),name,subs:[],hidden:false});
+  renderCatMgrList();
+  toast("主分類已新增");
+}
+window.addMainCategoryInline=addMainCategoryInline;
+function renameMainCategory(mainId,value){
+  const cat=getMainCat(mainId);
+  if(cat)cat.name=value;
+}
+function renameSubCategory(mainId,subId,value){
+  const main=getMainCat(mainId);
+  const sub=main?.subs?.find(s=>s.id===subId);
+  if(sub)sub.name=value;
+}
+function moveMainCategory(mainId,dir){
+  const idx=catalog.findIndex(c=>c.id===mainId);
+  const target=idx+dir;
+  if(idx<0||target<0||target>=catalog.length)return;
+  [catalog[idx],catalog[target]]=[catalog[target],catalog[idx]];
+  renderCatMgrList();
+}
+function moveSubCategory(mainId,subId,dir){
+  const main=getMainCat(mainId);
+  if(!main?.subs)return;
+  const idx=main.subs.findIndex(s=>s.id===subId);
+  const target=idx+dir;
+  if(idx<0||target<0||target>=main.subs.length)return;
+  [main.subs[idx],main.subs[target]]=[main.subs[target],main.subs[idx]];
+  renderCatMgrList();
+}
+function toggleMainHidden(mainId){
+  const cat=getMainCat(mainId);
+  if(cat)cat.hidden=!cat.hidden;
+  renderCatMgrList();
+}
+function toggleSubHidden(mainId,subId){
+  const main=getMainCat(mainId);
+  const sub=main?.subs?.find(s=>s.id===subId);
+  if(sub)sub.hidden=!sub.hidden;
+  renderCatMgrList();
+}
+function addSubCategoryInline(mainId){
+  const main=getMainCat(mainId);
+  if(!main)return;
+  const name=(prompt("請輸入新子分類名稱：")||"").trim();
+  if(!name)return;
+  main.subs=main.subs||[];
+  main.subs.push({id:"sub-"+uid(),name,hidden:false});
+  renderCatMgrList();
+  toast("子分類已新增");
+}
+let pendingCatDelete=null;
+function deleteMainCategoryRequest(mainId){
+  const cat=getMainCat(mainId);
+  if(!cat)return;
+  const affected=products.filter(p=>p.mainCat===mainId&&p.status!=="archived");
+  if(!affected.length){
+    if(!confirm(`確定要刪除主分類「${cat.name}」嗎？`))return;
+    catalog=catalog.filter(c=>c.id!==mainId);
+    renderCatMgrList();
+    toast("主分類已刪除");
+    return;
+  }
+  pendingCatDelete={kind:"main",mainId};
+  document.getElementById("catDeleteTitle").textContent=`刪除主分類「${cat.name}」`;
+  document.getElementById("catDeleteDesc").textContent=`此分類底下還有 ${affected.length} 件商品，請選擇要如何處理這些商品：`;
+  const targetSel=document.getElementById("catDelTarget");
+  targetSel.innerHTML=catalog.filter(c=>c.id!==mainId).map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
+  document.getElementById("catDelMove").checked=true;
+  openModal("catDeleteModal");
+}
+function deleteSubCategoryRequest(mainId,subId){
+  const main=getMainCat(mainId);
+  const sub=main?.subs?.find(s=>s.id===subId);
+  if(!main||!sub)return;
+  const affected=products.filter(p=>p.mainCat===mainId&&p.subCat===subId&&p.status!=="archived");
+  if(!affected.length){
+    if(!confirm(`確定要刪除子分類「${sub.name}」嗎？`))return;
+    main.subs=main.subs.filter(s=>s.id!==subId);
+    renderCatMgrList();
+    toast("子分類已刪除");
+    return;
+  }
+  pendingCatDelete={kind:"sub",mainId,subId};
+  document.getElementById("catDeleteTitle").textContent=`刪除子分類「${sub.name}」`;
+  document.getElementById("catDeleteDesc").textContent=`此子分類底下還有 ${affected.length} 件商品，請選擇要如何處理這些商品：`;
+  const targetSel=document.getElementById("catDelTarget");
+  const otherSubs=(main.subs||[]).filter(s=>s.id!==subId);
+  targetSel.innerHTML=`<option value="">（不指定子分類）</option>`+otherSubs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
+  document.getElementById("catDelMove").checked=true;
+  openModal("catDeleteModal");
+}
+window.deleteMainCategoryRequest=deleteMainCategoryRequest;
+window.deleteSubCategoryRequest=deleteSubCategoryRequest;
+function confirmCatDelete(){
+  if(!pendingCatDelete)return;
+  const action=document.querySelector('input[name="catDelAction"]:checked').value;
+  const targetId=document.getElementById("catDelTarget").value;
+  if(pendingCatDelete.kind==="main"){
+    const {mainId}=pendingCatDelete;
+    const affected=products.filter(p=>p.mainCat===mainId);
+    if(action==="move"){
+      if(!targetId){toast("請選擇要移動到的分類");return}
+      affected.forEach(p=>{p.mainCat=targetId;p.subCat=null});
+    }else{
+      affected.forEach(p=>{p.status="archived"});
+    }
+    catalog=catalog.filter(c=>c.id!==mainId);
+  }else{
+    const {mainId,subId}=pendingCatDelete;
+    const main=getMainCat(mainId);
+    const affected=products.filter(p=>p.mainCat===mainId&&p.subCat===subId);
+    if(action==="move"){
+      affected.forEach(p=>{p.subCat=targetId||null});
+    }else{
+      affected.forEach(p=>{p.status="archived"});
+    }
+    if(main)main.subs=main.subs.filter(s=>s.id!==subId);
+  }
+  // 受影響商品需要同步寫回 Firestore（分類異動／封存）
+  (async()=>{
+    try{
+      const batch=writeBatch(db);
+      // 直接把目前記憶體中所有商品狀態全部寫回，資料量不大，避免遺漏受影響商品
+      products.forEach(p=>batch.set(doc(productsCol(),p.id),p));
+      await batch.commit();
+    }catch(e){
+      toast("商品分類更新寫入失敗："+(e.message||String(e)),4000);
+    }
+  })();
+  pendingCatDelete=null;
+  closeModal("catDeleteModal");
+  renderCatMgrList();
+  renderTable();
+  toast("分類已刪除，商品已處理完成");
+}
+window.confirmCatDelete=confirmCatDelete;
+function renderCatMgrList(){
+  const wrap=document.getElementById("catmgrList");
+  if(!wrap)return;
+  wrap.innerHTML="";
+  catalog.forEach((cat,mIdx)=>{
+    const row=document.createElement("div");
+    row.className="catmgr-main-row";
+    const top=document.createElement("div");
+    top.className="catmgr-row-top";
+    top.innerHTML=`
+      <button class="catmgr-icon-btn" title="上移" ${mIdx===0?"disabled":""}>▲</button>
+      <button class="catmgr-icon-btn" title="下移" ${mIdx===catalog.length-1?"disabled":""}>▼</button>
+      <input type="text" value="${escapeHTML(cat.name)}">
+      <button class="catmgr-icon-btn${cat.hidden?" on":""}" title="${cat.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${cat.hidden?"🙈":"👁"}</button>
+      <button class="catmgr-icon-btn danger" title="刪除主分類">🗑</button>
+    `;
+    const [upBtn,downBtn,nameInput,hideBtn,delBtn]=top.children;
+    upBtn.onclick=()=>moveMainCategory(cat.id,-1);
+    downBtn.onclick=()=>moveMainCategory(cat.id,1);
+    nameInput.addEventListener("input",()=>renameMainCategory(cat.id,nameInput.value));
+    hideBtn.onclick=()=>toggleMainHidden(cat.id);
+    delBtn.onclick=()=>deleteMainCategoryRequest(cat.id);
+    row.appendChild(top);
+    const subsWrap=document.createElement("div");
+    subsWrap.className="catmgr-subs";
+    (cat.subs||[]).forEach((sub,sIdx)=>{
+      const subRow=document.createElement("div");
+      subRow.className="catmgr-sub-row";
+      subRow.innerHTML=`
+        <button class="catmgr-icon-btn" title="上移" ${sIdx===0?"disabled":""}>▲</button>
+        <button class="catmgr-icon-btn" title="下移" ${sIdx===cat.subs.length-1?"disabled":""}>▼</button>
+        <input type="text" value="${escapeHTML(sub.name)}">
+        <button class="catmgr-icon-btn${sub.hidden?" on":""}" title="${sub.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${sub.hidden?"🙈":"👁"}</button>
+        <button class="catmgr-icon-btn danger" title="刪除子分類">🗑</button>
+      `;
+      const [sUp,sDown,sName,sHide,sDel]=subRow.children;
+      sUp.onclick=()=>moveSubCategory(cat.id,sub.id,-1);
+      sDown.onclick=()=>moveSubCategory(cat.id,sub.id,1);
+      sName.addEventListener("input",()=>renameSubCategory(cat.id,sub.id,sName.value));
+      sHide.onclick=()=>toggleSubHidden(cat.id,sub.id);
+      sDel.onclick=()=>deleteSubCategoryRequest(cat.id,sub.id);
+      subsWrap.appendChild(subRow);
+    });
+    const addSubBtn=document.createElement("button");
+    addSubBtn.className="catmgr-add-sub";
+    addSubBtn.textContent="＋ 新增子分類";
+    addSubBtn.onclick=()=>addSubCategoryInline(cat.id);
+    subsWrap.appendChild(addSubBtn);
+    row.appendChild(subsWrap);
+    wrap.appendChild(row);
+  });
+}
+
+/* ── 聯繫資訊 ─────────────────────────────────────────────────── */
+function openContactManage(){
+  document.getElementById("cAddr").value=contact.addr||"";
+  document.getElementById("cPhone").value=contact.phone||"";
+  document.getElementById("cLine").value=contact.line||"";
+  document.getElementById("cHours").value=contact.hours||"";
+  document.getElementById("cEmail").value=contact.email||"";
+  document.getElementById("cFb").value=contact.fbUrl||"";
+  document.getElementById("cLineUrl").value=contact.lineUrl||"";
+  openModal("contactModal");
+}
+window.openContactManage=openContactManage;
+async function saveContactManage(){
+  contact={
+    addr:document.getElementById("cAddr").value,
+    phone:document.getElementById("cPhone").value,
+    line:document.getElementById("cLine").value,
+    hours:document.getElementById("cHours").value,
+    email:document.getElementById("cEmail").value,
+    fbUrl:document.getElementById("cFb").value,
+    lineUrl:document.getElementById("cLineUrl").value
+  };
+  closeModal("contactModal");
+  const ok=await saveMeta();
+  toast(ok?"聯繫資訊已更新 ☁️":"儲存失敗，請檢查網路連線");
+}
+window.saveContactManage=saveContactManage;
 
 /* ── 商品新增／編輯（照片處理沿用前台邏輯）───────────────────── */
 const MAX_PHOTOS=5;
@@ -1338,6 +1660,7 @@ window.openProductModal=async function(id){
     updateSubSelect();
     document.getElementById("pSubCat").value=product.subCat||"";
     document.getElementById("pName").value=product.name||"";
+    document.getElementById("pPrice").value=product.price||"";
     document.getElementById("pSize").value=product.size||"";
     document.getElementById("pWidth").value=product.dimensions?.width||"";
     document.getElementById("pDepth").value=product.dimensions?.depth||"";
@@ -1362,6 +1685,7 @@ window.openProductModal=async function(id){
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
     ["pName","pSize","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
+    document.getElementById("pPrice").value="";
     document.getElementById("pDesc").innerHTML="";
   }
   renderSpecEditor();
@@ -1390,6 +1714,7 @@ window.saveProduct=async function(){
     mainCat:document.getElementById("pMainCat").value,
     subCat:document.getElementById("pSubCat").value||null,
     name,
+    price:document.getElementById("pPrice").value.trim(),
     size,
     dimensions,
     specs:workingSpecs.filter(spec=>spec.part||spec.w||spec.d||spec.h).map(spec=>({
@@ -1470,15 +1795,17 @@ function missingFlags(p){
 }
 
 async function boot(){
-  document.getElementById("tbody").innerHTML='<tr><td colspan="8" class="loading">載入中…</td></tr>';
+  document.getElementById("tbody").innerHTML='<tr><td colspan="9" class="loading">載入中…</td></tr>';
   try{
     const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
-    catalog=metaSnap.exists()?(metaSnap.data().catalog||[]):[];
+    metaRaw=metaSnap.exists()?metaSnap.data():{};
+    catalog=metaRaw.catalog||[];
+    contact=metaRaw.contact||{};
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
     products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
   }catch(e){
-    document.getElementById("tbody").innerHTML=`<tr><td colspan="8" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
+    document.getElementById("tbody").innerHTML=`<tr><td colspan="9" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;
   }
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
@@ -1590,7 +1917,7 @@ window.renderTable=function(){
 
   const tbody=document.getElementById("tbody");
   if(!list.length){
-    tbody.innerHTML='<tr><td colspan="8" class="empty-state">沒有符合條件的商品</td></tr>';
+    tbody.innerHTML='<tr><td colspan="9" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
   tbody.innerHTML=list.map(p=>{
@@ -1611,6 +1938,7 @@ window.renderTable=function(){
         </td>
         <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':escapeHTML(categoryLabel(p))}</td>
         <td>${m.noSize?'<span class="pill pill-missing">缺尺寸</span>':'<span class="pill pill-ok">已填</span>'}</td>
+        <td>${p.price?escapeHTML(p.price):'<span class="pill pill-missing">未填</span>'}</td>
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
         <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>

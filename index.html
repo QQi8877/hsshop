@@ -22,9 +22,9 @@
   --charcoal:#343331;
   --ink:#262523;
   --muted:#67625b;
-  --soft:#8d867b;
+  --soft:#6e675c;
   --tan:#b99263;
-  --tan-dark:#967244;
+  --tan-dark:#8a6435;
   --sage:#7f9076;
   --cream:#f3eee6;
   --paper:#fffaf3;
@@ -35,6 +35,14 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+    scroll-behavior:auto!important;
+  }
+}
 body{
   font-family:"Noto Sans TC",system-ui,sans-serif;
   background:var(--cream);
@@ -80,6 +88,33 @@ nav{
   letter-spacing:.08em;
 }
 .nav-links a:hover{color:var(--tan-dark)}
+.nav-hamburger{
+  display:none;
+  border:0;background:transparent;color:var(--charcoal);
+  padding:6px;justify-self:end;
+}
+.nav-links-mobile{
+  display:none;
+  list-style:none;
+  position:fixed;
+  top:62px;left:0;right:0;
+  z-index:99;
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+  box-shadow:0 12px 30px rgba(0,0,0,.1);
+  padding:8px 0;
+}
+.nav-links-mobile.open{display:block}
+.nav-links-mobile a{
+  display:block;
+  padding:14px 24px;
+  color:var(--ink);
+  text-decoration:none;
+  font-size:15px;
+  border-bottom:1px solid var(--line);
+}
+.nav-links-mobile li:last-child a{border-bottom:0}
+.nav-links-mobile a:active{background:var(--cream)}
 .footer-edit-link{
   border:0;
   background:transparent;
@@ -298,6 +333,7 @@ body.edit-mode .add-cat-btn{display:inline-flex}
   margin-bottom:5px;
 }
 .product-size{font-size:12px;color:var(--tan-dark);margin-bottom:6px}
+.product-price{font-size:15px;color:var(--charcoal);font-weight:600;margin-top:2px}
 .product-desc{font-size:13px;color:var(--soft)}
 .favorite-btn{
   position:absolute;
@@ -527,7 +563,7 @@ footer{
 }
 .footer-brand{font-family:"Noto Serif TC",serif;letter-spacing:.08em}
 .modal-overlay{
-  display:none;
+  display:flex;
   position:fixed;
   inset:0;
   z-index:240;
@@ -535,8 +571,15 @@ footer{
   justify-content:center;
   padding:18px;
   background:rgba(34,29,24,.72);
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .2s ease,visibility 0s linear .2s;
 }
-.modal-overlay.open{display:flex}
+.modal-overlay.open{
+  opacity:1;
+  visibility:visible;
+  transition:opacity .2s ease;
+}
 .modal{
   width:min(590px,100%);
   max-height:92vh;
@@ -546,7 +589,10 @@ footer{
   padding:32px;
   position:relative;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
+  transform:scale(.96);
+  transition:transform .2s ease;
 }
+.modal-overlay.open .modal{transform:scale(1)}
 .modal-title{
   font-family:"Noto Serif TC",serif;
   font-size:21px;
@@ -895,7 +941,7 @@ body.quickcat-mode .favorite-btn{display:none}
 }
 .toast.show{opacity:1;transform:translateY(0)}
 #lightbox{
-  display:none;
+  display:flex;
   position:fixed;
   inset:0;
   z-index:600;
@@ -909,8 +955,17 @@ body.quickcat-mode .favorite-btn{display:none}
   flex-direction:column;
   gap:12px;
   padding:18px;
+  opacity:0;
+  visibility:hidden;
+  transition:opacity .22s ease,visibility 0s linear .22s;
 }
-#lightbox.open{display:flex}
+#lightbox.open{
+  opacity:1;
+  visibility:visible;
+  transition:opacity .22s ease;
+}
+#lightbox .lb-layout{transform:scale(.97);transition:transform .22s ease}
+#lightbox.open .lb-layout{transform:scale(1)}
 .lb-close,.lb-arrow{
   position:fixed;
   z-index:3;
@@ -967,6 +1022,16 @@ body.quickcat-mode .favorite-btn{display:none}
 }
 .lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
 .lb-product-title{font-family:"Noto Serif TC",serif;font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
+.lb-product-price{font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
+.lb-inquire-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  width:100%;padding:13px 16px;margin-bottom:18px;
+  background:#06c755;color:#fff;border:0;border-radius:8px;
+  font-size:15px;font-weight:500;text-decoration:none;
+  transition:background .18s ease;
+}
+.lb-inquire-btn:hover{background:#05a648}
+.lb-inquire-btn svg{flex-shrink:0}
 .lb-product-desc{font-size:14px;margin-bottom:18px}
 .lb-product-note{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:14px;color:var(--muted)}
 .lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
@@ -1037,8 +1102,9 @@ body.quickcat-mode .favorite-btn{display:none}
 .lb-counter{font-size:12px;color:rgba(255,255,255,.55)}
 .lb-hint{font-size:11px;color:rgba(255,255,255,.42);text-align:center}
 @media(max-width:760px){
-  nav{padding:0 15px}
+  nav{padding:0 12px;grid-template-columns:auto 1fr auto}
   .nav-links{display:none}
+  .nav-hamburger{display:flex}
   .hero-content{padding:58px 24px}
   .hero-title{font-size:34px}
   .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:14px}
@@ -1084,7 +1150,16 @@ body.quickcat-mode .favorite-btn{display:none}
     <li><a href="#categories">商品</a></li>
     <li><a href="#contact">聯繫</a></li>
   </ul>
+  <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="開啟選單" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
 </nav>
+<ul class="nav-links-mobile" id="navLinksMobile">
+  <li><a href="#hero" onclick="toggleMobileNav(false)">首頁</a></li>
+  <li><a href="#categories" onclick="toggleMobileNav(false)">商品</a></li>
+  <li><a href="#contact" onclick="toggleMobileNav(false)">聯繫</a></li>
+</ul>
+
 
 <section id="hero">
   <div class="hero-content">
@@ -1102,9 +1177,7 @@ body.quickcat-mode .favorite-btn{display:none}
     <h2 class="section-title" data-editable data-page-field="productsTitle" contenteditable="false">精選商品</h2>
     <div class="section-line"></div>
   </div>
-  <div class="categories-bar" id="categoriesBar">
-    <button class="add-cat-btn" onclick="openCategoryManage()">分類管理</button>
-  </div>
+  <div class="categories-bar" id="categoriesBar"></div>
   <div class="sub-categories-bar" id="subCategoriesBar"></div>
   <div class="products-grid" id="productsGrid"></div>
 </section>
@@ -1137,29 +1210,11 @@ body.quickcat-mode .favorite-btn{display:none}
 <footer>
   <div style="display:flex;align-items:center;gap:14px">
     <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
-    <button class="footer-edit-link" id="editToggleBtn" onclick="toggleEditMode()">管理</button>
+    <a class="footer-edit-link" href="manage.html" target="_blank" rel="noopener">管理</a>
   </div>
   <div>© 2026 信通家俱行</div>
 </footer>
 
-<div class="edit-toolbar">
-  <span>編輯模式開啟</span>
-  <button onclick="openCategoryManage()">分類管理</button>
-  <button onclick="openProductModal(null)">新增商品</button>
-  <button onclick="openBulkUploadModal()">批次上傳照片</button>
-  <button onclick="toggleQuickCatMode()">快速分類</button>
-  <button onclick="toggleArchivedView()" id="archivedToggleBtn">查看封存商品</button>
-  <button onclick="editContactInfo()">聯繫資訊</button>
-  <button onclick="saveAll()" style="background:var(--tan)">儲存</button>
-</div>
-<div class="quickcat-bar" id="quickCatBar">
-  <span id="quickCatCount">已選 0 個</span>
-  <select id="quickCatMain" onchange="updateQuickCatSubSelect()"></select>
-  <select id="quickCatSub"></select>
-  <label><input type="checkbox" id="quickCatOnlyUncat" checked onchange="renderProducts()"> 只顯示待分類商品</label>
-  <button onclick="applyQuickCat()">套用到已選商品</button>
-  <button onclick="toggleQuickCatMode(false)">結束快速分類</button>
-</div>
 <div class="toast" id="toast"></div>
 <button class="favorites-fab" onclick="toggleFavoritesPanel()">
   <span>♡ 喜愛清單</span>
@@ -1188,175 +1243,7 @@ body.quickcat-mode .favorite-btn{display:none}
   </div>
 </div>
 
-<div class="modal-overlay" id="productModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('productModal')">×</button>
-    <div class="modal-title" id="productModalTitle">新增商品</div>
-    <label>主分類</label>
-    <select id="pMainCat" onchange="updateSubSelect()"></select>
-    <label>子分類</label>
-    <div id="pSubCatWrap"><select id="pSubCat"></select></div>
-    <label>商品名稱 *</label>
-    <input type="text" id="pName" placeholder="例：北歐實木餐桌">
-    <input type="hidden" id="pSize">
-    <div class="dimension-grid">
-      <div>
-        <label>寬 W（cm）</label>
-        <input type="text" id="pWidth" placeholder="例：120">
-      </div>
-      <div>
-        <label>深 D（cm）</label>
-        <input type="text" id="pDepth" placeholder="例：60">
-      </div>
-      <div>
-        <label>高 H（cm）</label>
-        <input type="text" id="pHeight" placeholder="例：75">
-      </div>
-    </div>
-    <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
-    <div class="spec-editor" id="specEditor"></div>
-    <button class="add-spec-btn" onclick="addSpecRow()">＋ 新增部位列</button>
-    <label>商品說明（選填）</label>
-    <div class="rte-toolbar">
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
-      <select onmousedown="event.preventDefault()" onchange="if(this.value){rteApply('pDesc','fontSize',this.value);this.value=''}">
-        <option value="">文字大小</option>
-        <option value="12px">小</option>
-        <option value="15px">標準</option>
-        <option value="18px">大</option>
-        <option value="24px">特大</option>
-      </select>
-      <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
-      <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
-    </div>
-    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="材質、特色說明"></div>
 
-    <div class="photos-section">
-      <div class="photos-section-title">商品照片（最多 5 張）</div>
-      <div class="photos-note">
-        第 1 張是封面，第 2 張是滑鼠移過商品時的切換圖片。Google Drive 連結請先設定為「知道連結的任何人都可以檢視」。
-      </div>
-      <div class="upload-method-row">
-        <button class="upload-method-btn active" onclick="setUploadMethod('file',this)">本機上傳</button>
-        <button class="upload-method-btn" onclick="setUploadMethod('gdrive',this)">Google 雲端</button>
-        <button class="upload-method-btn" onclick="setUploadMethod('url',this)">圖片網址</button>
-      </div>
-      <div id="urlInputPanel" style="display:none">
-        <div class="url-input-row">
-          <input type="text" id="urlInput" placeholder="https://example.com/image.jpg">
-          <button onclick="addPhotoByUrl()">新增</button>
-        </div>
-      </div>
-      <div id="gdriveInputPanel" style="display:none">
-        <div class="url-input-row">
-          <input type="text" id="gdriveInput" placeholder="貼上 Google Drive 分享連結">
-          <button onclick="addPhotoByGdrive()">新增</button>
-        </div>
-        <div class="helper-text">支援 /file/d/ID/view 與 open?id=ID 等常見格式，會自動轉成圖片可讀取網址。</div>
-      </div>
-      <div class="photo-slots" id="photoSlots"></div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('productModal')">取消</button>
-      <button class="btn-primary" onclick="saveProduct()">儲存商品</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="catMgrModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('catMgrModal')">×</button>
-    <div class="modal-title">分類管理</div>
-    <p class="catmgr-hint">可重新命名、排序（▲▼）、隱藏／顯示（顧客端）、刪除主分類與子分類。變更會即時反映，記得按下方「完成」以確保已儲存。</p>
-    <div class="catmgr-list" id="catmgrList"></div>
-    <button class="catmgr-add-main" onclick="addMainCategoryInline()">＋ 新增主分類</button>
-    <div class="modal-actions">
-      <button class="btn-primary" onclick="closeCategoryManage()">完成</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="bulkUploadModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
-    <div class="modal-title">批次上傳照片</div>
-    <p class="catmgr-hint">
-      檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張。
-      檔名跟現有商品名稱<strong>完全一致</strong>才會自動比對進去；比對不到的名稱，系統會自動建立一個只有名稱跟照片的新商品，分類、尺寸等資料再請你事後補上。
-    </p>
-    <div class="upload-method-row">
-      <button class="upload-method-btn active" onclick="setBulkMode('append',this)">附加到空格（不覆蓋）</button>
-      <button class="upload-method-btn" onclick="setBulkMode('replace',this)">取代該商品所有照片</button>
-    </div>
-    <label>選擇照片檔案（可多選）</label>
-    <input type="file" id="bulkFileInput" accept="image/*" multiple>
-    <div class="helper-text">或者直接選整個資料夾：</div>
-    <input type="file" id="bulkFolderInput" accept="image/*" multiple webkitdirectory>
-    <div class="photos-note" id="bulkLog" style="margin-top:14px"></div>
-    <div class="modal-actions">
-      <button class="btn-primary" onclick="closeModal('bulkUploadModal')">完成</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="catDeleteModal">
-  <div class="modal" style="max-width:420px">
-    <button class="modal-close" onclick="closeModal('catDeleteModal')">×</button>
-    <div class="modal-title" id="catDeleteTitle">刪除分類</div>
-    <p class="catmgr-hint" id="catDeleteDesc"></p>
-    <div class="catdel-choice">
-      <input type="radio" name="catDelAction" id="catDelMove" value="move" checked>
-      <div style="flex:1">
-        <label for="catDelMove" style="display:inline;margin:0">移到其他分類</label>
-        <select id="catDelTarget"></select>
-      </div>
-    </div>
-    <div class="catdel-choice">
-      <input type="radio" name="catDelAction" id="catDelArchive" value="archive">
-      <label for="catDelArchive" style="display:inline;margin:0">將這些商品連同分類一併封存（可日後還原）</label>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('catDeleteModal')">取消</button>
-      <button class="btn-primary" style="background:var(--danger)" onclick="confirmCatDelete()">確認刪除分類</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-overlay" id="contactModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('contactModal')">×</button>
-    <div class="modal-title">編輯聯繫資訊</div>
-    <label>地址</label><input type="text" id="cAddr">
-    <label>電話</label><input type="text" id="cPhone">
-    <label>LINE / WeChat</label><input type="text" id="cLine">
-    <label>營業時間</label><input type="text" id="cHours">
-    <label>電子郵件</label><input type="text" id="cEmail">
-    <label>Facebook 連結</label><input type="text" id="cFb" placeholder="https://www.facebook.com/...">
-    <label>LINE 連結</label><input type="text" id="cLineUrl" placeholder="https://line.me/...">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
-      <button class="btn-primary" onclick="saveContactInfo()">儲存</button>
-    </div>
-  </div>
-</div>
-
-<!-- 密碼驗證 Modal -->
-<div class="modal-overlay" id="pwModal">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-title" style="margin-bottom:8px">🔒 編輯模式</div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:20px">請輸入管理員密碼</p>
-    <label>密碼</label>
-    <input type="password" id="pwInput" placeholder="••••••••"
-      onkeydown="if(event.key==='Enter')verifyPassword()">
-    <div id="pwError" style="display:none;color:var(--danger);font-size:12px;margin-top:8px">密碼錯誤，請再試一次</div>
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal('pwModal');document.getElementById('pwInput').value='';document.getElementById('pwError').style.display='none'">取消</button>
-      <button class="btn-primary" onclick="verifyPassword()">確認</button>
-    </div>
-  </div>
-</div>
 
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
@@ -1496,10 +1383,22 @@ function normalizeProduct(product){
   }
   return product;
 }
-let editMode=false,editingProductId=null,workingPhotos=[],uploadMethod="file",workingSpecs=[],showArchivedOnly=false;
-let quickCatMode=false,quickCatSelected=new Set();
 let searchQuery="";
-let dragProductId=null;
+function extractGdriveId(url){
+  const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
+  for(const pattern of patterns){
+    const match=String(url).match(pattern);
+    if(match)return match[1];
+  }
+  return null;
+}
+function convertGdriveUrl(url){
+  const id=extractGdriveId(url);
+  return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`:url;
+}
+function normalizePhotoUrl(url){
+  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
+}
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}
 function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
@@ -1519,6 +1418,13 @@ function getSizeSummary(product){
   if(d.height)parts.push(`高 ${withCm(d.height)}`);
   return parts.length?parts.join(" x "):(product.size||"尺寸洽詢");
 }
+function formatPrice(price){
+  const text=String(price||"").trim();
+  if(!text)return "";
+  // 純數字／千分位符號才自動補 NT$，其他文字（例如「洽詢」）原樣顯示
+  if(/^[\d,，]+$/.test(text))return `NT$ ${text}`;
+  return text;
+}
 function toast(msg,dur=2200){
   const el=document.getElementById("toast");
   el.textContent=msg;
@@ -1526,87 +1432,13 @@ function toast(msg,dur=2200){
   clearTimeout(toast.timer);
   toast.timer=setTimeout(()=>el.classList.remove("show"),dur);
 }
-async function saveAll(){
-  // 注意：favorites（喜愛清單）是每位顧客瀏覽器自己的資料，不寫入全站共用的 Firestore，
-  // 避免一位訪客的收藏被其他人看到。
-  const saveData={
-    catalog:state.catalog,
-    products:state.products,
-    contact:state.contact,
-    pageText:state.pageText
-  };
-  const ok=await Storage.set(saveData);
-  toast(ok?"已儲存 ☁️":"已儲存（本機備份）");
-}
 function openModal(id){document.getElementById(id).classList.add("open")}
 function closeModal(id){document.getElementById(id).classList.remove("open")}
 function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
     const key=el.dataset.pageField;
     if(state.pageText?.[key])el.textContent=state.pageText[key];
-    el.addEventListener("blur",()=>{
-      state.pageText=state.pageText||{};
-      state.pageText[key]=el.textContent.trim();
-      saveAll();
-    });
   });
-}
-function syncEditableState(){
-  document.querySelectorAll("[data-editable],[data-product-field],[data-contact-field]").forEach(el=>{
-    el.contentEditable=editMode?"true":"false";
-  });
-}
-/* 密碼雜湊（SHA-256） */
-const ADMIN_HASH="fb2495b0307d8ea473eef24e55c4c6a4b264074ef206122f79631ad9940a73a8";
-async function sha256(str){
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
-}
-async function verifyPassword(){
-  const pw=document.getElementById("pwInput").value;
-  const hash=await sha256(pw);
-  if(hash===ADMIN_HASH){
-    document.getElementById("pwInput").value="";
-    document.getElementById("pwError").style.display="none";
-    closeModal("pwModal");
-    activateEditMode();
-  }else{
-    document.getElementById("pwError").style.display="block";
-    document.getElementById("pwInput").select();
-  }
-}
-function activateEditMode(){
-  editMode=true;
-  document.body.classList.add("edit-mode");
-  const btn=document.getElementById("editToggleBtn");
-  btn.textContent="完成編輯";
-  btn.classList.add("active");
-  syncEditableState();
-  renderCategories();
-  renderProducts();
-  renderContact();
-}
-function toggleEditMode(){
-  if(editMode){
-    // 退出編輯模式，直接儲存
-    editMode=false;
-    showArchivedOnly=false;
-    document.body.classList.remove("edit-mode");
-    const btn=document.getElementById("editToggleBtn");
-    btn.textContent="編輯模式";
-    btn.classList.remove("active");
-    syncEditableState();
-    saveAll();
-    renderCategories();
-    renderProducts();
-    renderContact();
-  }else{
-    // 進入編輯模式，要求密碼
-    document.getElementById("pwInput").value="";
-    document.getElementById("pwError").style.display="none";
-    openModal("pwModal");
-    setTimeout(()=>document.getElementById("pwInput").focus(),100);
-  }
 }
 
 function activeProducts(){return state.products.filter(p=>p.status!=="archived")}
@@ -1615,19 +1447,18 @@ function subCount(mainId,subId){return activeProducts().filter(p=>p.mainCat===ma
 function renderCategories(){
   const bar=document.getElementById("categoriesBar");
   const subBar=document.getElementById("subCategoriesBar");
-  const addBtn=bar.querySelector(".add-cat-btn");
   bar.querySelectorAll(".cat-tab").forEach(el=>el.remove());
   ["全部",...state.catalog.map(c=>c.id)].forEach(id=>{
     const count=id==="全部"?activeProducts().length:mainCount(id);
     const cat=id==="全部"?null:getMainCat(id);
     const isHidden=!!cat?.hidden;
-    // 顧客端：隱藏「已標記隱藏」或「0 項商品」的主分類
-    if(!editMode&&id!=="全部"&&(isHidden||count===0))return;
+    // 隱藏「已標記隱藏」或「0 項商品」的主分類
+    if(id!=="全部"&&(isHidden||count===0))return;
     const btn=document.createElement("button");
-    btn.className="cat-tab"+(state.activeMain===id?" active":"")+(isHidden?" is-hidden":"");
-    btn.innerHTML=`${escapeHTML(getMainName(id))}<span class="tab-count">${count}</span>${isHidden&&editMode?'<span class="hidden-tag">隱藏中</span>':""}`;
+    btn.className="cat-tab"+(state.activeMain===id?" active":"");
+    btn.innerHTML=`${escapeHTML(getMainName(id))}<span class="tab-count">${count}</span>`;
     btn.onclick=()=>{state.activeMain=id;state.activeSub=null;renderCategories();renderProducts()};
-    bar.insertBefore(btn,addBtn);
+    bar.appendChild(btn);
   });
   subBar.innerHTML="";
   if(state.activeMain!=="全部"){
@@ -1641,10 +1472,10 @@ function renderCategories(){
       main.subs.forEach(sub=>{
         const count=subCount(state.activeMain,sub.id);
         const isHidden=!!sub.hidden;
-        if(!editMode&&(isHidden||count===0))return;
+        if(isHidden||count===0)return;
         const btn=document.createElement("button");
-        btn.className="sub-tab"+(state.activeSub===sub.id?" active":"")+(isHidden?" is-hidden":"");
-        btn.innerHTML=`${escapeHTML(sub.name)}<span class="tab-count">${count}</span>${isHidden&&editMode?'<span class="hidden-tag">隱藏中</span>':""}`;
+        btn.className="sub-tab"+(state.activeSub===sub.id?" active":"");
+        btn.innerHTML=`${escapeHTML(sub.name)}<span class="tab-count">${count}</span>`;
         btn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
         subBar.appendChild(btn);
       });
@@ -1653,373 +1484,8 @@ function renderCategories(){
   }else{
     subBar.style.display="none";
   }
-  renderCatSelect();
-}
-/* ── 分類管理（新增／改名／排序／隱藏／刪除，主分類與子分類）───── */
-function openCategoryManage(){
-  renderCatMgrList();
-  openModal("catMgrModal");
-}
-function closeCategoryManage(){
-  closeModal("catMgrModal");
-  renderCategories();
-  renderProducts();
-  saveAll();
 }
 /* ── 批次上傳照片（依檔名比對商品）───────────────────────────── */
-let bulkReplaceMode=false;
-function setBulkMode(mode,btn){
-  bulkReplaceMode=mode==="replace";
-  btn.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
-  btn.classList.add("active");
-}
-function parseBulkFilename(filename){
-  const base=filename.replace(/\.[^.]+$/,"");
-  const match=base.match(/^(.*?)[\s_\-\(（]+0*(\d{1,3})[\)）]?$/);
-  if(match&&match[1].trim())return {name:match[1].trim(),index:parseInt(match[2],10)};
-  return {name:base.trim(),index:1};
-}
-function groupBulkFiles(fileList){
-  const groups=new Map();
-  Array.from(fileList).filter(f=>f.type.startsWith("image/")).forEach(file=>{
-    const {name,index}=parseBulkFilename(file.name);
-    if(!name)return;
-    if(!groups.has(name))groups.set(name,[]);
-    groups.get(name).push({file,index});
-  });
-  groups.forEach(items=>items.sort((a,b)=>a.index-b.index));
-  return groups;
-}
-function fileToDataUrl(file){
-  return new Promise((resolve,reject)=>{
-    const reader=new FileReader();
-    reader.onload=e=>resolve(e.target.result);
-    reader.onerror=reject;
-    reader.readAsDataURL(file);
-  });
-}
-function openBulkUploadModal(){
-  document.getElementById("bulkFileInput").value="";
-  document.getElementById("bulkFolderInput").value="";
-  document.getElementById("bulkLog").innerHTML="";
-  openModal("bulkUploadModal");
-}
-async function handleBulkFiles(event){
-  const files=event.target.files;
-  if(!files||!files.length)return;
-  const log=document.getElementById("bulkLog");
-  const groups=groupBulkFiles(files);
-  if(!groups.size){log.textContent="沒有找到可用的圖片檔案。";event.target.value="";return}
-  log.textContent="處理中…";
-  const lines=[];
-  let matchedCount=0,createdCount=0;
-  for(const [name,items] of groups){
-    const photos=[];
-    for(const {file} of items.slice(0,MAX_PHOTOS)){
-      const dataUrl=await fileToDataUrl(file);
-      photos.push(await resizeImageToUniform(dataUrl));
-    }
-    const existing=state.products.find(p=>p.status!=="archived"&&p.name.trim()===name);
-    let fullPhotos,targetId;
-    if(existing){
-      targetId=existing.id;
-      if(bulkReplaceMode){
-        fullPhotos=photos;
-      }else{
-        // 補上模式要先把既有完整圖庫抓回來再合併，記憶體裡的 existing.photos 可能只有封面照
-        const cachedCount=(existing.photos||[]).filter(Boolean).length;
-        const totalCount=existing.photoCount??cachedCount;
-        const existingFull=totalCount>cachedCount?await Storage.getGallery(existing.id):(existing.photos||[]).filter(Boolean);
-        fullPhotos=existingFull.slice();
-        for(const photo of photos){
-          if(fullPhotos.length>=MAX_PHOTOS)break;
-          fullPhotos.push(photo);
-        }
-      }
-      existing.photos=[await resizeToThumb(fullPhotos[0])];
-      existing.photoCount=fullPhotos.length;
-      matchedCount++;
-      lines.push(`✓ 比對到「${escapeHTML(name)}」，已${bulkReplaceMode?"取代":"補上"}照片`);
-    }else{
-      targetId=uid();
-      fullPhotos=photos;
-      state.products.push({
-        id:targetId,sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
-        dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
-        photos:[await resizeToThumb(fullPhotos[0])],photoCount:fullPhotos.length,status:"active"
-      });
-      createdCount++;
-      lines.push(`＋ 找不到「${escapeHTML(name)}」，已建立待補資料的新商品`);
-    }
-    try{
-      await Storage.setGallery(targetId,fullPhotos);
-    }catch(e){
-      console.warn("圖庫寫入失敗",e);
-    }
-  }
-  renderCategories();
-  renderProducts();
-  await saveAll();
-  log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
-  event.target.value="";
-}
-/* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
-function toggleQuickCatMode(force){
-  quickCatMode=typeof force==="boolean"?force:!quickCatMode;
-  quickCatSelected.clear();
-  document.body.classList.toggle("quickcat-mode",quickCatMode);
-  document.getElementById("quickCatBar").classList.toggle("open",quickCatMode);
-  if(quickCatMode){
-    renderQuickCatSelect();
-    document.getElementById("quickCatOnlyUncat").checked=true;
-    updateQuickCatCount();
-  }
-  renderProducts();
-}
-function renderQuickCatSelect(){
-  const main=document.getElementById("quickCatMain");
-  main.innerHTML=state.catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
-  updateQuickCatSubSelect();
-}
-function updateQuickCatSubSelect(){
-  const mainId=document.getElementById("quickCatMain").value;
-  const sub=document.getElementById("quickCatSub");
-  const main=getMainCat(mainId);
-  if(main?.subs?.length){
-    sub.innerHTML=`<option value="">（不指定子分類）</option>`+main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
-    sub.style.display="";
-  }else{
-    sub.innerHTML="";
-    sub.style.display="none";
-  }
-}
-function toggleQuickCatSelect(id){
-  if(quickCatSelected.has(id))quickCatSelected.delete(id);
-  else quickCatSelected.add(id);
-  updateQuickCatCount();
-  renderProducts();
-}
-function updateQuickCatCount(){
-  document.getElementById("quickCatCount").textContent=`已選 ${quickCatSelected.size} 個`;
-}
-function applyQuickCat(){
-  if(!quickCatSelected.size){toast("請先勾選商品");return}
-  const mainId=document.getElementById("quickCatMain").value;
-  const subId=document.getElementById("quickCatSub").value||null;
-  state.products.forEach(p=>{
-    if(quickCatSelected.has(p.id)){p.mainCat=mainId;p.subCat=subId}
-  });
-  toast(`已將 ${quickCatSelected.size} 個商品分類為「${getMainName(mainId)}」`);
-  quickCatSelected.clear();
-  updateQuickCatCount();
-  renderCategories();
-  renderProducts();
-  saveAll();
-}
-function addMainCategoryInline(){
-  const name=(prompt("請輸入新主分類名稱：")||"").trim();
-  if(!name)return;
-  state.catalog.push({id:"cat-"+uid(),name,subs:[],hidden:false});
-  renderCatMgrList();
-  toast("主分類已新增");
-}
-function renameMainCategory(mainId,value){
-  const cat=getMainCat(mainId);
-  if(cat)cat.name=value;
-}
-function renameSubCategory(mainId,subId,value){
-  const main=getMainCat(mainId);
-  const sub=main?.subs?.find(s=>s.id===subId);
-  if(sub)sub.name=value;
-}
-function moveMainCategory(mainId,dir){
-  const list=state.catalog;
-  const idx=list.findIndex(c=>c.id===mainId);
-  const target=idx+dir;
-  if(idx<0||target<0||target>=list.length)return;
-  [list[idx],list[target]]=[list[target],list[idx]];
-  renderCatMgrList();
-}
-function moveSubCategory(mainId,subId,dir){
-  const main=getMainCat(mainId);
-  if(!main?.subs)return;
-  const idx=main.subs.findIndex(s=>s.id===subId);
-  const target=idx+dir;
-  if(idx<0||target<0||target>=main.subs.length)return;
-  [main.subs[idx],main.subs[target]]=[main.subs[target],main.subs[idx]];
-  renderCatMgrList();
-}
-function toggleMainHidden(mainId){
-  const cat=getMainCat(mainId);
-  if(cat)cat.hidden=!cat.hidden;
-  renderCatMgrList();
-}
-function toggleSubHidden(mainId,subId){
-  const main=getMainCat(mainId);
-  const sub=main?.subs?.find(s=>s.id===subId);
-  if(sub)sub.hidden=!sub.hidden;
-  renderCatMgrList();
-}
-function addSubCategoryInline(mainId){
-  const main=getMainCat(mainId);
-  if(!main)return;
-  const name=(prompt("請輸入新子分類名稱：")||"").trim();
-  if(!name)return;
-  main.subs=main.subs||[];
-  main.subs.push({id:"sub-"+uid(),name,hidden:false});
-  renderCatMgrList();
-  toast("子分類已新增");
-}
-let pendingCatDelete=null;
-function deleteMainCategoryRequest(mainId){
-  const cat=getMainCat(mainId);
-  if(!cat)return;
-  const affected=state.products.filter(p=>p.mainCat===mainId&&p.status!=="archived");
-  if(!affected.length){
-    if(!confirm(`確定要刪除主分類「${cat.name}」嗎？`))return;
-    state.catalog=state.catalog.filter(c=>c.id!==mainId);
-    if(state.activeMain===mainId){state.activeMain="全部";state.activeSub=null}
-    renderCatMgrList();
-    toast("主分類已刪除");
-    return;
-  }
-  pendingCatDelete={kind:"main",mainId};
-  document.getElementById("catDeleteTitle").textContent=`刪除主分類「${cat.name}」`;
-  document.getElementById("catDeleteDesc").textContent=`此分類底下還有 ${affected.length} 件商品，請選擇要如何處理這些商品：`;
-  const targetSel=document.getElementById("catDelTarget");
-  targetSel.innerHTML=state.catalog.filter(c=>c.id!==mainId).map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
-  document.getElementById("catDelMove").checked=true;
-  openModal("catDeleteModal");
-}
-function deleteSubCategoryRequest(mainId,subId){
-  const main=getMainCat(mainId);
-  const sub=main?.subs?.find(s=>s.id===subId);
-  if(!main||!sub)return;
-  const affected=state.products.filter(p=>p.mainCat===mainId&&p.subCat===subId&&p.status!=="archived");
-  if(!affected.length){
-    if(!confirm(`確定要刪除子分類「${sub.name}」嗎？`))return;
-    main.subs=main.subs.filter(s=>s.id!==subId);
-    if(state.activeSub===subId)state.activeSub=null;
-    renderCatMgrList();
-    toast("子分類已刪除");
-    return;
-  }
-  pendingCatDelete={kind:"sub",mainId,subId};
-  document.getElementById("catDeleteTitle").textContent=`刪除子分類「${sub.name}」`;
-  document.getElementById("catDeleteDesc").textContent=`此子分類底下還有 ${affected.length} 件商品，請選擇要如何處理這些商品：`;
-  const targetSel=document.getElementById("catDelTarget");
-  const otherSubs=(main.subs||[]).filter(s=>s.id!==subId);
-  targetSel.innerHTML=`<option value="">（不指定子分類）</option>`+otherSubs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
-  document.getElementById("catDelMove").checked=true;
-  openModal("catDeleteModal");
-}
-function confirmCatDelete(){
-  if(!pendingCatDelete)return;
-  const action=document.querySelector('input[name="catDelAction"]:checked').value;
-  const targetId=document.getElementById("catDelTarget").value;
-  if(pendingCatDelete.kind==="main"){
-    const {mainId}=pendingCatDelete;
-    const affected=state.products.filter(p=>p.mainCat===mainId);
-    if(action==="move"){
-      if(!targetId){toast("請選擇要移動到的分類");return}
-      affected.forEach(p=>{p.mainCat=targetId;p.subCat=null});
-    }else{
-      affected.forEach(p=>{p.status="archived"});
-    }
-    state.catalog=state.catalog.filter(c=>c.id!==mainId);
-    if(state.activeMain===mainId){state.activeMain="全部";state.activeSub=null}
-  }else{
-    const {mainId,subId}=pendingCatDelete;
-    const main=getMainCat(mainId);
-    const affected=state.products.filter(p=>p.mainCat===mainId&&p.subCat===subId);
-    if(action==="move"){
-      affected.forEach(p=>{p.subCat=targetId||null});
-    }else{
-      affected.forEach(p=>{p.status="archived"});
-    }
-    if(main)main.subs=main.subs.filter(s=>s.id!==subId);
-    if(state.activeSub===subId)state.activeSub=null;
-  }
-  pendingCatDelete=null;
-  closeModal("catDeleteModal");
-  renderCatMgrList();
-  renderCategories();
-  renderProducts();
-  saveAll();
-  toast("分類已刪除，商品已處理完成");
-}
-function renderCatMgrList(){
-  const wrap=document.getElementById("catmgrList");
-  if(!wrap)return;
-  wrap.innerHTML="";
-  state.catalog.forEach((cat,mIdx)=>{
-    const row=document.createElement("div");
-    row.className="catmgr-main-row";
-    const top=document.createElement("div");
-    top.className="catmgr-row-top";
-    top.innerHTML=`
-      <button class="catmgr-icon-btn" title="上移" ${mIdx===0?"disabled":""}>▲</button>
-      <button class="catmgr-icon-btn" title="下移" ${mIdx===state.catalog.length-1?"disabled":""}>▼</button>
-      <input type="text" value="${escapeHTML(cat.name)}">
-      <button class="catmgr-icon-btn${cat.hidden?" on":""}" title="${cat.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${cat.hidden?"🙈":"👁"}</button>
-      <button class="catmgr-icon-btn danger" title="刪除主分類">🗑</button>
-    `;
-    const [upBtn,downBtn,nameInput,hideBtn,delBtn]=top.children;
-    upBtn.onclick=()=>moveMainCategory(cat.id,-1);
-    downBtn.onclick=()=>moveMainCategory(cat.id,1);
-    nameInput.addEventListener("input",()=>renameMainCategory(cat.id,nameInput.value));
-    hideBtn.onclick=()=>toggleMainHidden(cat.id);
-    delBtn.onclick=()=>deleteMainCategoryRequest(cat.id);
-    row.appendChild(top);
-    const subsWrap=document.createElement("div");
-    subsWrap.className="catmgr-subs";
-    (cat.subs||[]).forEach((sub,sIdx)=>{
-      const subRow=document.createElement("div");
-      subRow.className="catmgr-sub-row";
-      subRow.innerHTML=`
-        <button class="catmgr-icon-btn" title="上移" ${sIdx===0?"disabled":""}>▲</button>
-        <button class="catmgr-icon-btn" title="下移" ${sIdx===cat.subs.length-1?"disabled":""}>▼</button>
-        <input type="text" value="${escapeHTML(sub.name)}">
-        <button class="catmgr-icon-btn${sub.hidden?" on":""}" title="${sub.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${sub.hidden?"🙈":"👁"}</button>
-        <button class="catmgr-icon-btn danger" title="刪除子分類">🗑</button>
-      `;
-      const [sUp,sDown,sName,sHide,sDel]=subRow.children;
-      sUp.onclick=()=>moveSubCategory(cat.id,sub.id,-1);
-      sDown.onclick=()=>moveSubCategory(cat.id,sub.id,1);
-      sName.addEventListener("input",()=>renameSubCategory(cat.id,sub.id,sName.value));
-      sHide.onclick=()=>toggleSubHidden(cat.id,sub.id);
-      sDel.onclick=()=>deleteSubCategoryRequest(cat.id,sub.id);
-      subsWrap.appendChild(subRow);
-    });
-    const addSubBtn=document.createElement("button");
-    addSubBtn.className="catmgr-add-sub";
-    addSubBtn.textContent="＋ 新增子分類";
-    addSubBtn.onclick=()=>addSubCategoryInline(cat.id);
-    subsWrap.appendChild(addSubBtn);
-    row.appendChild(subsWrap);
-    wrap.appendChild(row);
-  });
-}
-function renderCatSelect(){
-  const main=document.getElementById("pMainCat");
-  if(!main)return;
-  main.innerHTML=state.catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
-  updateSubSelect();
-}
-function updateSubSelect(){
-  const mainId=document.getElementById("pMainCat").value;
-  const sub=document.getElementById("pSubCat");
-  const wrap=document.getElementById("pSubCatWrap");
-  const main=getMainCat(mainId);
-  if(main?.subs?.length){
-    sub.innerHTML=main.subs.map(s=>`<option value="${escapeHTML(s.id)}">${escapeHTML(s.name)}</option>`).join("");
-    wrap.style.display="block";
-  }else{
-    sub.innerHTML="";
-    wrap.style.display="none";
-  }
-}
-
 function handleSearchInput(){
   const prev=searchQuery;
   searchQuery=document.getElementById("productSearch").value;
@@ -2033,20 +1499,20 @@ function clearSearch(){
   document.getElementById("searchClearBtn").style.display="none";
   renderProducts();
 }
+function toggleMobileNav(force){
+  const menu=document.getElementById("navLinksMobile");
+  const btn=document.getElementById("navHamburger");
+  const open=typeof force==="boolean"?force:!menu.classList.contains("open");
+  menu.classList.toggle("open",open);
+  btn.setAttribute("aria-expanded",String(open));
+}
 function renderProducts(){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
-  let list;
-  if(editMode&&showArchivedOnly){
-    list=state.products.filter(p=>p.status==="archived");
-  }else{
-    list=state.products.filter(p=>editMode?true:p.status!=="archived");
-    if(quickCatMode){
-      if(document.getElementById("quickCatOnlyUncat")?.checked)list=list.filter(p=>!p.mainCat);
-    }else if(state.activeMain!=="全部"){
-      list=list.filter(p=>p.mainCat===state.activeMain);
-      if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
-    }
+  let list=state.products.filter(p=>p.status!=="archived");
+  if(state.activeMain!=="全部"){
+    list=list.filter(p=>p.mainCat===state.activeMain);
+    if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
   }
   const q=searchQuery.trim().toLowerCase();
   if(q)list=list.filter(p=>{
@@ -2055,29 +1521,16 @@ function renderProducts(){
     return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
   });
   list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
-  const canReorder=editMode&&!quickCatMode&&!showArchivedOnly&&state.activeMain==="全部"&&!q;
-  const addBtn2=document.getElementById("archivedToggleBtn");
-  if(addBtn2)addBtn2.textContent=showArchivedOnly?"返回商品列表":"查看封存商品";
   if(!list.length){
     const empty=document.createElement("div");
     empty.style.cssText="grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--soft)";
-    empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`:(showArchivedOnly?"目前沒有封存商品":"此分類尚無商品");
+    empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`:"此分類尚無商品";
     grid.appendChild(empty);
-    if(!editMode||!showArchivedOnly){
-      // 繼續往下加「新增商品」卡片
-    }
   }
   list.forEach(product=>{
-    const isArchived=product.status==="archived";
     const photos=(product.photos||[]).filter(Boolean);
     const card=document.createElement("article");
-    card.className="product-card"+(isArchived?" is-archived":"");
-    if(isArchived){
-      const badge=document.createElement("span");
-      badge.className="archived-badge";
-      badge.textContent="已封存";
-      card.appendChild(badge);
-    }
+    card.className="product-card";
     const wrap=document.createElement("div");
     wrap.className="product-img-wrap";
     const fav=document.createElement("button");
@@ -2141,77 +1594,14 @@ function renderProducts(){
     info.innerHTML=`
       <div class="product-name">${escapeHTML(product.name)}</div>
       <div class="product-size">${escapeHTML(getSizeSummary(product))}</div>
+      ${product.price?`<div class="product-price">${escapeHTML(formatPrice(product.price))}</div>`:""}
     `;
     card.appendChild(info);
-    const controls=document.createElement("div");
-    controls.className="card-edit-controls";
-    if(isArchived){
-      controls.innerHTML=`<button class="btn-restore-card" title="還原" onclick="event.stopPropagation();restoreProduct('${product.id}')">還</button><button class="btn-del-card" title="永久刪除" onclick="event.stopPropagation();permanentlyDeleteProduct('${product.id}')">刪</button>`;
-    }else{
-      controls.innerHTML=`<button class="btn-edit-card" title="編輯" onclick="event.stopPropagation();openProductModal('${product.id}')">編</button><button class="btn-del-card" title="封存" onclick="event.stopPropagation();archiveProduct('${product.id}')">封</button>`;
-    }
-    card.appendChild(controls);
-    if(quickCatMode){
-      const check=document.createElement("div");
-      check.className="quickcat-check"+(quickCatSelected.has(product.id)?" checked":"");
-      check.textContent=quickCatSelected.has(product.id)?"✓":"";
-      card.appendChild(check);
-    }
-    card.addEventListener("click",()=>{
-      if(quickCatMode){toggleQuickCatSelect(product.id);return}
-      if(!editMode)openProductDetail(product.id);
-    });
-    if(canReorder){
-      card.classList.add("reorderable");
-      card.draggable=true;
-      card.addEventListener("dragstart",e=>{
-        dragProductId=product.id;
-        card.classList.add("dragging");
-        e.dataTransfer.effectAllowed="move";
-      });
-      card.addEventListener("dragend",()=>{
-        card.classList.remove("dragging");
-        grid.querySelectorAll(".product-card").forEach(c=>c.classList.remove("drag-over"));
-      });
-      card.addEventListener("dragover",e=>{
-        e.preventDefault();
-        e.dataTransfer.dropEffect="move";
-        if(dragProductId!==product.id)card.classList.add("drag-over");
-      });
-      card.addEventListener("dragleave",()=>card.classList.remove("drag-over"));
-      card.addEventListener("drop",e=>{
-        e.preventDefault();
-        card.classList.remove("drag-over");
-        if(!dragProductId||dragProductId===product.id)return;
-        reorderProduct(dragProductId,product.id);
-      });
-    }
+    card.addEventListener("click",()=>openProductDetail(product.id));
     grid.appendChild(card);
   });
-  if(!(editMode&&showArchivedOnly)){
-    const add=document.createElement("button");
-    add.className="add-product-card";
-    add.innerHTML='<svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg><span>新增商品</span>';
-    add.onclick=()=>openProductModal(null);
-    grid.appendChild(add);
-  }
 }
-function reorderProduct(srcId,targetId){
-  const srcIdx=state.products.findIndex(p=>p.id===srcId);
-  if(srcIdx===-1)return;
-  const [moved]=state.products.splice(srcIdx,1);
-  const targetIdx=state.products.findIndex(p=>p.id===targetId);
-  state.products.splice(targetIdx===-1?state.products.length:targetIdx,0,moved);
-  state.products.forEach((p,i)=>p.sortOrder=i);
-  dragProductId=null;
-  renderProducts();
-  saveAll();
-  toast("商品順序已更新");
-}
-function toggleArchivedView(){
-  showArchivedOnly=!showArchivedOnly;
-  renderProducts();
-}
+const FAVORITES_KEY="xintong_favorites_v1";
 function placeholderMarkup(text){
   return `<div class="placeholder"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><div>${escapeHTML(text)}</div></div></div>`;
 }
@@ -2219,41 +1609,6 @@ function showBrokenImage(wrap,img){
   img.style.display="none";
   if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片無法載入<br><small>請確認 Drive 已公開分享</small></div></div>`);
 }
-function archiveProduct(id){
-  const p=state.products.find(p=>p.id===id);
-  if(!p)return;
-  if(!confirm(`確定要封存「${p.name}」嗎？封存後顧客端不會顯示，但可以隨時還原。`))return;
-  p.status="archived";
-  renderCategories();
-  renderProducts();
-  renderFavorites();
-  saveAll();
-  toast("商品已封存");
-}
-function restoreProduct(id){
-  const p=state.products.find(p=>p.id===id);
-  if(!p)return;
-  p.status="active";
-  renderCategories();
-  renderProducts();
-  renderFavorites();
-  saveAll();
-  toast("商品已還原");
-}
-function permanentlyDeleteProduct(id){
-  const p=state.products.find(p=>p.id===id);
-  if(!p)return;
-  if(!confirm(`此操作無法復原，確定要永久刪除「${p.name}」嗎？`))return;
-  state.products=state.products.filter(p=>p.id!==id);
-  state.favorites=state.favorites.filter(favId=>favId!==id);
-  saveFavoritesLocal();
-  renderCategories();
-  renderProducts();
-  renderFavorites();
-  saveAll();
-  toast("商品已永久刪除");
-}
-const FAVORITES_KEY="xintong_favorites_v1";
 function loadFavoritesLocal(){
   try{const s=localStorage.getItem(FAVORITES_KEY);return s?JSON.parse(s):[]}catch(e){return []}
 }
@@ -2303,412 +1658,6 @@ function renderFavorites(){
     item.querySelector("button").onclick=()=>toggleFavorite(product.id);
     list.appendChild(item);
   });
-}
-
-function setUploadMethod(method,el){
-  uploadMethod=method;
-  document.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
-  el.classList.add("active");
-  document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
-  document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
-  renderPhotoSlots();
-}
-function renderPhotoSlots(){
-  const container=document.getElementById("photoSlots");
-  container.innerHTML="";
-  let dragSrcIdx=null;
-  for(let i=0;i<MAX_PHOTOS;i++){
-    const src=workingPhotos[i];
-    const slot=document.createElement("div");
-    slot.className="photo-slot"+(src?" has-img":"");
-    slot.dataset.idx=i;
-    if(src){
-      const img=document.createElement("img");
-      img.className="slot-img";
-      img.src=normalizePhotoUrl(src);
-      img.alt="";
-      slot.appendChild(img);
-
-      // 拖曳排序
-      slot.draggable=true;
-      slot.addEventListener("dragstart",e=>{
-        dragSrcIdx=i;
-        slot.classList.add("dragging");
-        e.dataTransfer.effectAllowed="move";
-      });
-      slot.addEventListener("dragend",()=>{
-        slot.classList.remove("dragging");
-        container.querySelectorAll(".photo-slot").forEach(s=>s.classList.remove("drag-over"));
-      });
-      slot.addEventListener("dragover",e=>{
-        e.preventDefault();
-        e.dataTransfer.dropEffect="move";
-        if(dragSrcIdx!==i)slot.classList.add("drag-over");
-      });
-      slot.addEventListener("dragleave",()=>slot.classList.remove("drag-over"));
-      slot.addEventListener("drop",e=>{
-        e.preventDefault();
-        slot.classList.remove("drag-over");
-        if(dragSrcIdx===null||dragSrcIdx===i)return;
-        // 交換兩張圖片
-        const tmp=workingPhotos[dragSrcIdx];
-        workingPhotos[dragSrcIdx]=workingPhotos[i];
-        workingPhotos[i]=tmp;
-        dragSrcIdx=null;
-        renderPhotoSlots();
-        toast("圖片順序已更新");
-      });
-
-      // 拖曳提示標籤
-      const handle=document.createElement("div");
-      handle.className="slot-drag-handle";
-      handle.textContent="⠿ 拖曳排序";
-      handle.addEventListener("mousedown",e=>e.stopPropagation());
-      slot.appendChild(handle);
-    }
-    const num=document.createElement("span");
-    num.className="slot-num";
-    num.textContent=i+1;
-    slot.appendChild(num);
-    const overlay=document.createElement("div");
-    overlay.className="slot-overlay";
-    overlay.innerHTML=src?"更換":"新增";
-    if(uploadMethod==="file"){
-      const file=document.createElement("input");
-      file.type="file";
-      file.accept="image/*";
-      file.className="slot-file-input";
-      file.addEventListener("change",event=>handleSlotFile(i,event));
-      slot.appendChild(file);
-    }else{
-      overlay.style.cursor="pointer";
-      overlay.addEventListener("click",()=>promptUrlForSlot(i));
-    }
-    slot.appendChild(overlay);
-    if(src){
-      const del=document.createElement("button");
-      del.className="slot-del";
-      del.textContent="×";
-      del.addEventListener("click",event=>{
-        event.stopPropagation();
-        workingPhotos[i]="";
-        const filled=workingPhotos.filter(Boolean);
-        workingPhotos=new Array(MAX_PHOTOS).fill("");
-        filled.forEach((photo,index)=>workingPhotos[index]=photo);
-        renderPhotoSlots();
-      });
-      slot.appendChild(del);
-    }
-    container.appendChild(slot);
-  }
-}
-function handleSlotFile(slotIdx,event){
-  const file=event.target.files[0];
-  if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    workingPhotos[slotIdx]=await resizeImageToUniform(e.target.result);
-    renderPhotoSlots();
-  };
-  reader.readAsDataURL(file);
-}
-async function promptUrlForSlot(slotIdx){
-  const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
-  const raw=document.getElementById(inputId).value.trim();
-  if(!raw){toast("請先在上方輸入連結");return}
-  workingPhotos[slotIdx]=await resizeImageToUniform(normalizePhotoUrl(raw));
-  renderPhotoSlots();
-  toast("圖片已設定");
-}
-async function addPhotoByUrl(){
-  const raw=document.getElementById("urlInput").value.trim();
-  if(!raw){toast("請輸入圖片網址");return}
-  await addWorkingPhoto(normalizePhotoUrl(raw));
-}
-async function addPhotoByGdrive(){
-  const raw=document.getElementById("gdriveInput").value.trim();
-  if(!raw){toast("請輸入 Google Drive 連結");return}
-  await addWorkingPhoto(convertGdriveUrl(raw));
-}
-async function addWorkingPhoto(url){
-  const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
-  if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
-  workingPhotos[empty]=await resizeImageToUniform(url);
-  renderPhotoSlots();
-  toast("圖片已新增");
-}
-function loadImage(src){
-  return new Promise((resolve,reject)=>{
-    const img=new Image();
-    img.crossOrigin="anonymous";
-    img.onload=()=>resolve(img);
-    img.onerror=reject;
-    img.src=src;
-  });
-}
-const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1500;
-function resizeImageToUniform(src){
-  return loadImage(src).then(img=>{
-    try{
-      const canvas=document.createElement("canvas");
-      canvas.width=PHOTO_TARGET_W;
-      canvas.height=PHOTO_TARGET_H;
-      const ctx=canvas.getContext("2d");
-      ctx.fillStyle="#fffaf3";
-      ctx.fillRect(0,0,PHOTO_TARGET_W,PHOTO_TARGET_H);
-      const scale=Math.min(PHOTO_TARGET_W/img.width,PHOTO_TARGET_H/img.height);
-      const w=img.width*scale,h=img.height*scale;
-      ctx.drawImage(img,(PHOTO_TARGET_W-w)/2,(PHOTO_TARGET_H-h)/2,w,h);
-      return canvas.toDataURL("image/jpeg",0.86);
-    }catch(e){
-      return src;
-    }
-  }).catch(()=>src);
-}
-const THUMB_W=480,THUMB_H=600;
-function resizeToThumb(src){
-  // 只給商品列表封面用的小尺寸版本，畫質跟原圖無關——原圖仍完整存在圖庫子文件裡，
-  // 點開商品/燈箱看到的還是未經過這層縮圖的原始照片。
-  return loadImage(src).then(img=>{
-    try{
-      const canvas=document.createElement("canvas");
-      canvas.width=THUMB_W;
-      canvas.height=THUMB_H;
-      const ctx=canvas.getContext("2d");
-      ctx.fillStyle="#fffaf3";
-      ctx.fillRect(0,0,THUMB_W,THUMB_H);
-      const scale=Math.min(THUMB_W/img.width,THUMB_H/img.height);
-      const w=img.width*scale,h=img.height*scale;
-      ctx.drawImage(img,(THUMB_W-w)/2,(THUMB_H-h)/2,w,h);
-      return canvas.toDataURL("image/jpeg",0.82);
-    }catch(e){
-      return src;
-    }
-  }).catch(()=>src);
-}
-function extractGdriveId(url){
-  const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
-  for(const pattern of patterns){
-    const match=String(url).match(pattern);
-    if(match)return match[1];
-  }
-  return null;
-}
-function convertGdriveUrl(url){
-  const id=extractGdriveId(url);
-  return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`:url;
-}
-function normalizePhotoUrl(url){
-  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
-}
-
-/* ── 商品說明簡易富文本編輯器（底線／文字大小／文字顏色／網底）─── */
-const rteSavedRange={};
-function rteInit(id){
-  const editor=document.getElementById(id);
-  if(!editor||editor.dataset.rteReady)return;
-  editor.dataset.rteReady="1";
-  const saveSel=()=>{
-    const sel=window.getSelection();
-    if(sel.rangeCount&&editor.contains(sel.anchorNode))rteSavedRange[id]=sel.getRangeAt(0).cloneRange();
-  };
-  editor.addEventListener("mouseup",saveSel);
-  editor.addEventListener("keyup",saveSel);
-  editor.addEventListener("keydown",e=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      document.execCommand("insertHTML",false,"<br>");
-    }
-  });
-  editor.addEventListener("paste",e=>{
-    e.preventDefault();
-    const text=(e.clipboardData||window.clipboardData).getData("text/plain");
-    const html=escapeHTML(text).replace(/\r\n|\r|\n/g,"<br>");
-    document.execCommand("insertHTML",false,html);
-  });
-}
-function rteApply(id,styleProp,value){
-  const editor=document.getElementById(id);
-  const range=rteSavedRange[id];
-  if(!editor||!range)return;
-  const sel=window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  if(sel.isCollapsed)return;
-  const span=document.createElement("span");
-  span.style[styleProp]=value;
-  try{
-    range.surroundContents(span);
-  }catch(e){
-    const contents=range.extractContents();
-    span.appendChild(contents);
-    range.insertNode(span);
-  }
-  sel.removeAllRanges();
-  editor.focus();
-}
-function rteClear(id){
-  const editor=document.getElementById(id);
-  const range=rteSavedRange[id];
-  if(!editor||!range)return;
-  const sel=window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-  if(sel.isCollapsed)return;
-  const text=range.toString();
-  range.deleteContents();
-  range.insertNode(document.createTextNode(text));
-  sel.removeAllRanges();
-  editor.focus();
-}
-
-function addSpecRow(part="",w="",d="",h=""){
-  workingSpecs.push({part,w,d,h});
-  renderSpecEditor();
-}
-function renderSpecEditor(){
-  const editor=document.getElementById("specEditor");
-  if(!editor)return;
-  editor.innerHTML="";
-  if(!workingSpecs.length){
-    workingSpecs=[
-      {part:"",w:"",d:"",h:""},
-      {part:"",w:"",d:"",h:""},
-      {part:"",w:"",d:"",h:""}
-    ];
-  }
-  const table=document.createElement("table");
-  table.className="spec-table";
-  table.innerHTML=`<thead><tr>
-    <th>部位</th><th>寬（W）</th><th>深（D）</th><th>高（H）</th><th></th>
-  </tr></thead>`;
-  const tbody=document.createElement("tbody");
-  workingSpecs.forEach((spec,index)=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
-      <td><input type="text" value="${escapeHTML(spec.part)}" placeholder="例：椅面"></td>
-      <td><input type="text" value="${escapeHTML(spec.w)}" placeholder="—"></td>
-      <td><input type="text" value="${escapeHTML(spec.d)}" placeholder="—"></td>
-      <td><input type="text" value="${escapeHTML(spec.h)}" placeholder="—"></td>
-      <td><button class="spec-del-btn" type="button">×</button></td>
-    `;
-    const [partInput,wInput,dInput,hInput]=tr.querySelectorAll("input");
-    partInput.style.textAlign="left";
-    partInput.addEventListener("input",()=>workingSpecs[index].part=partInput.value);
-    wInput.addEventListener("input",()=>workingSpecs[index].w=wInput.value);
-    dInput.addEventListener("input",()=>workingSpecs[index].d=dInput.value);
-    hInput.addEventListener("input",()=>workingSpecs[index].h=hInput.value);
-    tr.querySelector(".spec-del-btn").addEventListener("click",()=>{workingSpecs.splice(index,1);renderSpecEditor()});
-    tbody.appendChild(tr);
-  });
-  table.appendChild(tbody);
-  editor.appendChild(table);
-}
-function sanitizeRichText(html){
-  const div=document.createElement("div");
-  div.innerHTML=html;
-  div.querySelectorAll("script,iframe,object,embed,link,style").forEach(el=>el.remove());
-  div.querySelectorAll("*").forEach(el=>{
-    [...el.attributes].forEach(attr=>{
-      if(/^on/i.test(attr.name)||(attr.name==="style"&&/expression|javascript:/i.test(attr.value)))el.removeAttribute(attr.name);
-    });
-  });
-  return div.innerHTML;
-}
-async function openProductModal(id){
-  editingProductId=id;
-  workingPhotos=new Array(MAX_PHOTOS).fill("");
-  workingSpecs=[];
-  document.getElementById("productModalTitle").textContent=id?"編輯商品":"新增商品";
-  document.getElementById("urlInput").value="";
-  document.getElementById("gdriveInput").value="";
-  setUploadMethod("file",document.querySelector(".upload-method-btn"));
-  renderCatSelect();
-  rteInit("pDesc");
-  if(id){
-    const product=state.products.find(p=>p.id===id);
-    document.getElementById("pMainCat").value=product.mainCat;
-    updateSubSelect();
-    document.getElementById("pSubCat").value=product.subCat||"";
-    document.getElementById("pName").value=product.name;
-    document.getElementById("pSize").value=product.size;
-    document.getElementById("pWidth").value=product.dimensions?.width||"";
-    document.getElementById("pDepth").value=product.dimensions?.depth||"";
-    document.getElementById("pHeight").value=product.dimensions?.height||"";
-    workingSpecs=(product.specs||[]).map(spec=>{
-      // 相容舊格式 {label,value} → 新格式 {part,w,d,h}
-      if("part" in spec)return {...spec};
-      return {part:spec.label||"",w:spec.value||"",d:"",h:""};
-    });
-    document.getElementById("pDesc").innerHTML=product.desc||"";
-    let cover=(product.photos||[]).filter(Boolean);
-    // 商品文件的封面只是縮圖，編輯時一律要換成 gallery 子文件裡的原始畫質照片，
-    // 不然沒改照片、只改文字存檔的話，封面會被縮圖版本永久取代
-    const totalCount=product.photoCount??cover.length;
-    if(totalCount>0){
-      renderPhotoSlots();
-      openModal("productModal");
-      const full=await Storage.getGallery(id);
-      if(editingProductId!==id)return; // 使用者切換到別的商品了，不要覆蓋畫面
-      if(full.length)cover=full;
-    }
-    cover.slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
-  }else{
-    document.getElementById("pMainCat").value=state.catalog[0]?.id||"";
-    updateSubSelect();
-    ["pName","pSize","pWidth","pDepth","pHeight"].forEach(id=>document.getElementById(id).value="");
-    document.getElementById("pDesc").innerHTML="";
-  }
-  renderSpecEditor();
-  renderPhotoSlots();
-  openModal("productModal");
-}
-async function saveProduct(){
-  const name=document.getElementById("pName").value.trim();
-  const dimensions={
-    width:document.getElementById("pWidth").value.trim(),
-    depth:document.getElementById("pDepth").value.trim(),
-    height:document.getElementById("pHeight").value.trim()
-  };
-  const size=document.getElementById("pSize").value.trim()||getSizeSummary({dimensions,size:""});
-  if(!name){toast("請填寫商品名稱");return}
-  const fullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
-  const data={
-    mainCat:document.getElementById("pMainCat").value,
-    subCat:document.getElementById("pSubCat").value||null,
-    name,
-    size,
-    dimensions,
-    specs:workingSpecs.filter(spec=>spec.part||spec.w||spec.d||spec.h).map(spec=>({
-      part:(spec.part||"").trim(),
-      w:(spec.w||"").trim(),
-      d:(spec.d||"").trim(),
-      h:(spec.h||"").trim()
-    })),
-    desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim()),
-    // 商品文件只存封面照的縮圖版本，原始照片（含完整畫質封面）存在 gallery 子文件
-    photos:fullPhotos.length?[await resizeToThumb(fullPhotos[0])]:[],
-    photoCount:fullPhotos.length
-  };
-  let productId;
-  if(editingProductId){
-    const index=state.products.findIndex(p=>p.id===editingProductId);
-    productId=editingProductId;
-    state.products[index]={id:productId,sortOrder:state.products[index].sortOrder,...data};
-  }else{
-    productId=uid();
-    state.products.push({id:productId,sortOrder:nextSortOrder(),...data});
-  }
-  closeModal("productModal");
-  renderCategories();
-  renderProducts();
-  try{
-    await Storage.setGallery(productId,fullPhotos);
-  }catch(e){
-    console.warn("圖庫寫入失敗",e);
-  }
-  saveAll();
-  toast(editingProductId?"商品已更新":"商品已新增");
 }
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
@@ -2819,6 +1768,8 @@ function lbRender(){
     info.innerHTML=`
       <div class="lb-product-cat">${escapeHTML(cat)}</div>
       <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
+      ${lbProduct.price?`<div class="lb-product-price">${escapeHTML(formatPrice(lbProduct.price))}</div>`:""}
+      ${lineInquireBtnHtml(lbProduct)}
       <div class="lb-spec-title">基本尺寸</div>
       <div class="lb-spec-grid">
         <div class="lb-spec-box"><div class="lb-spec-label">寬 W</div><div class="lb-spec-value">${escapeHTML(withCm(d.width)||"—")}</div></div>
@@ -2829,6 +1780,16 @@ function lbRender(){
       ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
     `;
   }
+}
+function lineInquireBtnHtml(product){
+  const lineId=(state.contact?.line||"").trim();
+  if(!lineId)return "";
+  const msg=`您好，我想詢問這件商品：${product.name||""}`;
+  const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
+  return `<a class="lb-inquire-btn" href="${escapeHTML(url)}" target="_blank" rel="noopener">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    LINE 詢問這件商品
+  </a>`;
 }
 function lbNav(dir){
   if(!lbImages.length)return;
@@ -2892,99 +1853,30 @@ function renderContact(){
   document.getElementById("lineLink").href=c.lineUrl||"#";
   const icon=d=>`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${d}</svg>`;
   const items=[
-    {field:"addr",label:"地址",val:c.addr,icon:icon('<path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/>')},
-    {field:"phone",label:"電話",val:c.phone,icon:icon('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>')},
-    {field:"line",label:"LINE",val:c.line,icon:icon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>')},
-    {field:"hours",label:"營業時間",val:c.hours,icon:icon('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>')},
-    {field:"email",label:"電子郵件",val:c.email,icon:icon('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/>')}
+    {label:"地址",val:c.addr,icon:icon('<path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/>')},
+    {label:"電話",val:c.phone,icon:icon('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>')},
+    {label:"LINE",val:c.line,icon:icon('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>')},
+    {label:"營業時間",val:c.hours,icon:icon('<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>')},
+    {label:"電子郵件",val:c.email,icon:icon('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/>')}
   ];
-  document.getElementById("contactItems").innerHTML=items.map(item=>`<div class="contact-item"><div class="contact-icon">${item.icon}</div><div><div class="contact-item-label">${escapeHTML(item.label)}</div><div class="contact-item-val" data-contact-field="${item.field}" contenteditable="${editMode}">${escapeHTML(item.val||"-")}</div></div></div>`).join("");
-  document.querySelectorAll("[data-contact-field]").forEach(el=>{
-    el.addEventListener("blur",()=>{
-      state.contact[el.dataset.contactField]=el.textContent.trim();
-      saveAll();
-    });
-  });
-  syncEditableState();
-}
-function editContactInfo(){
-  const c=state.contact;
-  document.getElementById("cAddr").value=c.addr||"";
-  document.getElementById("cPhone").value=c.phone||"";
-  document.getElementById("cLine").value=c.line||"";
-  document.getElementById("cHours").value=c.hours||"";
-  document.getElementById("cEmail").value=c.email||"";
-  document.getElementById("cFb").value=c.fbUrl||"";
-  document.getElementById("cLineUrl").value=c.lineUrl||"";
-  openModal("contactModal");
-}
-function saveContactInfo(){
-  state.contact={
-    addr:document.getElementById("cAddr").value,
-    phone:document.getElementById("cPhone").value,
-    line:document.getElementById("cLine").value,
-    hours:document.getElementById("cHours").value,
-    email:document.getElementById("cEmail").value,
-    fbUrl:document.getElementById("cFb").value,
-    lineUrl:document.getElementById("cLineUrl").value
-  };
-  closeModal("contactModal");
-  renderContact();
-  saveAll();
-  toast("聯繫資訊已更新");
+  document.getElementById("contactItems").innerHTML=items.map(item=>`<div class="contact-item"><div class="contact-icon">${item.icon}</div><div><div class="contact-item-label">${escapeHTML(item.label)}</div><div class="contact-item-val">${escapeHTML(item.val||"-")}</div></div></div>`).join("");
 }
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});
 });
-document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
-document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
-document.querySelectorAll(".social-card").forEach(card=>{
-  card.addEventListener("click",event=>{
-    if(editMode){
-      event.preventDefault();
-      toast("編輯模式中：社群連結請到聯繫資訊修改");
-    }
-  });
-});
 
 /* ── 將函式掛到 window，讓 HTML onclick 可以呼叫（module 作用域限制）── */
 Object.assign(window,{
-  toggleEditMode,
-  verifyPassword,
-  openProductModal,
-  editContactInfo,
-  saveAll,
   toggleFavoritesPanel,
   closeLightbox,
   lbNav,
   closeModal,
   openModal,
-  addSpecRow,
-  setUploadMethod,
-  addPhotoByUrl,
-  addPhotoByGdrive,
-  rteApply,
-  rteClear,
-  saveProduct,
-  saveContactInfo,
-  updateSubSelect,
   toggleFavorite,
   openProductDetail,
-  openCategoryManage,
-  closeCategoryManage,
-  openBulkUploadModal,
-  setBulkMode,
-  toggleQuickCatMode,
-  updateQuickCatSubSelect,
-  applyQuickCat,
   handleSearchInput,
   clearSearch,
-  addMainCategoryInline,
-  confirmCatDelete,
-  toggleArchivedView,
-  archiveProduct,
-  restoreProduct,
-  permanentlyDeleteProduct,
+  toggleMobileNav,
 });
 /* ── 啟動：從 Firebase 載入資料 ────────────────────────────────── */
 (async()=>{

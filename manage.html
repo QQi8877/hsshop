@@ -1526,13 +1526,22 @@ tbodyEl.addEventListener("drop",async e=>{
   await reorderProductRow(srcId,targetId);
 });
 async function reorderProductRow(srcId,targetId){
-  const list=products.filter(p=>p.status!=="archived").sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  // 拖曳範圍要跟畫面上看到的一致：有選分類時只在該分類內重排，不動其他分類商品的順序
+  let list=products.slice();
+  if(catFilterMain){
+    list=list.filter(p=>p.mainCat===catFilterMain);
+    if(catFilterSub)list=list.filter(p=>p.subCat===catFilterSub);
+  }
+  list=list.filter(p=>p.status!=="archived").sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
   const srcIdx=list.findIndex(p=>p.id===srcId);
   const targetIdx=list.findIndex(p=>p.id===targetId);
   if(srcIdx<0||targetIdx<0)return;
+  // 重排後把「這個子集合原本占用的 sortOrder 數值」原地重新分配，
+  // 不會影響到子集合以外商品之間的相對順序
+  const orderSlots=list.map(p=>p.sortOrder??0);
   const [moved]=list.splice(srcIdx,1);
   list.splice(targetIdx,0,moved);
-  list.forEach((p,i)=>p.sortOrder=i);
+  list.forEach((p,i)=>p.sortOrder=orderSlots[i]);
   renderTable();
   try{
     const batch=writeBatch(db);
@@ -2261,7 +2270,7 @@ window.renderTable=function(){
     return;
   }
   // 拖曳排序只在「未篩選、依顯示順序排列」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂
-  const canReorder=sortKey==="order"&&!quickCatMode&&!q&&!catFilterMain&&currentFilter==="all";
+  const canReorder=sortKey==="order"&&!quickCatMode&&!q&&currentFilter==="all";
   tbody.innerHTML=list.map(p=>{
     const m=missingFlags(p);
     const photos=(p.photos||[]).filter(Boolean);

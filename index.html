@@ -1681,6 +1681,7 @@ function openProductDetail(id){
   document.body.classList.add("lightbox-open");
   lbRender();
   document.querySelector(".lb-close").focus();
+  history.replaceState(null,"",`#product-${id}`);
   // 商品文件的封面只是縮圖，燈箱一律要換成 gallery 子文件裡的原始畫質照片
   const totalCount=product.photoCount??cover.length;
   if(totalCount>0){
@@ -1700,6 +1701,7 @@ function closeLightbox(){
   resetZoom();
   if(lastFocusedElement instanceof HTMLElement)lastFocusedElement.focus();
   lastFocusedElement=null;
+  if(location.hash.startsWith("#product-"))history.replaceState(null,"",location.pathname+location.search);
 }
 function lbRender(){
   const img=document.getElementById("lbImg");
@@ -1789,7 +1791,9 @@ function lbRender(){
 function lineInquireBtnHtml(product){
   const lineId=(state.contact?.line||"").trim();
   if(!lineId)return "";
-  const msg=`您好，我想詢問這件商品：${product.name||""}`;
+  // LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
+  const productUrl=`${location.origin}${location.pathname}#product-${product.id}`;
+  const msg=`您好，我想詢問這件商品：${product.name||""}\n${productUrl}`;
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
   return `<a class="lb-inquire-btn" href="${escapeHTML(url)}" target="_blank" rel="noopener">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
@@ -1923,6 +1927,12 @@ Object.assign(window,{
   renderProducts();
   renderContact();
   renderFavorites();
+  // 分享出去的商品連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應商品的燈箱
+  const hashMatch=location.hash.match(/^#product-(.+)$/);
+  if(hashMatch){
+    const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
+    if(sharedProduct)openProductDetail(sharedProduct.id);
+  }
 })();
 </script>
 </body>

@@ -964,8 +964,10 @@ body.quickcat-mode .favorite-btn{display:none}
   visibility:visible;
   transition:opacity .22s ease;
 }
-#lightbox .lb-layout{transform:scale(.97);transition:transform .22s ease}
-#lightbox.open .lb-layout{transform:scale(1)}
+@media(max-width:760px){
+  #lightbox .lb-layout{transform:scale(.97);transition:transform .22s ease}
+  #lightbox.open .lb-layout{transform:scale(1)}
+}
 .lb-close,.lb-arrow{
   position:fixed;
   z-index:3;
@@ -1128,7 +1130,8 @@ body.quickcat-mode .favorite-btn{display:none}
   .lb-stage,.lb-stage img{max-height:55svh}
   .lb-info{max-height:none;width:100%;overflow:visible}
   .lb-hint{display:none}
-  .lb-spec-grid{grid-template-columns:1fr 1fr}
+  .lb-spec-grid{grid-template-columns:repeat(3,1fr);gap:6px}
+  .lb-spec-box{padding:8px 6px}
   .favorites-fab{right:14px;bottom:14px}
 }
 @media(max-width:470px){
@@ -1354,10 +1357,12 @@ const DEFAULT_STATE={
   activeSub:null,
   favorites:[],
   products:[
-    {id:uid(),mainCat:"cat-bed",subCat:"sub-bed-frame",name:"日式低床架",size:"Queen 153 x 203 cm",desc:"低矮設計，原木質感，附床頭收納空間。",photos:[sampleSvg("日式低床架","#8a7b68","#5b5448"),sampleSvg("床架細節","#9b8a70","#6b5f50")]},
-    {id:uid(),mainCat:"cat-table",subCat:"sub-tbl-dining",name:"實木圓形餐桌",size:"直徑 120 x 高 75 cm",desc:"橡木實木材質，圓形設計增加圍桌親密感。",photos:[sampleSvg("實木圓形餐桌","#8f8a76","#a78350"),sampleSvg("桌面紋理","#a6967b","#7d6f58")]},
-    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-sofa",name:"北歐亞麻三人沙發",size:"寬 220 x 深 90 x 高 80 cm",desc:"天然亞麻布面，木腳設計，耐用舒適。",photos:[sampleSvg("北歐亞麻沙發","#87917b","#6f765f"),sampleSvg("沙發布面","#a5aa96","#7f886f")]},
-    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-tv",name:"木質電視矮櫃",size:"寬 160 x 深 40 x 高 50 cm",desc:"附線材收納孔與門片收納空間。",photos:[sampleSvg("木質電視矮櫃","#827765","#7d5f3f")]}
+    {id:uid(),mainCat:"cat-bed",subCat:"sub-bed-frame",name:"日式低床架",size:"Queen 153 x 203 cm",price:"12,800",desc:"低矮設計，原木質感，附床頭收納空間。",photos:[sampleSvg("日式低床架","#8a7b68","#5b5448"),sampleSvg("床架細節","#9b8a70","#6b5f50")]},
+    {id:uid(),mainCat:"cat-table",subCat:"sub-tbl-dining",name:"實木圓形餐桌",dimensions:{width:"120",depth:"120",height:"75"},desc:"橡木實木材質，圓形設計增加圍桌親密感。",photos:[sampleSvg("實木圓形餐桌","#8f8a76","#a78350"),sampleSvg("桌面紋理","#a6967b","#7d6f58")]},
+    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-sofa",name:"北歐亞麻三人沙發",size:"寬 220 x 深 90 x 高 80 cm",price:"18,000",desc:"天然亞麻布面，木腳設計，耐用舒適。",photos:[sampleSvg("北歐亞麻沙發","#87917b","#6f765f"),sampleSvg("沙發布面","#a5aa96","#7f886f")]},
+    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-tv",name:"木質電視矮櫃",size:"寬 160 x 深 40 x 高 50 cm",desc:"附線材收納孔與門片收納空間。",photos:[sampleSvg("木質電視矮櫃","#827765","#7d5f3f")]},
+    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-dining",name:"鋼管靠背餐椅",dimensions:{width:"45",depth:"52",height:"88"},price:"1,200",desc:"鋼管骨架穩重紮實，久坐不搖晃，皮革椅面好清潔耐髒污。",photos:[sampleSvg("鋼管靠背餐椅","#4a4640","#2f2c28"),sampleSvg("椅面細節","#5b5650","#3a3630"),sampleSvg("椅背角度","#4a4640","#2f2c28")]},
+    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-bookshelf",name:"五層置物架",size:"寬 80 x 深 35 x 高 180 cm",price:"2,400",desc:"五層收納空間實用，組裝簡易。",photos:[sampleSvg("五層置物架","#8f8371","#6f6558")]}
   ],
   contact:{
     addr:"台北市大安區 XX 路 XX 號",

@@ -1547,8 +1547,16 @@ document.querySelectorAll("thead th[data-sort]").forEach(th=>{
 
 window.renderTable=function(){
   const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
+
+  // 左邊分類是第一層篩選，上面的篩選籤（含數字）只在左邊選到的分類範圍內統計／篩選
+  let catFiltered=products.slice();
+  if(catFilterMain){
+    catFiltered=catFiltered.filter(p=>p.mainCat===catFilterMain);
+    if(catFilterSub)catFiltered=catFiltered.filter(p=>p.subCat===catFilterSub);
+  }
+
   const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,archived:0};
-  products.forEach(p=>{
+  catFiltered.forEach(p=>{
     if(p.status==="archived"){counts.archived++;return}
     counts.all++;
     const m=missingFlags(p);
@@ -1559,7 +1567,7 @@ window.renderTable=function(){
   });
   Object.keys(counts).forEach(k=>{const el=document.getElementById("fc-"+k);if(el)el.textContent=counts[k]});
 
-  let list=products.slice();
+  let list=catFiltered.slice();
   if(currentFilter==="archived"){
     list=list.filter(p=>p.status==="archived");
   }else{
@@ -1567,10 +1575,6 @@ window.renderTable=function(){
     if(currentFilter!=="all"){
       list=list.filter(p=>missingFlags(p)[currentFilter]);
     }
-  }
-  if(catFilterMain){
-    list=list.filter(p=>p.mainCat===catFilterMain);
-    if(catFilterSub)list=list.filter(p=>p.subCat===catFilterSub);
   }
   if(q){
     list=list.filter(p=>{

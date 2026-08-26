@@ -1486,6 +1486,7 @@ async function boot(){
   renderSidebar();
   renderTable();
 }
+window.boot=boot;
 
 function renderSidebar(){
   const activeProducts=products.filter(p=>p.status!=="archived");
@@ -1609,11 +1610,11 @@ window.renderTable=function(){
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
         <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
-        <td class="row-actions">
+        <td><div class="row-actions">
           ${p.status==="archived"
             ? `<button onclick="restoreProductRow('${p.id}')">還原</button><button class="danger" onclick="deleteProductRow('${p.id}')">刪除</button>`
             : `<button onclick="archiveProductRow('${p.id}')">封存</button>`}
-        </td>
+        </div></td>
       </tr>
     `;
   }).join("");

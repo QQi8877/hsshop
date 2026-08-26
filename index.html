@@ -1470,7 +1470,8 @@ function normalizeProduct(product){
   product.dimensions=product.dimensions||{width:"",depth:"",height:""};
   product.specs=Array.isArray(product.specs)?product.specs:[];
   product.status=product.status==="archived"?"archived":"active";
-  if(!product.specs.length&&product.size){
+  const hasDims=product.dimensions.width||product.dimensions.depth||product.dimensions.height;
+  if(!product.specs.length&&product.size&&!hasDims){
     product.specs=[{label:"尺寸備註",value:product.size}];
   }
   return product;

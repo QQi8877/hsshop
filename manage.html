@@ -241,6 +241,8 @@ tbody tr.is-archived{opacity:.55}
   display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:10px;text-align:center;
 }
 .cell-name{font-weight:500;color:var(--charcoal)}
+.cell-name-link{cursor:pointer}
+.cell-name-link:hover{color:var(--tan-dark);text-decoration:underline}
 .pill{
   display:inline-flex;
   align-items:center;
@@ -454,10 +456,10 @@ tbody tr.is-archived{opacity:.55}
 }
 .helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
 .dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.spec-editor{margin-top:8px;overflow-x:auto}
-.spec-table{width:100%;border-collapse:collapse;font-size:13px}
+.spec-editor{margin-top:8px}
+.spec-table{width:100%;min-width:0;border-collapse:collapse;font-size:13px;table-layout:fixed}
 .spec-table th{
-  padding:7px 10px;
+  padding:7px 6px;
   background:var(--cream);
   color:var(--muted);
   font-weight:500;
@@ -466,11 +468,18 @@ tbody tr.is-archived{opacity:.55}
   border:1px solid var(--line);
   text-align:center;
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
-.spec-table th:first-child{text-align:left;min-width:90px}
+.spec-table th:first-child{text-align:left}
+.spec-table th:nth-child(1),.spec-table td:nth-child(1){width:30%}
+.spec-table th:nth-child(2),.spec-table td:nth-child(2),
+.spec-table th:nth-child(3),.spec-table td:nth-child(3),
+.spec-table th:nth-child(4),.spec-table td:nth-child(4){width:20%}
+.spec-table th:nth-child(5),.spec-table td:nth-child(5){width:30px}
 .spec-table td{
   border:1px solid var(--line);
-  padding:4px 6px;
+  padding:4px 4px;
 }
 .spec-table td:first-child{padding:4px 8px}
 .spec-table input{
@@ -480,9 +489,8 @@ tbody tr.is-archived{opacity:.55}
   color:var(--ink);
   font-size:13px;
   text-align:center;
-  padding:3px 4px;
+  padding:3px 2px;
   outline:none;
-  min-width:52px;
 }
 .spec-table input:first-child,.spec-table td:first-child input{text-align:left}
 .spec-table input:focus{background:rgba(185,146,99,.1);border-radius:4px}
@@ -1584,7 +1592,7 @@ window.renderTable=function(){
       <tr class="${p.status==="archived"?"is-archived":""}">
         <td>${thumb}</td>
         <td>
-          <div class="cell-name">${escapeHTML(p.name||"（未命名）")}</div>
+          <div class="cell-name cell-name-link" onclick="openProductModal('${p.id}')">${escapeHTML(p.name||"（未命名）")}</div>
           ${dots}
         </td>
         <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':escapeHTML(categoryLabel(p))}</td>
@@ -1593,7 +1601,6 @@ window.renderTable=function(){
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
         <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
         <td class="row-actions">
-          <button onclick="openProductModal('${p.id}')">編輯</button>
           ${p.status==="archived"
             ? `<button onclick="restoreProductRow('${p.id}')">還原</button><button class="danger" onclick="deleteProductRow('${p.id}')">刪除</button>`
             : `<button onclick="archiveProductRow('${p.id}')">封存</button>`}

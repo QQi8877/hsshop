@@ -245,14 +245,14 @@ nav{
 .active .tab-count{background:rgba(255,255,255,.22)}
 .products-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(255px,1fr));
-  gap:24px;
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:16px;
   padding:0 38px;
 }
 .product-card{
   background:var(--paper);
   border:1px solid var(--line);
-  border-radius:8px;
+  border-radius:6px;
   overflow:hidden;
   position:relative;
   cursor:pointer;
@@ -276,7 +276,7 @@ nav{
   height:100%;
   object-fit:contain;
   object-position:center;
-  padding:14px;
+  padding:10px;
   box-sizing:border-box;
   transition:opacity .34s ease,transform .34s ease;
 }
@@ -288,17 +288,17 @@ nav{
 .img-count-badge,.img-zoom-hint{
   position:absolute;
   z-index:4;
-  bottom:10px;
+  bottom:8px;
   border-radius:999px;
   color:var(--white);
   background:rgba(43,39,34,.66);
   backdrop-filter:blur(6px);
 }
-.img-count-badge{left:10px;font-size:11px;padding:3px 9px}
+.img-count-badge{left:8px;font-size:10px;padding:2px 8px}
 .img-zoom-hint{
-  right:10px;
-  width:34px;
-  height:34px;
+  right:8px;
+  width:28px;
+  height:28px;
   display:grid;
   place-items:center;
   opacity:0;
@@ -315,23 +315,23 @@ nav{
   font-size:13px;
 }
 .placeholder svg{width:44px;height:44px;opacity:.52;margin-bottom:6px}
-.product-info{padding:17px 18px 19px}
+.product-info{padding:12px 13px 14px}
 .product-name{
   font-family:"Noto Serif TC",serif;
   color:var(--charcoal);
-  font-size:17px;
+  font-size:14.5px;
   font-weight:500;
-  margin-bottom:5px;
+  margin-bottom:3px;
 }
-.product-size{font-size:12px;color:var(--tan-dark);margin-bottom:6px}
-.product-price{font-size:15px;color:var(--charcoal);font-weight:600;margin-top:2px}
+.product-size{font-size:11px;color:var(--tan-dark);margin-bottom:4px}
+.product-price{font-size:13.5px;color:var(--charcoal);font-weight:600;margin-top:2px}
 .favorite-btn{
   position:absolute;
-  top:10px;
-  right:10px;
+  top:8px;
+  right:8px;
   z-index:6;
-  width:36px;
-  height:36px;
+  width:30px;
+  height:30px;
   border:0;
   border-radius:50%;
   display:grid;
@@ -339,7 +339,7 @@ nav{
   color:var(--white);
   background:rgba(43,39,34,.58);
   backdrop-filter:blur(6px);
-  font-size:19px;
+  font-size:16px;
   transition:transform .16s ease,background .16s ease,color .16s ease;
 }
 .favorite-btn:hover{transform:scale(1.06);background:rgba(43,39,34,.76)}
@@ -460,7 +460,7 @@ nav{
 .favorites-inquire-btn svg{flex-shrink:0}
 #contact{background:var(--charcoal);padding:70px 38px;text-align:center}
 .contact-inner{
-  max-width:600px;
+  max-width:1400px;
   margin:auto;
 }
 .contact-heading{
@@ -470,7 +470,16 @@ nav{
   font-weight:500;
 }
 .contact-sub{color:rgba(255,255,255,.48);font-size:13px;letter-spacing:.08em;margin:6px 0 32px}
-.contact-line{color:rgba(255,255,255,.82);font-size:14px;line-height:2.1}
+.contact-line{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  align-items:baseline;
+  gap:8px 0;
+  color:rgba(255,255,255,.82);
+  font-size:14px;
+}
+.contact-line .item{white-space:nowrap}
 .contact-line b{color:var(--tan);font-weight:500;letter-spacing:.04em;margin-right:6px}
 .contact-line .dot{color:rgba(255,255,255,.28);margin:0 14px;font-size:12px}
 .fb-icon{
@@ -762,11 +771,10 @@ footer{
   .nav-hamburger{display:flex}
   .hero-content{padding:58px 24px}
   .hero-title{font-size:34px}
-  .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:14px}
+  .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:10px}
   .categories-bar,.sub-categories-bar{padding-left:15px;padding-right:15px}
   #navSearchBar{width:100%}
   #contact{padding:54px 22px}
-  .contact-line .dot{display:block;height:0;margin:2px 0;opacity:0}
   footer{padding:20px 22px}
   .modal-scroll{padding:28px 20px}
   #lightbox{
@@ -1626,7 +1634,7 @@ function renderContact(){
     {label:"營業時間",val:c.hours},
     {label:"信箱",val:c.email}
   ].filter(item=>item.val);
-  document.getElementById("contactItems").innerHTML=items.map(item=>`<b>${escapeHTML(item.label)}</b>${escapeHTML(item.val)}`).join('<span class="dot">·</span>');
+  document.getElementById("contactItems").innerHTML=items.map(item=>`<span class="item"><b>${escapeHTML(item.label)}</b>${escapeHTML(item.val)}</span>`).join('<span class="dot">·</span>');
 }
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});

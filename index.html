@@ -929,7 +929,7 @@ footer{
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -945,7 +945,28 @@ const SITE_DOC="hsshop-10bd9";
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
 function galleryDocRef(id){return doc(db,"sitedata",SITE_DOC,"products",id,"gallery","full")}
+function wishlistDocRef(code){return doc(db,"sitedata",SITE_DOC,"wishlists",code)}
+const WISHLIST_TTL_MS=30*24*60*60*1000; // 心願清單短碼超過 30 天視為過期
 const Storage={
+  // 心願清單打包連結：把收藏的商品 id 存成一筆短碼文件，網址只要帶短碼，
+  // 不管收藏幾件商品，連結長度都固定很短。
+  async createWishlist(ids){
+    const code=Math.random().toString(36).slice(2,8);
+    await setDoc(wishlistDocRef(code),{ids,createdAt:Date.now()});
+    return code;
+  },
+  async getWishlist(code){
+    try{
+      const snap=await getDoc(wishlistDocRef(code));
+      if(!snap.exists())return null;
+      const data=snap.data();
+      if(!data.createdAt||Date.now()-data.createdAt>WISHLIST_TTL_MS)return null;
+      return Array.isArray(data.ids)?data.ids:null;
+    }catch(e){
+      console.warn("心願清單讀取失敗",e);
+      return null;
+    }
+  },
   // 商品各自存成一份文件（sitedata/{SITE_DOC}/products/{id}），避免全站塞進單一文件撞到
   // Firestore 每份文件 1MB 的上限（商品一多、照片一多很容易超過）。
   // catalog／contact／pageText 資料量小，仍合併存在主文件裡。
@@ -1500,21 +1521,33 @@ function lineInquireBtnHtml(product){
     LINE 詢問這件商品
   </a>`;
 }
-function inquireAllFavorites(){
+async function inquireAllFavorites(){
   const lineId=(state.contact?.line||"").trim();
   if(!lineId){toast("店家尚未設定 LINE");return}
   const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
   if(!products.length){toast("喜愛清單是空的");return}
-  // 一個連結打包整個收藏清單，賣家點開會看到清單裡所有商品，不用一個個點
-  const wishlistUrl=`${location.origin}${location.pathname}#wishlist=${products.map(p=>p.id).join(",")}`;
-  const msg=`您好，我想詢問以下收藏商品（共 ${products.length} 件）：\n${wishlistUrl}`;
+  const ids=products.map(p=>p.id);
+  // 先同步開一個空白分頁佔位，避免非同步等待期間被瀏覽器判定成彈窗封鎖
+  const win=window.open("","_blank","noopener");
+  let wishlistUrl;
+  try{
+    const code=await Storage.createWishlist(ids);
+    wishlistUrl=`${location.origin}${location.pathname}#w=${code}`;
+  }catch(e){
+    console.warn("心願清單短碼建立失敗，改用完整網址",e);
+    wishlistUrl=`${location.origin}${location.pathname}#wishlist=${ids.join(",")}`;
+  }
+  // 分隔線固定 10 個字元，不會因為太長在手機上被迫換行；下面留白給客人接著打字
+  const msg=`您好，我想詢問以下收藏商品（共 ${products.length} 件）：\n${wishlistUrl}\n——————————\n`;
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
-  window.open(url,"_blank","noopener");
+  if(win)win.location.href=url;else window.open(url,"_blank","noopener");
 }
-function renderSharedWishlist(ids){
+function renderSharedWishlist(ids,expired){
   const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
   const container=document.getElementById("wishlistItems");
-  if(!products.length){
+  if(expired){
+    container.innerHTML='<div class="favorites-empty">這個連結已經失效了（超過 30 天，或連結有誤）。</div>';
+  }else if(!products.length){
     container.innerHTML='<div class="favorites-empty">找不到這些商品，可能已下架。</div>';
   }else{
     container.innerHTML=products.map(p=>{
@@ -1664,11 +1697,16 @@ Object.assign(window,{
   renderFavorites();
   // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面
   const hashMatch=location.hash.match(/^#product-(.+)$/);
+  const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
   const wishlistMatch=location.hash.match(/^#wishlist=(.+)$/);
   if(hashMatch){
     const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
     if(sharedProduct)openProductDetail(sharedProduct.id);
+  }else if(wishlistCodeMatch){
+    const ids=await Storage.getWishlist(wishlistCodeMatch[1]);
+    renderSharedWishlist(ids||[],!ids);
   }else if(wishlistMatch){
+    // 舊格式的完整網址（短碼功能上線前分享出去的連結），繼續支援
     const ids=wishlistMatch[1].split(",").filter(Boolean);
     if(ids.length)renderSharedWishlist(ids);
   }

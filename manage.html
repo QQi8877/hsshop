@@ -885,6 +885,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <label>電子郵件</label><input type="text" id="cEmail">
     <label>Facebook 連結</label><input type="text" id="cFb" placeholder="https://facebook.com/...">
     <label>LINE 加好友連結</label><input type="text" id="cLineUrl" placeholder="https://line.me/...">
+    <label>Google 地圖連結</label><input type="text" id="cMapUrl" placeholder="https://maps.app.goo.gl/...">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
       <button class="btn-primary" onclick="saveContactManage()">儲存</button>
@@ -1282,6 +1283,7 @@ function openContactManage(){
   document.getElementById("cEmail").value=contact.email||"";
   document.getElementById("cFb").value=contact.fbUrl||"";
   document.getElementById("cLineUrl").value=contact.lineUrl||"";
+  document.getElementById("cMapUrl").value=contact.mapUrl||"";
   openModal("contactModal");
 }
 window.openContactManage=openContactManage;
@@ -1293,7 +1295,8 @@ async function saveContactManage(){
     hours:document.getElementById("cHours").value,
     email:document.getElementById("cEmail").value,
     fbUrl:document.getElementById("cFb").value,
-    lineUrl:document.getElementById("cLineUrl").value
+    lineUrl:document.getElementById("cLineUrl").value,
+    mapUrl:document.getElementById("cMapUrl").value
   };
   closeModal("contactModal");
   const ok=await saveMeta();

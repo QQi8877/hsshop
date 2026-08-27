@@ -349,27 +349,67 @@ nav{
   right:22px;
   bottom:22px;
   z-index:190;
-  min-width:56px;
-  height:48px;
+  width:52px;
+  height:52px;
   border:0;
-  border-radius:999px;
-  padding:0 16px;
+  border-radius:50%;
   background:var(--charcoal);
   color:var(--white);
-  display:flex;
-  align-items:center;
-  gap:8px;
+  display:grid;
+  place-items:center;
+  font-size:22px;
   box-shadow:0 14px 34px rgba(0,0,0,.24);
+  transition:transform .16s ease;
 }
+.favorites-fab:hover{transform:scale(1.06)}
 .favorites-count{
+  position:absolute;
+  top:-3px;
+  right:-3px;
   min-width:20px;
   height:20px;
+  padding:0 4px;
   display:grid;
   place-items:center;
   border-radius:999px;
   background:var(--tan);
-  font-size:12px;
+  color:var(--charcoal);
+  font-size:11px;
+  font-weight:600;
+  box-shadow:0 2px 6px rgba(0,0,0,.22);
 }
+.line-fab{
+  position:fixed;
+  right:22px;
+  bottom:86px;
+  z-index:190;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:#06c755;
+  color:#fff;
+  display:grid;
+  place-items:center;
+  box-shadow:0 14px 34px rgba(0,0,0,.24);
+  transition:transform .16s ease;
+}
+.line-fab:hover{transform:scale(1.06)}
+.map-fab{
+  position:fixed;
+  right:22px;
+  bottom:150px;
+  z-index:190;
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:var(--tan-dark);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  box-shadow:0 14px 34px rgba(0,0,0,.24);
+  transition:transform .16s ease;
+}
+.map-fab:hover{transform:scale(1.06)}
 .favorites-panel{
   position:fixed;
   top:0;
@@ -799,6 +839,8 @@ footer{
   .lb-spec-grid{grid-template-columns:repeat(3,1fr);gap:6px}
   .lb-spec-box{padding:8px 6px}
   .favorites-fab{right:14px;bottom:14px}
+  .line-fab{right:14px;bottom:78px}
+  .map-fab{right:14px;bottom:142px}
 }
 @media(max-width:470px){
   .lb-arrow{display:none!important}
@@ -883,8 +925,14 @@ footer{
 </footer>
 
 <div class="toast" id="toast"></div>
-<button class="favorites-fab" onclick="toggleFavoritesPanel()">
-  <span>♡ 喜愛清單</span>
+<a class="map-fab" id="mapFab" href="#" target="_blank" rel="noopener" aria-label="Google 地圖">
+  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+</a>
+<a class="line-fab" id="lineFab" href="#" target="_blank" rel="noopener" aria-label="LINE 加好友">
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 3a9 9 0 0 0-9 9c0 4.6 3.4 8.4 7.8 9 .3 0 .5.2.6.5l.4 1.8c.1.5.7.6 1 .2.6-.8 1.6-2.1 2.1-2.8A9 9 0 0 0 21 12a9 9 0 0 0-9-9z"/></svg>
+</a>
+<button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
+  ♡
   <span class="favorites-count" id="favoritesCount">0</span>
 </button>
 <aside class="favorites-panel" id="favoritesPanel">
@@ -1631,6 +1679,8 @@ function renderContact(){
   const c=state.contact;
   document.getElementById("fbLink").href=c.fbUrl||"#";
   document.getElementById("lineLink").href=c.lineUrl||"#";
+  document.getElementById("lineFab").href=c.lineUrl||"#";
+  document.getElementById("mapFab").href=c.addr?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.addr)}`:"#";
   const icon=d=>`<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8">${d}</svg>`;
   const items=[
     {label:"地址",val:c.addr,icon:icon('<path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/>')},

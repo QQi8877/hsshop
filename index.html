@@ -951,7 +951,7 @@ const Storage={
   // 心願清單打包連結：把收藏的商品 id 存成一筆短碼文件，網址只要帶短碼，
   // 不管收藏幾件商品，連結長度都固定很短。
   async createWishlist(ids){
-    const code=Math.random().toString(36).slice(2,8);
+    const code=uid().slice(0,6);
     await setDoc(wishlistDocRef(code),{ids,createdAt:Date.now()});
     return code;
   },
@@ -1542,12 +1542,15 @@ async function inquireAllFavorites(){
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
   if(win)win.location.href=url;else window.open(url,"_blank","noopener");
 }
-function renderSharedWishlist(ids,expired){
-  const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
+function renderSharedWishlist(ids){
   const container=document.getElementById("wishlistItems");
-  if(expired){
+  if(!ids){
     container.innerHTML='<div class="favorites-empty">這個連結已經失效了（超過 30 天，或連結有誤）。</div>';
-  }else if(!products.length){
+    openModal("wishlistModal");
+    return;
+  }
+  const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
+  if(!products.length){
     container.innerHTML='<div class="favorites-empty">找不到這些商品，可能已下架。</div>';
   }else{
     container.innerHTML=products.map(p=>{
@@ -1657,6 +1660,11 @@ Object.assign(window,{
 });
 /* ── 啟動：從 Firebase 載入資料 ────────────────────────────────── */
 (async()=>{
+  // 分享出去的心願清單短碼（例如 LINE 詢問訊息裡帶的網址）提早發出讀取請求，
+  // 跟商品資料一起平行載入，不用等商品載完才開始等心願清單。
+  const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
+  const wishlistPromise=wishlistCodeMatch?Storage.getWishlist(wishlistCodeMatch[1]):null;
+
   const loadingEl=document.createElement("div");
   loadingEl.id="site-loading";
   loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:'Noto Serif TC',serif;color:var(--muted)";
@@ -1697,14 +1705,12 @@ Object.assign(window,{
   renderFavorites();
   // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面
   const hashMatch=location.hash.match(/^#product-(.+)$/);
-  const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
   const wishlistMatch=location.hash.match(/^#wishlist=(.+)$/);
   if(hashMatch){
     const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
     if(sharedProduct)openProductDetail(sharedProduct.id);
   }else if(wishlistCodeMatch){
-    const ids=await Storage.getWishlist(wishlistCodeMatch[1]);
-    renderSharedWishlist(ids||[],!ids);
+    renderSharedWishlist(await wishlistPromise);
   }else if(wishlistMatch){
     // 舊格式的完整網址（短碼功能上線前分享出去的連結），繼續支援
     const ids=wishlistMatch[1].split(",").filter(Boolean);

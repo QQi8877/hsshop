@@ -219,11 +219,13 @@ nav{
   padding:0 2px;
 }
 .search-clear:hover{color:var(--danger)}
+.cat-layout{padding:0 38px}
+.cat-sidebar{display:none}
 .categories-bar,.sub-categories-bar{
   display:flex;
   flex-wrap:wrap;
   gap:8px;
-  padding:0 38px 18px;
+  padding:0 0 18px;
 }
 .sub-categories-bar{display:none;padding-bottom:24px}
 .cat-tab,.sub-tab{
@@ -247,7 +249,49 @@ nav{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
   gap:16px;
-  padding:0 38px;
+}
+@media(min-width:761px){
+  .cat-layout{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
+  .cat-main{min-width:0}
+  .categories-bar,.sub-categories-bar{display:none!important}
+  .cat-sidebar{display:grid;gap:2px;position:sticky;top:20px}
+  .cat-side-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:10px 12px;
+    border-radius:7px;
+    border:0;
+    background:transparent;
+    color:var(--muted);
+    font-size:14px;
+    text-align:left;
+    cursor:pointer;
+  }
+  .cat-side-btn:hover{background:rgba(185,146,99,.1);color:var(--tan-dark)}
+  .cat-side-btn.active{background:var(--charcoal);color:var(--white);font-weight:500}
+  .cat-side-count{font-size:11px;color:var(--soft);background:rgba(0,0,0,.06);border-radius:999px;padding:1px 7px}
+  .cat-side-btn.active .cat-side-count{background:rgba(255,255,255,.16);color:rgba(255,255,255,.85)}
+  .cat-subs{display:grid;gap:1px;margin:2px 0 8px;padding-left:14px;border-left:2px solid var(--line)}
+  .cat-sub-btn{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:6px;
+    border:0;
+    background:transparent;
+    color:var(--soft);
+    font-size:12.5px;
+    text-align:left;
+    cursor:pointer;
+  }
+  .cat-sub-btn:hover{color:var(--tan-dark)}
+  .cat-sub-btn.active{color:var(--sage);font-weight:600}
 }
 .product-card{
   background:var(--paper);
@@ -771,8 +815,8 @@ footer{
   .nav-hamburger{display:flex}
   .hero-content{padding:58px 24px}
   .hero-title{font-size:34px}
-  .products-grid{grid-template-columns:1fr 1fr;padding:0 15px;gap:10px}
-  .categories-bar,.sub-categories-bar{padding-left:15px;padding-right:15px}
+  .products-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .cat-layout{padding:0 15px}
   #navSearchBar{width:100%}
   #contact{padding:54px 22px}
   footer{padding:20px 22px}
@@ -846,9 +890,14 @@ footer{
     <h2 class="section-title" data-page-field="productsTitle">精選商品</h2>
     <div class="section-line"></div>
   </div>
-  <div class="categories-bar" id="categoriesBar"></div>
-  <div class="sub-categories-bar" id="subCategoriesBar"></div>
-  <div class="products-grid" id="productsGrid"></div>
+  <div class="cat-layout">
+    <nav class="cat-sidebar" id="catSidebar"></nav>
+    <div class="cat-main">
+      <div class="categories-bar" id="categoriesBar"></div>
+      <div class="sub-categories-bar" id="subCategoriesBar"></div>
+      <div class="products-grid" id="productsGrid"></div>
+    </div>
+  </div>
 </section>
 
 <section id="contact">
@@ -1141,18 +1190,46 @@ function subCount(mainId,subId){return activeProducts().filter(p=>p.mainCat===ma
 function renderCategories(){
   const bar=document.getElementById("categoriesBar");
   const subBar=document.getElementById("subCategoriesBar");
+  const sidebar=document.getElementById("catSidebar");
   bar.querySelectorAll(".cat-tab").forEach(el=>el.remove());
+  sidebar.innerHTML="";
   ["全部",...state.catalog.map(c=>c.id)].forEach(id=>{
     const count=id==="全部"?activeProducts().length:mainCount(id);
     const cat=id==="全部"?null:getMainCat(id);
     const isHidden=!!cat?.hidden;
     // 隱藏「已標記隱藏」或「0 項商品」的主分類
     if(id!=="全部"&&(isHidden||count===0))return;
+    const isActive=state.activeMain===id;
     const btn=document.createElement("button");
-    btn.className="cat-tab"+(state.activeMain===id?" active":"");
+    btn.className="cat-tab"+(isActive?" active":"");
     btn.innerHTML=`${escapeHTML(getMainName(id))}<span class="tab-count">${count}</span>`;
     btn.onclick=()=>{state.activeMain=id;state.activeSub=null;renderCategories();renderProducts()};
     bar.appendChild(btn);
+    // 桌面版左側分類清單：跟水平分類列共用同一組資料與點擊邏輯
+    const sideBtn=document.createElement("button");
+    sideBtn.className="cat-side-btn"+(isActive?" active":"");
+    sideBtn.innerHTML=`${escapeHTML(getMainName(id))}<span class="cat-side-count">${count}</span>`;
+    sideBtn.onclick=btn.onclick;
+    sidebar.appendChild(sideBtn);
+    if(isActive&&cat?.subs?.length){
+      const subsWrap=document.createElement("div");
+      subsWrap.className="cat-subs";
+      const allSub=document.createElement("button");
+      allSub.className="cat-sub-btn"+(state.activeSub===null?" active":"");
+      allSub.innerHTML=`全部<span class="cat-side-count">${count}</span>`;
+      allSub.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
+      subsWrap.appendChild(allSub);
+      cat.subs.forEach(sub=>{
+        const n=subCount(id,sub.id);
+        if(sub.hidden||n===0)return;
+        const subBtn=document.createElement("button");
+        subBtn.className="cat-sub-btn"+(state.activeSub===sub.id?" active":"");
+        subBtn.innerHTML=`${escapeHTML(sub.name)}<span class="cat-side-count">${n}</span>`;
+        subBtn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
+        subsWrap.appendChild(subBtn);
+      });
+      sidebar.appendChild(subsWrap);
+    }
   });
   subBar.innerHTML="";
   if(state.activeMain!=="全部"){
@@ -1366,6 +1443,7 @@ function renderFavorites(){
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
 let lbTouchStartX=0,lbTouchStartY=0;
+let lbZoomArmed=true,lbZoomArmTimer=null;
 function openProductDetail(id){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
@@ -1579,9 +1657,16 @@ function resetZoom(){
   lbScale=1;
   document.getElementById("lbImg").style.transformOrigin="center center";
   applyZoom();
+  // 剛開燈箱／切換照片時，滑鼠常常還停在剛剛點擊的位置（就已經在圖片範圍內），
+  // 這時任何一點點滑鼠晃動都會被誤判成「移進圖片」而自動放大。短暫延遲後才
+  // 允許滑過放大，確保放大一定是使用者之後真的動了滑鼠才觸發。
+  lbZoomArmed=false;
+  clearTimeout(lbZoomArmTimer);
+  lbZoomArmTimer=setTimeout(()=>{lbZoomArmed=true},350);
 }
 const lbStage=document.getElementById("lbStage");
 lbStage.addEventListener("mouseenter",()=>{
+  if(!lbZoomArmed)return;
   lbScale=2.35;
   applyZoom();
 });
@@ -1590,7 +1675,7 @@ lbStage.addEventListener("mousemove",event=>{
   const x=((event.clientX-rect.left)/rect.width*100).toFixed(2);
   const y=((event.clientY-rect.top)/rect.height*100).toFixed(2);
   document.getElementById("lbImg").style.transformOrigin=`${x}% ${y}%`;
-  if(lbScale===1){
+  if(lbZoomArmed&&lbScale===1){
     lbScale=2.35;
     applyZoom();
   }

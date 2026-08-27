@@ -908,10 +908,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <label>商品區標題</label><input type="text" id="ptProductsTitle" placeholder="精選商品">
     <label>聯繫區標題</label><input type="text" id="ptContactTitle" placeholder="聯繫我們">
     <label>聯繫區英文小標</label><input type="text" id="ptContactSub" placeholder="CONTACT US">
-    <label>Facebook 卡片標題</label><input type="text" id="ptFbTitle" placeholder="Facebook">
-    <label>Facebook 卡片說明</label><input type="text" id="ptFbText" placeholder="查看新品與門市消息">
-    <label>LINE 卡片標題</label><input type="text" id="ptLineTitle" placeholder="LINE">
-    <label>LINE 卡片說明</label><input type="text" id="ptLineText" placeholder="加入好友快速詢問">
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('pageTextModal')">取消</button>
       <button class="btn-primary" onclick="savePageTextManage()">儲存</button>
@@ -1305,11 +1301,10 @@ async function saveContactManage(){
 window.saveContactManage=saveContactManage;
 
 /* ── 頁面文字（首頁標語等） ───────────────────────────────────── */
-const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","productsTitle","contactTitle","contactSub","fbTitle","fbText","lineTitle","lineText"];
+const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","productsTitle","contactTitle","contactSub"];
 const PAGE_TEXT_INPUT_IDS={
   heroTag:"ptHeroTag",heroTitle:"ptHeroTitle",heroSub:"ptHeroSub",heroDesc:"ptHeroDesc",heroCta:"ptHeroCta",
-  productsTitle:"ptProductsTitle",contactTitle:"ptContactTitle",contactSub:"ptContactSub",
-  fbTitle:"ptFbTitle",fbText:"ptFbText",lineTitle:"ptLineTitle",lineText:"ptLineText"
+  productsTitle:"ptProductsTitle",contactTitle:"ptContactTitle",contactSub:"ptContactSub"
 };
 function openPageTextManage(){
   PAGE_TEXT_FIELDS.forEach(key=>{

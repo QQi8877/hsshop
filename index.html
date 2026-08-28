@@ -1210,11 +1210,6 @@ function renderCategories(){
     if(isActive&&cat?.subs?.length){
       const subsWrap=document.createElement("div");
       subsWrap.className="cat-subs";
-      const allSub=document.createElement("button");
-      allSub.className="cat-sub-btn"+(state.activeSub===null?" active":"");
-      allSub.innerHTML="全部";
-      allSub.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
-      subsWrap.appendChild(allSub);
       cat.subs.forEach(sub=>{
         const n=subCount(id,sub.id);
         if(sub.hidden||n===0)return;

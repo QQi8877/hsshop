@@ -243,8 +243,6 @@ nav{
 .cat-tab:hover,.sub-tab:hover{border-color:var(--tan);color:var(--tan-dark)}
 .cat-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
 .sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
-.tab-count{font-size:11px;background:rgba(0,0,0,.08);border-radius:999px;padding:0 7px}
-.active .tab-count{background:rgba(255,255,255,.22)}
 .products-grid{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
@@ -254,7 +252,7 @@ nav{
   .cat-layout{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
   .cat-main{min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
-  .cat-sidebar{display:grid;gap:2px;position:sticky;top:20px}
+  .cat-sidebar{display:flex;flex-direction:column;gap:2px;position:sticky;top:20px}
   .cat-side-btn{
     width:100%;
     display:flex;
@@ -272,9 +270,7 @@ nav{
   }
   .cat-side-btn:hover{background:rgba(185,146,99,.1);color:var(--tan-dark)}
   .cat-side-btn.active{background:var(--charcoal);color:var(--white);font-weight:500}
-  .cat-side-count{font-size:11px;color:var(--soft);background:rgba(0,0,0,.06);border-radius:999px;padding:1px 7px}
-  .cat-side-btn.active .cat-side-count{background:rgba(255,255,255,.16);color:rgba(255,255,255,.85)}
-  .cat-subs{display:grid;gap:1px;margin:2px 0 8px;padding-left:14px;border-left:2px solid var(--line)}
+  .cat-subs{display:flex;flex-direction:column;gap:1px;margin:2px 0 8px;padding-left:14px;border-left:2px solid var(--line)}
   .cat-sub-btn{
     width:100%;
     display:flex;
@@ -891,7 +887,7 @@ footer{
     <div class="section-line"></div>
   </div>
   <div class="cat-layout">
-    <nav class="cat-sidebar" id="catSidebar"></nav>
+    <aside class="cat-sidebar" id="catSidebar"></aside>
     <div class="cat-main">
       <div class="categories-bar" id="categoriesBar"></div>
       <div class="sub-categories-bar" id="subCategoriesBar"></div>
@@ -1202,13 +1198,13 @@ function renderCategories(){
     const isActive=state.activeMain===id;
     const btn=document.createElement("button");
     btn.className="cat-tab"+(isActive?" active":"");
-    btn.innerHTML=`${escapeHTML(getMainName(id))}<span class="tab-count">${count}</span>`;
+    btn.innerHTML=escapeHTML(getMainName(id));
     btn.onclick=()=>{state.activeMain=id;state.activeSub=null;renderCategories();renderProducts()};
     bar.appendChild(btn);
     // 桌面版左側分類清單：跟水平分類列共用同一組資料與點擊邏輯
     const sideBtn=document.createElement("button");
     sideBtn.className="cat-side-btn"+(isActive?" active":"");
-    sideBtn.innerHTML=`${escapeHTML(getMainName(id))}<span class="cat-side-count">${count}</span>`;
+    sideBtn.innerHTML=escapeHTML(getMainName(id));
     sideBtn.onclick=btn.onclick;
     sidebar.appendChild(sideBtn);
     if(isActive&&cat?.subs?.length){
@@ -1216,7 +1212,7 @@ function renderCategories(){
       subsWrap.className="cat-subs";
       const allSub=document.createElement("button");
       allSub.className="cat-sub-btn"+(state.activeSub===null?" active":"");
-      allSub.innerHTML=`全部<span class="cat-side-count">${count}</span>`;
+      allSub.innerHTML="全部";
       allSub.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
       subsWrap.appendChild(allSub);
       cat.subs.forEach(sub=>{
@@ -1224,7 +1220,7 @@ function renderCategories(){
         if(sub.hidden||n===0)return;
         const subBtn=document.createElement("button");
         subBtn.className="cat-sub-btn"+(state.activeSub===sub.id?" active":"");
-        subBtn.innerHTML=`${escapeHTML(sub.name)}<span class="cat-side-count">${n}</span>`;
+        subBtn.innerHTML=escapeHTML(sub.name);
         subBtn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
         subsWrap.appendChild(subBtn);
       });
@@ -1237,7 +1233,7 @@ function renderCategories(){
     if(main?.subs?.length){
       const all=document.createElement("button");
       all.className="sub-tab"+(state.activeSub===null?" active":"");
-      all.innerHTML=`全部 <span class="tab-count">${mainCount(state.activeMain)}</span>`;
+      all.innerHTML="全部";
       all.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
       subBar.appendChild(all);
       main.subs.forEach(sub=>{
@@ -1246,7 +1242,7 @@ function renderCategories(){
         if(isHidden||count===0)return;
         const btn=document.createElement("button");
         btn.className="sub-tab"+(state.activeSub===sub.id?" active":"");
-        btn.innerHTML=`${escapeHTML(sub.name)}<span class="tab-count">${count}</span>`;
+        btn.innerHTML=escapeHTML(sub.name);
         btn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
         subBar.appendChild(btn);
       });

@@ -1229,11 +1229,6 @@ function renderCategories(){
   if(state.activeMain!=="全部"){
     const main=getMainCat(state.activeMain);
     if(main?.subs?.length){
-      const all=document.createElement("button");
-      all.className="sub-tab"+(state.activeSub===null?" active":"");
-      all.innerHTML="全部";
-      all.onclick=()=>{state.activeSub=null;renderCategories();renderProducts()};
-      subBar.appendChild(all);
       main.subs.forEach(sub=>{
         const count=subCount(state.activeMain,sub.id);
         const isHidden=!!sub.hidden;

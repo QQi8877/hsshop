@@ -367,7 +367,7 @@ nav{
   margin-bottom:3px;
 }
 .product-size{font-size:11px;color:var(--tan-dark);margin-bottom:4px}
-.product-price{font-size:13.5px;color:var(--charcoal);font-weight:600;margin-top:2px}
+.product-price{font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:2px;text-align:right}
 .favorite-btn{
   position:absolute;
   top:8px;
@@ -1432,7 +1432,6 @@ function renderFavorites(){
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
 let lbTouchStartX=0,lbTouchStartY=0;
-let lbZoomArmed=true,lbZoomArmTimer=null;
 function openProductDetail(id){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
@@ -1646,28 +1645,16 @@ function resetZoom(){
   lbScale=1;
   document.getElementById("lbImg").style.transformOrigin="center center";
   applyZoom();
-  // 剛開燈箱／切換照片時，滑鼠常常還停在剛剛點擊的位置（就已經在圖片範圍內），
-  // 這時任何一點點滑鼠晃動都會被誤判成「移進圖片」而自動放大。短暫延遲後才
-  // 允許滑過放大，確保放大一定是使用者之後真的動了滑鼠才觸發。
-  lbZoomArmed=false;
-  clearTimeout(lbZoomArmTimer);
-  lbZoomArmTimer=setTimeout(()=>{lbZoomArmed=true},350);
 }
 const lbStage=document.getElementById("lbStage");
-lbStage.addEventListener("mouseenter",()=>{
-  if(!lbZoomArmed)return;
-  lbScale=2.35;
-  applyZoom();
-});
+// 滑過去不會自動放大（會被誤判成使用者從點擊當下就停在圖片上），
+// 一定要滾輪滾動才會放大，確保放大永遠是使用者主動觸發的。
 lbStage.addEventListener("mousemove",event=>{
+  if(lbScale===1)return;
   const rect=lbStage.getBoundingClientRect();
   const x=((event.clientX-rect.left)/rect.width*100).toFixed(2);
   const y=((event.clientY-rect.top)/rect.height*100).toFixed(2);
   document.getElementById("lbImg").style.transformOrigin=`${x}% ${y}%`;
-  if(lbZoomArmed&&lbScale===1){
-    lbScale=2.35;
-    applyZoom();
-  }
 });
 lbStage.addEventListener("mouseleave",resetZoom);
 lbStage.addEventListener("wheel",event=>{

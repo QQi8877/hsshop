@@ -247,6 +247,8 @@ nav{
   display:grid;
   grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
   gap:0;
+  border-top:1px solid var(--line);
+  border-left:1px solid var(--line);
 }
 @media(min-width:761px){
   .cat-layout{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
@@ -291,7 +293,8 @@ nav{
 }
 .product-card{
   background:var(--paper);
-  border:1px solid var(--line);
+  border-right:1px solid var(--line);
+  border-bottom:1px solid var(--line);
   border-radius:0;
   overflow:hidden;
   position:relative;

@@ -2179,7 +2179,7 @@ function renderSidebar(){
       const subCount=activeProducts.filter(p=>p.mainCat===c.id&&p.subCat===s.id).length;
       const active=catFilterMain===c.id&&catFilterSub===s.id;
       return `<div class="cat-sub-row ${active?"active":""}" onclick="setCatFilter('${c.id}','${s.id}')">
-        <span>${escapeHTML(s.name)}</span><span class="cat-count">${subCount}</span>
+        <span>${escapeHTML(s.name)}</span>${subCount?`<span class="cat-count">${subCount}</span>`:""}
       </div>`;
     }).join("");
     return `

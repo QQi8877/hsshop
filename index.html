@@ -252,19 +252,15 @@ nav{
 }
 @media(min-width:761px){
   .cat-layout{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
-  /* 側欄改用 position:fixed 後不再參與 grid 排版，.cat-main 要明確指定放第二欄，
-     不然 grid 自動排版會把它擠去第一欄、跟固定側欄疊在一起 */
-  .cat-main{min-width:0;grid-column:2}
+  .cat-main{min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
     display:flex;
     flex-direction:column;
     gap:2px;
-    position:fixed;
-    z-index:10;
-    left:38px;
+    position:sticky;
+    /* 62px 是頂部固定導覽列的高度；top 值要蓋過它，不然側欄吸頂時上緣會被導覽列擋住 */
     top:90px;
-    width:220px;
     max-height:calc(100vh - 110px);
     overflow-y:auto;
   }

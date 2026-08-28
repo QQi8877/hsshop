@@ -227,6 +227,7 @@ thead th{
 }
 thead th:hover{color:var(--tan-dark)}
 thead th.sorted{color:var(--tan-dark)}
+thead th.drag-active{background:var(--tan);color:#fff}
 tbody td{
   padding:9px 12px;
   border-bottom:1px solid var(--line);
@@ -989,6 +990,7 @@ let sortKey="name";
 let sortDir=1;
 let catFilterMain=null;
 let catFilterSub=null;
+let dragModeEnabled=false;
 let quickCatMode=false;
 let quickCatSelected=new Set();
 let openMainCats=new Set();
@@ -1529,7 +1531,9 @@ async function reorderProductRow(srcId,targetId){
     list=list.filter(p=>p.mainCat===catFilterMain);
     if(catFilterSub)list=list.filter(p=>p.subCat===catFilterSub);
   }
-  list=list.filter(p=>p.status!=="archived").sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  // 依照畫面上目前的排序欄位排列（可能是名稱、分類…等，不一定是自訂順序），
+  // 這樣拖曳的來源／目標位置才會跟使用者看到的列一致
+  list=list.filter(p=>p.status!=="archived").sort((a,b)=>sortDir*sortCompare(a,b));
   const srcIdx=list.findIndex(p=>p.id===srcId);
   const targetIdx=list.findIndex(p=>p.id===targetId);
   if(srcIdx<0||targetIdx<0)return;
@@ -2099,7 +2103,6 @@ window.saveProduct=async function(){
 window.archiveProductRow=async function(id){
   const p=products.find(p=>p.id===id);
   if(!p)return;
-  if(!confirm(`確定要封存「${p.name}」嗎？封存後前台不會顯示，可以隨時還原。`))return;
   p.status="archived";
   await setDoc(doc(productsCol(),id),p);
   toast("已封存");
@@ -2211,6 +2214,13 @@ window.setFilter=function(f){
 document.querySelectorAll("thead th[data-sort]").forEach(th=>{
   th.addEventListener("click",()=>{
     const key=th.dataset.sort;
+    if(key==="order"){
+      // 這顆是「開放拖曳排序」的開關，只切換拖曳模式，不改變目前的排序欄位／順序
+      dragModeEnabled=!dragModeEnabled;
+      th.classList.toggle("drag-active",dragModeEnabled);
+      renderTable();
+      return;
+    }
     if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=1}
     document.querySelectorAll("thead th").forEach(t=>t.classList.remove("sorted"));
     th.classList.add("sorted");
@@ -2266,8 +2276,9 @@ window.renderTable=function(){
     tbody.innerHTML='<tr><td colspan="11" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
-  // 拖曳排序只在「未篩選、依顯示順序排列」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂
-  const canReorder=sortKey==="order"&&!quickCatMode&&!q&&currentFilter==="all";
+  // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂；
+  // 拖曳模式本身用獨立的開關（⠿ 按鈕）控制，不綁定目前的排序欄位
+  const canReorder=dragModeEnabled&&!quickCatMode&&!q&&currentFilter==="all";
   tbody.innerHTML=list.map(p=>{
     const m=missingFlags(p);
     const photos=(p.photos||[]).filter(Boolean);

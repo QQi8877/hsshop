@@ -672,9 +672,10 @@ body.quickcat-mode .quickcat-bar{display:flex}
 <div id="gate">
   <div class="gate-card">
     <h1>🔒 商品管理後台</h1>
-    <p>請輸入管理員密碼</p>
-    <div class="gate-error" id="gateError">密碼錯誤，請再試一次</div>
-    <input type="password" id="gatePw" placeholder="••••••••" onkeydown="if(event.key==='Enter')unlockGate()">
+    <p>請輸入管理員帳號密碼</p>
+    <div class="gate-error" id="gateError">登入失敗，請確認帳號密碼是否正確</div>
+    <input type="email" id="gateEmail" placeholder="管理員 Email" autocomplete="username">
+    <input type="password" id="gatePw" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')unlockGate()">
     <button onclick="unlockGate()">進入後台</button>
   </div>
 </div>
@@ -692,6 +693,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
       <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
+      <button class="add-btn" onclick="logoutGate()" style="background:transparent;border:1px solid var(--line);color:var(--muted)">登出</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
     </div>
   </header>
@@ -945,6 +947,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 <script type="module">
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -958,23 +961,65 @@ const fbApp=initializeApp(firebaseConfig);
 const db=getFirestore(fbApp);
 const SITE_DOC="hsshop-10bd9";
 
-const ADMIN_HASH="fb2495b0307d8ea473eef24e55c4c6a4b264074ef206122f79631ad9940a73a8";
-async function sha256(str){
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+/* ── 管理員登入（Firebase Authentication）───────────────────────
+   用 try/catch 包起來：萬一 Authentication 服務端還沒設定好，
+   只會讓登入功能顯示錯誤訊息，不會讓整份後台程式當掉。 */
+let fbAuth=null,authInitError=null;
+try{
+  fbAuth=getAuth(fbApp);
+}catch(e){
+  authInitError=e;
+  console.error("Firebase Auth 初始化失敗",e);
 }
 window.unlockGate=async function(){
+  const errEl=document.getElementById("gateError");
+  errEl.style.display="none";
+  if(!fbAuth){
+    errEl.textContent="登入功能目前無法使用，請確認 Firebase Authentication 是否已啟用。";
+    errEl.style.display="block";
+    return;
+  }
+  const email=document.getElementById("gateEmail").value.trim();
   const pw=document.getElementById("gatePw").value;
-  const hash=await sha256(pw);
-  if(hash===ADMIN_HASH){
-    document.getElementById("gate").style.display="none";
-    document.getElementById("app").style.display="block";
-    boot();
-  }else{
-    document.getElementById("gateError").style.display="block";
+  if(!email||!pw){
+    errEl.textContent="請輸入 Email 與密碼";
+    errEl.style.display="block";
+    return;
+  }
+  try{
+    await signInWithEmailAndPassword(fbAuth,email,pw);
+    // 登入成功後的畫面切換交給 onAuthStateChanged 統一處理
+  }catch(e){
+    console.warn("登入失敗",e);
+    errEl.textContent="登入失敗，請確認帳號密碼是否正確";
+    errEl.style.display="block";
     document.getElementById("gatePw").select();
   }
 };
+window.logoutGate=function(){
+  if(fbAuth)signOut(fbAuth).catch(()=>{});
+};
+if(fbAuth){
+  onAuthStateChanged(fbAuth,user=>{
+    if(user){
+      document.getElementById("gate").style.display="none";
+      document.getElementById("app").style.display="block";
+      boot();
+    }else{
+      document.getElementById("gate").style.display="flex";
+      document.getElementById("app").style.display="none";
+    }
+  });
+}else{
+  // Auth 服務初始化失敗時，至少讓登入畫面顯示錯誤訊息，而不是整頁空白
+  document.addEventListener("DOMContentLoaded",()=>{
+    const errEl=document.getElementById("gateError");
+    if(errEl){
+      errEl.textContent="登入功能目前無法使用，請確認 Firebase Authentication 是否已啟用。";
+      errEl.style.display="block";
+    }
+  });
+}
 
 function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));

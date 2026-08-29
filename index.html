@@ -1645,8 +1645,14 @@ function resetZoom(){
   applyZoom();
 }
 const lbStage=document.getElementById("lbStage");
-// 滑過去不會自動放大（會被誤判成使用者從點擊當下就停在圖片上），
-// 一定要滾輪滾動才會放大，確保放大永遠是使用者主動觸發的。
+// 只有真正有滑鼠的桌面裝置才啟用「滑過去放大」；觸控裝置點擊時瀏覽器有時會
+// 補送 mouseenter/mousemove 事件，用 hover+pointer:fine 判斷可以避免手機誤觸放大。
+const lbHoverZoomEnabled=window.matchMedia("(hover:hover) and (pointer:fine)").matches;
+lbStage.addEventListener("mouseenter",()=>{
+  if(!lbHoverZoomEnabled)return;
+  lbScale=2.35;
+  applyZoom();
+});
 lbStage.addEventListener("mousemove",event=>{
   if(lbScale===1)return;
   const rect=lbStage.getBoundingClientRect();

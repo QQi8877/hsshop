@@ -115,16 +115,6 @@ nav{
 }
 .nav-links-mobile li:last-child a{border-bottom:0}
 .nav-links-mobile a:active{background:var(--cream)}
-.footer-edit-link{
-  border:0;
-  background:transparent;
-  color:rgba(255,255,255,.36);
-  font-size:11px;
-  letter-spacing:.06em;
-  padding:4px 2px;
-}
-.footer-edit-link:hover{color:rgba(255,255,255,.7)}
-.footer-edit-link.active{color:var(--tan)}
 #hero{
   margin-top:62px;
   min-height:520px;
@@ -328,7 +318,7 @@ nav{
   height:100%;
   object-fit:contain;
   object-position:center;
-  padding:10px;
+  padding:5px;
   box-sizing:border-box;
   transition:opacity .34s ease,transform .34s ease;
 }
@@ -367,7 +357,7 @@ nav{
   font-size:13px;
 }
 .placeholder svg{width:44px;height:44px;opacity:.52;margin-bottom:6px}
-.product-info{padding:6px 13px 8px}
+.product-info{padding:4px 13px 8px}
 .product-name{
   font-family:"Noto Serif TC",serif;
   color:var(--charcoal);
@@ -920,10 +910,7 @@ footer{
 </section>
 
 <footer>
-  <div style="display:flex;align-items:center;gap:14px">
-    <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
-    <a class="footer-edit-link" href="manage.html" target="_blank" rel="noopener">管理</a>
-  </div>
+  <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
   <div>© 2026 信通家俱行</div>
 </footer>
 
@@ -1279,16 +1266,18 @@ function renderProducts(){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
   let list=state.products.filter(p=>p.status!=="archived");
-  if(state.activeMain!=="全部"){
+  const q=searchQuery.trim().toLowerCase();
+  if(q){
+    // 搜尋要涵蓋全部商品、全部分類，不受目前選取的分類侷限
+    list=list.filter(p=>{
+      const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
+      const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
+      return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
+    });
+  }else if(state.activeMain!=="全部"){
     list=list.filter(p=>p.mainCat===state.activeMain);
     if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
   }
-  const q=searchQuery.trim().toLowerCase();
-  if(q)list=list.filter(p=>{
-    const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
-    const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
-    return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
-  });
   list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
   if(!list.length){
     const empty=document.createElement("div");

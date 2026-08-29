@@ -244,6 +244,7 @@ tbody tr.is-archived{opacity:.55}
 .cell-name{font-weight:500;color:var(--charcoal)}
 .cell-name-link{cursor:pointer}
 .cell-name-link:hover{color:var(--tan-dark);text-decoration:underline}
+.cell-subcat{padding-left:14px;font-size:12px;color:var(--soft);margin-top:2px}
 .pill{
   display:inline-flex;
   align-items:center;
@@ -2646,7 +2647,10 @@ window.renderTable=function(){
           <div class="cell-name cell-name-link" onclick="openProductModal('${p.id}')">${escapeHTML(p.name||"（未命名）")}</div>
           ${dots}
         </td>
-        <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':escapeHTML(categoryLabel(p))}</td>
+        <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':`
+          <div>${escapeHTML(getMainName(p.mainCat))}</div>
+          ${p.subCat?`<div class="cell-subcat">${escapeHTML(getSubName(p.mainCat,p.subCat))}</div>`:""}
+        `}</td>
         <td>${m.noSize?'<span class="pill pill-missing">缺尺寸</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${p.price?escapeHTML(p.price):'<span class="pill pill-missing">未填</span>'}</td>
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>

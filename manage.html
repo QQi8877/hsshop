@@ -376,6 +376,13 @@ body.quickcat-mode .quickcat-bar{display:flex}
   overflow-y:auto;
   padding:32px;
 }
+.csv-diff-table{width:100%;border-collapse:collapse;font-size:13px}
+.csv-diff-table th{text-align:left;padding:8px 12px;background:var(--cream);border-bottom:1px solid var(--line);position:sticky;top:0}
+.csv-diff-table td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.csv-diff-old{color:var(--soft);text-decoration:line-through}
+.csv-diff-new{color:var(--sage);font-weight:600}
+.csv-diff-skip-row{opacity:.55}
+.csv-diff-skip-tag{font-size:11px;color:var(--danger);background:rgba(184,66,54,.1);border-radius:999px;padding:2px 8px}
 .modal-title{
   font-family:"Noto Serif TC",serif;
   font-size:21px;
@@ -692,6 +699,9 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button class="add-btn" onclick="openPageTextManage()" style="background:var(--tan-dark)">📝 頁面文字</button>
       <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
       <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
+      <button class="add-btn" onclick="exportProductsCSV()" style="background:var(--tan-dark)">⬇ 匯出 CSV</button>
+      <button class="add-btn" onclick="document.getElementById('csvFileInput').click()" style="background:var(--tan-dark)">⬆ 匯入 CSV</button>
+      <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <button class="add-btn" onclick="logoutGate()" style="background:transparent;border:1px solid var(--line);color:var(--muted)">登出</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
@@ -892,6 +902,21 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('contactModal')">取消</button>
       <button class="btn-primary" onclick="saveContactManage()">儲存</button>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="csvImportModal">
+  <div class="modal" style="max-width:720px">
+    <button class="modal-close" onclick="closeModal('csvImportModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">確認匯入變更</div>
+    <p style="font-size:13px;color:var(--soft);margin:-6px 0 14px" id="csvImportSummary"></p>
+    <div id="csvImportPreview" style="max-height:50vh;overflow:auto;border:1px solid var(--line);border-radius:8px"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('csvImportModal')">取消</button>
+      <button class="btn-primary" id="csvImportConfirmBtn" onclick="confirmCSVImport()">確認套用變更</button>
     </div>
     </div>
   </div>
@@ -2253,6 +2278,285 @@ window.setCatFilter=function(mainId,subId){
 window.setFilter=function(f){
   currentFilter=f;
   document.querySelectorAll(".filter-chip").forEach(b=>b.classList.toggle("active",b.dataset.filter===f));
+  renderTable();
+};
+
+/* ── CSV 匯出／匯入（價格、尺寸、分類皆可批次編輯）────────────── */
+function getCurrentFilteredList(){
+  const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
+  let catFiltered=products.slice();
+  if(catFilterMain){
+    catFiltered=catFiltered.filter(p=>p.mainCat===catFilterMain);
+    if(catFilterSub)catFiltered=catFiltered.filter(p=>p.subCat===catFilterSub);
+  }
+  let list=catFiltered.slice();
+  if(currentFilter==="archived"){
+    list=list.filter(p=>p.status==="archived");
+  }else{
+    list=list.filter(p=>p.status!=="archived");
+    if(currentFilter!=="all"){
+      list=list.filter(p=>missingFlags(p)[currentFilter]);
+    }
+  }
+  if(q){
+    list=list.filter(p=>{
+      const cat=categoryLabel(p).toLowerCase();
+      const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
+      return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
+    });
+  }
+  list.sort((a,b)=>sortDir*sortCompare(a,b));
+  return list;
+}
+const CSV_HEADERS=["商品ID(請勿修改)","商品名稱(僅供參考,匯入不會套用)","主分類","子分類","寬cm","深cm","高cm","價格","狀態(上架或封存)"];
+function csvEscapeCell(val){
+  const s=String(val??"");
+  if(/[",\n]/.test(s))return `"${s.replace(/"/g,'""')}"`;
+  return s;
+}
+function csvParseLine(line){
+  // 簡易 CSV 解析：支援雙引號包住的欄位、欄位內逗號與跳脫的雙引號
+  const cells=[];
+  let cur="",inQuotes=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(inQuotes){
+      if(ch==='"'){
+        if(line[i+1]==='"'){cur+='"';i++}
+        else inQuotes=false;
+      }else cur+=ch;
+    }else{
+      if(ch==='"')inQuotes=true;
+      else if(ch===","){cells.push(cur);cur=""}
+      else cur+=ch;
+    }
+  }
+  cells.push(cur);
+  return cells;
+}
+function parseCSV(text){
+  // 拿掉 UTF-8 BOM，統一換行符號後逐行解析
+  const clean=text.replace(/^﻿/,"").replace(/\r\n/g,"\n").replace(/\r/g,"\n");
+  const lines=clean.split("\n").filter(l=>l.length>0);
+  if(!lines.length)return [];
+  const rows=[];
+  for(let i=1;i<lines.length;i++){ // 跳過表頭
+    const cells=csvParseLine(lines[i]);
+    if(!cells.some(c=>c.trim()!==""))continue; // 跳過空行
+    rows.push(cells);
+  }
+  return rows;
+}
+function findMainCatByName(name){
+  const target=(name||"").trim();
+  if(!target)return null;
+  return catalog.find(c=>(c.name||"").trim()===target)||null;
+}
+function findSubByName(mainCat,name){
+  const target=(name||"").trim();
+  if(!target||!mainCat)return null;
+  return (mainCat.subs||[]).find(s=>(s.name||"").trim()===target)||null;
+}
+window.exportProductsCSV=function(){
+  const list=getCurrentFilteredList();
+  if(!list.length){toast("目前沒有可匯出的商品");return}
+  const lines=[CSV_HEADERS.map(csvEscapeCell).join(",")];
+  list.forEach(p=>{
+    const d=p.dimensions||{};
+    const statusLabel=p.status==="archived"?"封存":"上架";
+    lines.push([
+      p.id,
+      p.name||"",
+      getMainName(p.mainCat),
+      getSubName(p.mainCat,p.subCat),
+      d.width||"",
+      d.depth||"",
+      d.height||"",
+      p.price||"",
+      statusLabel
+    ].map(csvEscapeCell).join(","));
+  });
+  const csvContent="﻿"+lines.join("\n"); // 加 BOM，Excel 開啟中文才不會亂碼
+  const blob=new Blob([csvContent],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  const ts=new Date().toISOString().slice(0,10);
+  a.href=url;
+  a.download=`hsshop-商品清單-${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast(`已匯出 ${list.length} 筆商品`);
+};
+
+let pendingCSVChanges=[];
+window.handleCSVImport=async function(event){
+  const file=event.target.files[0];
+  event.target.value=""; // 清空，方便下次選同一個檔案也會觸發 change
+  if(!file)return;
+  let text;
+  try{
+    text=await file.text();
+  }catch(e){
+    toast("讀取檔案失敗："+(e.message||String(e)));
+    return;
+  }
+  let rows;
+  try{
+    rows=parseCSV(text);
+  }catch(e){
+    toast("CSV 格式解析失敗，請確認是用「匯出 CSV」產生的檔案再編輯");
+    return;
+  }
+  if(!rows.length){toast("這個 CSV 檔案沒有資料列");return}
+
+  const changes=[];
+  const skipped=[];
+  rows.forEach(cells=>{
+    const [id,,mainCatCell,subCatCell,widthCell,depthCell,heightCell,priceCell,statusCell]=cells;
+    const product=products.find(p=>p.id===(id||"").trim());
+    if(!product){
+      skipped.push({id:(id||"").trim()||"(空白)",reason:"找不到對應的商品 ID"});
+      return;
+    }
+    const fieldChanges=[];
+
+    // 分類：主分類空白＝不變更；主分類有值但找不到對應分類＝略過分類變更並警告
+    let newMainCat=product.mainCat,newSubCat=product.subCat;
+    const mainCatName=(mainCatCell||"").trim();
+    if(mainCatName){
+      const matchedMain=findMainCatByName(mainCatName);
+      if(!matchedMain){
+        skipped.push({id:product.id,reason:`找不到主分類「${mainCatName}」，此列的分類變更已略過`});
+      }else{
+        newMainCat=matchedMain.id;
+        const subCatName=(subCatCell||"").trim();
+        if(subCatName){
+          const matchedSub=findSubByName(matchedMain,subCatName);
+          if(!matchedSub){
+            skipped.push({id:product.id,reason:`分類「${mainCatName}」底下找不到子分類「${subCatName}」，此列的子分類變更已略過`});
+            newSubCat=matchedMain.id===product.mainCat?product.subCat:null;
+          }else{
+            newSubCat=matchedSub.id;
+          }
+        }else{
+          newSubCat=null;
+        }
+      }
+    }
+    const mainCatChanged=newMainCat!==product.mainCat;
+    const subCatChanged=newSubCat!==(product.subCat||null);
+    if(mainCatChanged||subCatChanged){
+      fieldChanges.push({
+        key:"category",
+        label:"分類",
+        oldVal:categoryLabel(product),
+        newVal:[getMainName(newMainCat),newSubCat?getSubName(newMainCat,newSubCat):""].filter(Boolean).join(" / ")
+      });
+    }
+
+    // 尺寸：寬/深/高，空白視為清空該欄位
+    const d=product.dimensions||{};
+    const newWidth=(widthCell||"").trim();
+    const newDepth=(depthCell||"").trim();
+    const newHeight=(heightCell||"").trim();
+    const dimsChanged=newWidth!==(d.width||"")||newDepth!==(d.depth||"")||newHeight!==(d.height||"");
+    if(dimsChanged){
+      const oldSize=getSizeSummary(d,product.size);
+      const newSize=getSizeSummary({width:newWidth,depth:newDepth,height:newHeight},product.size);
+      fieldChanges.push({key:"dims",label:"尺寸",oldVal:oldSize,newVal:newSize});
+    }
+
+    // 價格
+    const newPrice=(priceCell||"").trim();
+    const priceChanged=newPrice!==(product.price||"");
+    if(priceChanged){
+      fieldChanges.push({key:"price",label:"價格",oldVal:product.price||"（空白）",newVal:newPrice||"（空白）"});
+    }
+
+    // 狀態
+    const statusText=(statusCell||"").trim();
+    let newStatus=product.status==="archived"?"archived":"active";
+    if(statusText==="封存")newStatus="archived";
+    else if(statusText==="上架")newStatus="active";
+    else if(statusText){
+      skipped.push({id:product.id,reason:`狀態欄位「${statusText}」看不懂，只接受「上架」或「封存」，此列的狀態變更已略過`});
+    }
+    const statusChanged=newStatus!==(product.status==="archived"?"archived":"active");
+    if(statusChanged){
+      fieldChanges.push({key:"status",label:"狀態",oldVal:product.status==="archived"?"封存":"上架",newVal:newStatus==="archived"?"封存":"上架"});
+    }
+
+    if(fieldChanges.length){
+      changes.push({
+        product,name:product.name||"（未命名）",fieldChanges,
+        newMainCat,newSubCat,mainCatChanged,subCatChanged,
+        newWidth,newDepth,newHeight,dimsChanged,
+        newPrice,priceChanged,
+        newStatus,statusChanged
+      });
+    }
+  });
+
+  pendingCSVChanges=changes;
+  renderCSVImportPreview(changes,skipped,rows.length);
+  openModal("csvImportModal");
+};
+function renderCSVImportPreview(changes,skipped,totalRows){
+  const summary=document.getElementById("csvImportSummary");
+  const preview=document.getElementById("csvImportPreview");
+  summary.textContent=`讀到 ${totalRows} 列，其中 ${changes.length} 筆有變更需要套用${skipped.length?`，${skipped.length} 項略過`:""}。請確認以下變更沒問題再套用。`;
+  if(!changes.length&&!skipped.length){
+    preview.innerHTML='<div style="padding:20px;color:var(--soft)">沒有偵測到任何變更。</div>';
+    document.getElementById("csvImportConfirmBtn").disabled=true;
+    return;
+  }
+  document.getElementById("csvImportConfirmBtn").disabled=changes.length===0;
+  let html='<table class="csv-diff-table"><thead><tr><th>商品</th><th>變更內容</th></tr></thead><tbody>';
+  changes.forEach(c=>{
+    const changeHtml=c.fieldChanges.map(fc=>
+      `<div><b>${escapeHTML(fc.label)}：</b><span class="csv-diff-old">${escapeHTML(fc.oldVal)}</span> → <span class="csv-diff-new">${escapeHTML(fc.newVal)}</span></div>`
+    ).join("");
+    html+=`<tr><td>${escapeHTML(c.name)}</td><td>${changeHtml}</td></tr>`;
+  });
+  skipped.forEach(s=>{
+    html+=`<tr class="csv-diff-skip-row"><td colspan="2"><span class="csv-diff-skip-tag">略過</span> ${escapeHTML(s.id)}：${escapeHTML(s.reason)}</td></tr>`;
+  });
+  html+="</tbody></table>";
+  preview.innerHTML=html;
+}
+window.confirmCSVImport=async function(){
+  if(!pendingCSVChanges.length){closeModal("csvImportModal");return}
+  const btn=document.getElementById("csvImportConfirmBtn");
+  btn.disabled=true;
+  btn.textContent="套用中…";
+  try{
+    const batch=writeBatch(db);
+    pendingCSVChanges.forEach(c=>{
+      if(c.mainCatChanged)c.product.mainCat=c.newMainCat;
+      if(c.subCatChanged)c.product.subCat=c.newSubCat;
+      if(c.dimsChanged){
+        c.product.dimensions=c.product.dimensions||{};
+        c.product.dimensions.width=c.newWidth;
+        c.product.dimensions.depth=c.newDepth;
+        c.product.dimensions.height=c.newHeight;
+      }
+      if(c.priceChanged)c.product.price=c.newPrice;
+      if(c.statusChanged)c.product.status=c.newStatus;
+      batch.set(doc(productsCol(),c.product.id),c.product);
+    });
+    await batch.commit();
+    toast(`已套用 ${pendingCSVChanges.length} 筆變更 ☁️`);
+  }catch(e){
+    toast("套用失敗："+(e.message||String(e)),4000);
+  }
+  btn.disabled=false;
+  btn.textContent="確認套用變更";
+  pendingCSVChanges=[];
+  closeModal("csvImportModal");
+  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  renderSidebar();
   renderTable();
 };
 

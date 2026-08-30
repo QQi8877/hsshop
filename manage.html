@@ -470,6 +470,9 @@ body.quickcat-mode .quickcat-bar{display:flex}
 }
 .rte-editor:focus{border-color:var(--tan)}
 .rte-editor:empty:before{content:attr(data-placeholder);color:var(--soft)}
+.rte-editor ul{margin:4px 0;padding-left:22px;list-style:disc}
+.rte-editor ol{margin:4px 0;padding-left:22px;list-style:decimal}
+.rte-editor li{margin:2px 0}
 .photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
 .photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
 .photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
@@ -809,6 +812,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
       </select>
       <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
       <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertUnorderedList')">• 項目符號</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertOrderedList')">1. 編號清單</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="applyAutoDesc()">🪄 自動產生文案</button>
     </div>
@@ -1852,12 +1857,6 @@ function rteInit(id){
   };
   editor.addEventListener("mouseup",saveSel);
   editor.addEventListener("keyup",saveSel);
-  editor.addEventListener("keydown",e=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      document.execCommand("insertHTML",false,"<br>");
-    }
-  });
   editor.addEventListener("paste",e=>{
     e.preventDefault();
     const text=(e.clipboardData||window.clipboardData).getData("text/plain");
@@ -1884,6 +1883,23 @@ window.rteApply=function(id,styleProp,value){
   }
   sel.removeAllRanges();
   editor.focus();
+};
+window.rteList=function(id,command){
+  const editor=document.getElementById(id);
+  const range=rteSavedRange[id];
+  if(!editor)return;
+  const sel=window.getSelection();
+  sel.removeAllRanges();
+  if(range)sel.addRange(range);
+  else{
+    editor.focus();
+    const r=document.createRange();
+    r.selectNodeContents(editor);
+    r.collapse(false);
+    sel.addRange(r);
+  }
+  editor.focus();
+  document.execCommand(command,false,null);
 };
 window.rteClear=function(id){
   const editor=document.getElementById(id);

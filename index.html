@@ -397,6 +397,7 @@ nav{
   .cat-sub-btn .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--soft)}
   .cat-sub-btn:hover{color:var(--tan-dark)}
   .cat-sub-btn.active{color:var(--sage);font-weight:600}
+  .listing-head,.applied-chips{margin-left:270px}
 }
 .listing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0 0 14px}
 .listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}
@@ -1349,7 +1350,8 @@ function getSizeSummary(product){
   if(d.width)parts.push(`寬 ${withCm(d.width)}`);
   if(d.depth)parts.push(`深 ${withCm(d.depth)}`);
   if(d.height)parts.push(`高 ${withCm(d.height)}`);
-  return parts.length?parts.join(" x "):(product.size||"尺寸洽詢");
+  if(!parts.length)return product.size||"尺寸洽詢";
+  return parts.join(" x ").replace(/ cm(?= x )/g," ");
 }
 function parseWidthCm(product){
   const raw=product.dimensions?.width;

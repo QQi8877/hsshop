@@ -16,6 +16,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -996,6 +998,41 @@ footer a:hover{color:var(--color-on-dark)}
 @media(max-width:470px){
   .lb-arrow{display:none!important}
 }
+#site-loading .load-mark{
+  width:56px;height:56px;border-radius:16px;
+  background:var(--charcoal);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-heading);
+  color:var(--tan);
+  font-size:26px;
+  animation:loadPulse 1.7s ease-in-out infinite;
+}
+#site-loading .load-name{
+  font-family:var(--font-heading);
+  font-size:19px;
+  letter-spacing:.14em;
+  color:var(--charcoal);
+  margin-top:4px;
+}
+#site-loading .load-dots{display:flex;gap:6px;margin-top:2px}
+#site-loading .load-dots span{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--tan);
+  animation:loadDot 1.3s ease-in-out infinite;
+}
+#site-loading .load-dots span:nth-child(2){animation-delay:.16s}
+#site-loading .load-dots span:nth-child(3){animation-delay:.32s}
+@keyframes loadPulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(1.1);opacity:.72}
+}
+@keyframes loadDot{
+  0%,80%,100%{opacity:.25;transform:translateY(0)}
+  40%{opacity:1;transform:translateY(-4px)}
+}
+@media(prefers-reduced-motion:reduce){
+  #site-loading .load-mark,#site-loading .load-dots span{animation:none}
+}
 </style>
 </head>
 <body>
@@ -1160,7 +1197,7 @@ footer a:hover{color:var(--color-on-dark)}
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1171,7 +1208,9 @@ const firebaseConfig={
   appId:"1:693625648338:web:7460e5aa1c5e9e55b1a90b"
 };
 const fbApp=initializeApp(firebaseConfig);
-const db=getFirestore(fbApp);
+// 開啟本機（IndexedDB）持久化快取：回訪客人不用整包商品資料重新下載一次，
+// 先顯示快取內容，背景再跟雲端同步最新資料，載入體感明顯變快。
+const db=initializeFirestore(fbApp,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
 const SITE_DOC="hsshop-10bd9";
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
@@ -1215,9 +1254,11 @@ const Storage={
   },
   async get(){
     try{
-      const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
+      const[metaSnap,productsSnap]=await Promise.all([
+        getDoc(doc(db,"sitedata",SITE_DOC)),
+        getDocs(productsCol())
+      ]);
       const meta=metaSnap.exists()?metaSnap.data():null;
-      const productsSnap=await getDocs(productsCol());
       const products=productsSnap.docs.map(d=>d.data());
       if(!meta&&!products.length)return null;
       return {...meta,products};
@@ -2195,7 +2236,7 @@ Object.assign(window,{
   const loadingEl=document.createElement("div");
   loadingEl.id="site-loading";
   loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:var(--font-heading);color:var(--muted)";
-  loadingEl.innerHTML='<div style="font-size:28px;letter-spacing:.1em;color:var(--charcoal)">信通家俱行</div><div style="font-size:13px;letter-spacing:.08em">載入中...</div>';
+  loadingEl.innerHTML='<div class="load-mark">信</div><div class="load-name">信通家俱行</div><div class="load-dots"><span></span><span></span><span></span></div>';
   document.body.appendChild(loadingEl);
 
   try{

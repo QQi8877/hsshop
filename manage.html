@@ -156,9 +156,9 @@ header{
   align-items:center;
   justify-content:space-between;
   gap:6px;
-  padding:6px 8px;
+  padding:6px 8px 6px 16px;
   border-radius:7px;
-  font-size:12.5px;
+  font-size:9.83px;
   color:var(--muted);
   cursor:pointer;
 }
@@ -244,7 +244,7 @@ tbody tr.is-archived{opacity:.55}
 .cell-name{font-weight:500;color:var(--charcoal)}
 .cell-name-link{cursor:pointer}
 .cell-name-link:hover{color:var(--tan-dark);text-decoration:underline}
-.cell-subcat{padding-left:14px;font-size:12px;color:var(--soft);margin-top:2px}
+.cell-subcat{padding-left:18px;font-size:9.33px;color:var(--soft);margin-top:2px}
 .pill{
   display:inline-flex;
   align-items:center;
@@ -698,6 +698,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button class="add-btn" onclick="openCategoryManage()" style="background:var(--tan-dark)">🗂 分類管理</button>
       <button class="add-btn" onclick="openContactManage()" style="background:var(--tan-dark)">📇 聯繫資訊</button>
       <button class="add-btn" onclick="openPageTextManage()" style="background:var(--tan-dark)">📝 頁面文字</button>
+      <button class="add-btn" onclick="openLayoutSettings()" style="background:var(--tan-dark)">🎨 首頁版面</button>
       <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
       <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
       <button class="add-btn" onclick="exportProductsCSV()" style="background:var(--tan-dark)">⬇ 匯出 CSV</button>
@@ -945,6 +946,44 @@ body.quickcat-mode .quickcat-bar{display:flex}
   </div>
 </div>
 
+<div class="modal-overlay" id="layoutModal">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('layoutModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">首頁版面設定</div>
+    <p class="catmgr-hint">控制首頁「本月選品」「分類磚」要不要顯示，還有這兩區要用哪些照片、哪些商品——改好按儲存，前台就會直接套用，不用再麻煩工程師改。</p>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:16px;cursor:pointer">
+      <input type="checkbox" id="layoutShowPicks" style="width:16px;height:16px">
+      顯示「本月選品」區塊
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:8px;cursor:pointer">
+      <input type="checkbox" id="layoutShowCatTiles" style="width:16px;height:16px">
+      顯示「分類磚」區塊
+    </label>
+
+    <div class="catmgr-hint" style="margin-top:22px;font-weight:600;color:var(--charcoal)">首頁大圖</div>
+    <p class="catmgr-hint">沒有上傳的話，會自動用第一件有照片的商品當首頁大圖。</p>
+    <div id="heroImageSlotWrap" style="width:140px;margin-top:8px"></div>
+
+    <div class="catmgr-hint" style="margin-top:22px;font-weight:600;color:var(--charcoal)">分類磚縮圖</div>
+    <p class="catmgr-hint">沒有上傳的話，會自動用該分類底下第一件商品的照片。</p>
+    <div id="catTileImagesWrap" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:14px;margin-top:8px"></div>
+
+    <div class="catmgr-hint" style="margin-top:22px;font-weight:600;color:var(--charcoal)">本月選品（最多 4 件）</div>
+    <p class="catmgr-hint">不手動選的話，會自動抓後台排序最前面的 4 件商品；選好的商品可以用 ▲▼ 調整出現順序。</p>
+    <input type="text" id="picksSearchInput" placeholder="搜尋商品名稱加入…" oninput="renderPicksCandidates()" style="margin-top:4px">
+    <div id="picksSelectedList" style="margin-top:10px;display:grid;gap:6px"></div>
+    <div id="picksCandidatesList" style="margin-top:10px;max-height:180px;overflow:auto;display:grid;gap:2px;border:1px solid var(--line);border-radius:8px;padding:6px"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('layoutModal')">取消</button>
+      <button class="btn-primary" onclick="saveLayoutSettings()">儲存</button>
+    </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="bulkUploadModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
@@ -1055,6 +1094,7 @@ let catalog=[];
 let products=[];
 let contact={};
 let pageText={};
+let layout={};
 let metaRaw={};
 let currentFilter="all";
 let sortKey="name";
@@ -1126,6 +1166,7 @@ async function saveMeta(){
   metaRaw.catalog=catalog;
   metaRaw.contact=contact;
   metaRaw.pageText=pageText;
+  metaRaw.layout=layout;
   try{
     await setDoc(doc(db,"sitedata",SITE_DOC),metaRaw);
     return true;
@@ -1398,6 +1439,152 @@ async function savePageTextManage(){
   toast(ok?"頁面文字已更新 ☁️":"儲存失敗，請檢查網路連線");
 }
 window.savePageTextManage=savePageTextManage;
+
+/* ── 首頁版面設定：顯示/隱藏區塊、首頁大圖、分類磚縮圖、手動挑選本月選品 ───── */
+let layoutHeroImage="";
+let layoutCatImages={};
+let layoutPicksIds=[];
+function openLayoutSettings(){
+  document.getElementById("layoutShowPicks").checked=layout.showPicks!==false;
+  document.getElementById("layoutShowCatTiles").checked=layout.showCatTiles!==false;
+  layoutHeroImage=layout.heroImage||"";
+  layoutCatImages={};
+  catalog.forEach(c=>{layoutCatImages[c.id]=c.image||""});
+  layoutPicksIds=(layout.picksProductIds||[]).filter(id=>products.some(p=>p.id===id));
+  document.getElementById("picksSearchInput").value="";
+  renderHeroImageSlot();
+  renderCatTileImageSlots();
+  renderPicksSelected();
+  renderPicksCandidates();
+  openModal("layoutModal");
+}
+window.openLayoutSettings=openLayoutSettings;
+function renderHeroImageSlot(){
+  const wrap=document.getElementById("heroImageSlotWrap");
+  wrap.innerHTML=`
+    <div class="photo-slot${layoutHeroImage?" has-img":""}">
+      ${layoutHeroImage?`<img class="slot-img" src="${layoutHeroImage}">`:""}
+      <div class="slot-overlay">${layoutHeroImage?"更換":"上傳照片"}</div>
+      <input type="file" class="slot-file-input" accept="image/*" onchange="handleHeroImageFile(event)">
+      ${layoutHeroImage?`<button class="slot-del" onclick="event.stopPropagation();clearHeroImage()">×</button>`:""}
+    </div>
+  `;
+}
+function handleHeroImageFile(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    layoutHeroImage=await resizeSquareImage(e.target.result,900,0.85);
+    renderHeroImageSlot();
+  };
+  reader.readAsDataURL(file);
+}
+window.handleHeroImageFile=handleHeroImageFile;
+function clearHeroImage(){layoutHeroImage="";renderHeroImageSlot()}
+window.clearHeroImage=clearHeroImage;
+function renderCatTileImageSlots(){
+  const wrap=document.getElementById("catTileImagesWrap");
+  const visible=catalog.filter(c=>!c.hidden);
+  if(!visible.length){wrap.innerHTML='<div class="catmgr-hint">目前沒有分類</div>';return}
+  wrap.innerHTML=visible.map(c=>{
+    const img=layoutCatImages[c.id]||"";
+    return `
+      <div>
+        <div class="photo-slot${img?" has-img":""}">
+          ${img?`<img class="slot-img" src="${img}">`:""}
+          <div class="slot-overlay">${img?"更換":"上傳"}</div>
+          <input type="file" class="slot-file-input" accept="image/*" onchange="handleCatImageFile('${c.id}',event)">
+          ${img?`<button class="slot-del" onclick="event.stopPropagation();clearCatImage('${c.id}')">×</button>`:""}
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">${escapeHTML(c.name)}</div>
+      </div>
+    `;
+  }).join("");
+}
+function handleCatImageFile(catId,event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    layoutCatImages[catId]=await resizeSquareImage(e.target.result,320,0.82);
+    renderCatTileImageSlots();
+  };
+  reader.readAsDataURL(file);
+}
+window.handleCatImageFile=handleCatImageFile;
+function clearCatImage(catId){layoutCatImages[catId]="";renderCatTileImageSlots()}
+window.clearCatImage=clearCatImage;
+function renderPicksSelected(){
+  const wrap=document.getElementById("picksSelectedList");
+  if(!layoutPicksIds.length){
+    wrap.innerHTML='<p class="catmgr-hint">尚未手動挑選，目前會自動抓排序最前面的 4 件商品。</p>';
+    return;
+  }
+  wrap.innerHTML=layoutPicksIds.map((id,i)=>{
+    const p=products.find(x=>x.id===id);
+    if(!p)return "";
+    return `
+      <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 8px">
+        <span style="flex:1;font-size:13px">${escapeHTML(p.name)}</span>
+        <button onclick="movePick(${i},-1)" ${i===0?"disabled":""} title="往前移" style="border:0;background:transparent;cursor:pointer;opacity:${i===0?".35":"1"}">▲</button>
+        <button onclick="movePick(${i},1)" ${i===layoutPicksIds.length-1?"disabled":""} title="往後移" style="border:0;background:transparent;cursor:pointer;opacity:${i===layoutPicksIds.length-1?".35":"1"}">▼</button>
+        <button onclick="removePick('${id}')" title="移除" style="border:0;background:transparent;color:var(--danger);cursor:pointer">×</button>
+      </div>
+    `;
+  }).join("");
+}
+function movePick(index,dir){
+  const target=index+dir;
+  if(target<0||target>=layoutPicksIds.length)return;
+  [layoutPicksIds[index],layoutPicksIds[target]]=[layoutPicksIds[target],layoutPicksIds[index]];
+  renderPicksSelected();
+}
+window.movePick=movePick;
+function removePick(id){
+  layoutPicksIds=layoutPicksIds.filter(x=>x!==id);
+  renderPicksSelected();
+  renderPicksCandidates();
+}
+window.removePick=removePick;
+function addPick(id){
+  if(layoutPicksIds.length>=4){toast("最多只能選 4 件商品");return}
+  if(layoutPicksIds.includes(id))return;
+  layoutPicksIds.push(id);
+  renderPicksSelected();
+  renderPicksCandidates();
+}
+window.addPick=addPick;
+function renderPicksCandidates(){
+  const wrap=document.getElementById("picksCandidatesList");
+  const q=(document.getElementById("picksSearchInput").value||"").trim().toLowerCase();
+  const list=products.filter(p=>p.status!=="archived"&&!layoutPicksIds.includes(p.id)&&(!q||(p.name||"").toLowerCase().includes(q))).slice(0,30);
+  if(!list.length){wrap.innerHTML='<div class="catmgr-hint" style="padding:6px">沒有符合的商品</div>';return}
+  wrap.innerHTML=list.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px" onclick="addPick('${p.id}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='transparent'">
+      <span style="font-size:13px">${escapeHTML(p.name)}</span>
+      <span style="font-size:12px;color:var(--tan-dark)">＋ 加入</span>
+    </div>
+  `).join("");
+}
+window.renderPicksCandidates=renderPicksCandidates;
+async function saveLayoutSettings(){
+  const next={
+    showPicks:document.getElementById("layoutShowPicks").checked,
+    showCatTiles:document.getElementById("layoutShowCatTiles").checked,
+    heroImage:layoutHeroImage,
+    picksProductIds:layoutPicksIds.slice()
+  };
+  catalog.forEach(c=>{
+    if(layoutCatImages[c.id])c.image=layoutCatImages[c.id];
+    else delete c.image;
+  });
+  layout=next;
+  closeModal("layoutModal");
+  const ok=await saveMeta();
+  toast(ok?"首頁版面已更新 ☁️":"儲存失敗，請檢查網路連線");
+}
+window.saveLayoutSettings=saveLayoutSettings;
 
 /* ── 批次上傳照片（依檔名比對商品，沿用前台邏輯）───────────────── */
 let bulkReplaceMode=false;
@@ -1863,6 +2050,26 @@ function resizeToThumb(src){
     }
   }).catch(()=>src);
 }
+// 首頁大圖／分類磚縮圖用：跟商品照片同一套「白底裁切置中」邏輯，
+// 但畫面上只會顯示縮圖大小，用比商品原圖小很多的尺寸存，避免版面設定塞爆單一份 Firestore 文件
+function resizeSquareImage(src,size,quality){
+  return loadImage(src).then(img=>{
+    try{
+      const canvas=document.createElement("canvas");
+      canvas.width=size;
+      canvas.height=size;
+      const ctx=canvas.getContext("2d");
+      ctx.fillStyle="#fffaf3";
+      ctx.fillRect(0,0,size,size);
+      const scale=Math.min(size/img.width,size/img.height);
+      const w=img.width*scale,h=img.height*scale;
+      ctx.drawImage(img,(size-w)/2,(size-h)/2,w,h);
+      return canvas.toDataURL("image/jpeg",quality);
+    }catch(e){
+      return src;
+    }
+  }).catch(()=>src);
+}
 function extractGdriveId(url){
   const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
   for(const pattern of patterns){
@@ -2221,6 +2428,7 @@ async function boot(){
     catalog=metaRaw.catalog||[];
     contact=metaRaw.contact||{};
     pageText=metaRaw.pageText||{};
+    layout=metaRaw.layout||{};
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
     products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});

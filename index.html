@@ -16,22 +16,42 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --charcoal:#343331;
-  --ink:#262523;
-  --muted:#67625b;
-  --soft:#6e675c;
-  --tan:#b99263;
-  --tan-dark:#8a6435;
-  --sage:#7f9076;
-  --cream:#f3eee6;
-  --paper:#fffaf3;
-  --line:#ddd2c4;
+  /* Organic redesign tokens — palette/type swap only (Phase 1).
+     Old variable names kept so the rest of the stylesheet doesn't need touching;
+     values now point at the new design system instead of the old one. */
+  --charcoal:#201e1d;
+  --ink:#201e1d;
+  --muted:#645c50;
+  --soft:#82796a;
+  --tan:#c67139;
+  --tan-dark:#8c491a;
+  --sage:#7a8a5e;
+  --cream:#f5ead8;
+  --paper:#fffaf3; /* 跟後台上傳流程烤進照片裡的白底色一致(manage.html resizeImageToUniform)，避免照片邊緣出現色塊 */
+  --line:rgba(32,30,29,.14);
   --white:#fff;
   --danger:#b84236;
-  --shadow:0 18px 50px rgba(45,38,30,.12);
+  --shadow:0 12px 32px rgba(46,43,37,.18);
+
+  /* 英數字形照原本站台維持 Noto Serif/Sans TC，不套用新設計稿的 Caprasimo／Figtree／等寬字 */
+  --font-heading:"Noto Serif TC",serif;
+  --font-body:"Noto Sans TC",system-ui,sans-serif;
+  --font-mono:"Noto Sans TC",system-ui,sans-serif;
+
+  --color-surface:#ebddc5;
+  --color-line-strong:rgba(32,30,29,.28);
+  --color-on-dark:#f9f4ed;
+  --color-on-dark-2:rgba(245,234,216,.66);
+  --color-accent-tint:#fff2eb;
+  --color-accent-tint-2:#ffe1d0;
+  --color-accent-2-tint:#e1eecc;
+  --shadow-sm:0 1px 2px rgba(46,43,37,.14);
+  --shadow-md:0 3px 10px rgba(46,43,37,.16);
+  --radius-pill:999px;
+  --radius-lg:24px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -44,15 +64,16 @@ html{scroll-behavior:smooth}
   }
 }
 body{
-  font-family:"Noto Sans TC",system-ui,sans-serif;
+  font-family:var(--font-body);
   background:var(--cream);
   color:var(--ink);
   font-size:15px;
-  line-height:1.7;
+  line-height:1.75;
 }
 body.lightbox-open{overflow:hidden}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
+svg[data-icon]{stroke-width:2.75;stroke-linecap:round;stroke-linejoin:round}
 img{max-width:100%}
 nav{
   position:fixed;
@@ -69,7 +90,7 @@ nav{
   backdrop-filter:blur(12px);
 }
 .nav-logo{
-  font-family:"Noto Serif TC",serif;
+  font-family:var(--font-heading);
   font-size:18px;
   font-weight:700;
   letter-spacing:.08em;
@@ -80,12 +101,14 @@ nav{
 }
 .nav-logo span{color:var(--tan)}
 #navSearchBar{width:min(340px,32vw);min-width:0;margin:0;padding:7px 12px;justify-self:center}
-.nav-links{display:flex;gap:28px;list-style:none;justify-self:end}
+.nav-links{display:flex;gap:20px;list-style:none;flex:none}
 .nav-links a{
+  display:block;
   color:var(--muted);
   text-decoration:none;
   font-size:13px;
-  letter-spacing:.08em;
+  letter-spacing:.04em;
+  white-space:nowrap;
 }
 .nav-links a:hover{color:var(--tan-dark)}
 .nav-hamburger{
@@ -117,67 +140,147 @@ nav{
 .nav-links-mobile a:active{background:var(--cream)}
 #hero{
   margin-top:62px;
-  min-height:520px;
   position:relative;
-  display:flex;
-  align-items:center;
   overflow:hidden;
-  background:linear-gradient(120deg,#232220,var(--charcoal) 45%,var(--tan-dark) 100%);
+  background:var(--color-surface);
 }
-.hero-content{position:relative;z-index:1;max-width:560px;padding:84px 72px}
+.hero-inner{
+  max-width:1200px;
+  margin:0 auto;
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:44px;
+  align-items:center;
+  padding:64px 40px;
+}
+.hero-content{position:relative;z-index:1;max-width:560px;padding:0}
+.hero-photo{
+  aspect-ratio:1/1;
+  border-radius:var(--radius-pill);
+  background:var(--paper);
+  box-shadow:var(--shadow);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+.hero-photo img{width:70%;height:70%;object-fit:contain;filter:saturate(.94) contrast(.97) brightness(1.02)}
 .hero-tag{
-  display:inline-block;
-  color:var(--white);
-  background:var(--tan);
-  border-radius:999px;
-  padding:5px 14px;
+  display:block;
+  color:var(--tan-dark);
+  font-family:var(--font-mono);
   font-size:11px;
-  letter-spacing:.16em;
+  letter-spacing:.24em;
   margin-bottom:22px;
 }
 .hero-title{
-  font-family:"Noto Serif TC",serif;
-  color:var(--white);
+  font-family:var(--font-heading);
+  color:var(--ink);
   font-size:52px;
   line-height:1.18;
-  letter-spacing:.07em;
+  letter-spacing:.02em;
   margin-bottom:12px;
 }
 .hero-sub{
-  color:rgba(255,255,255,.72);
-  font-family:"Noto Serif TC",serif;
-  letter-spacing:.18em;
+  color:var(--tan-dark);
+  font-family:var(--font-heading);
+  letter-spacing:.06em;
   margin-bottom:22px;
 }
 .hero-desc{
-  color:rgba(255,255,255,.82);
+  color:var(--muted);
   max-width:450px;
   margin-bottom:34px;
+  line-height:1.85;
 }
+.hero-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .hero-cta{
   display:inline-flex;
   align-items:center;
   gap:8px;
-  color:var(--white);
+  color:var(--ink);
+  background:transparent;
   text-decoration:none;
-  border:1px solid rgba(255,255,255,.58);
-  border-radius:6px;
-  padding:11px 22px;
-  letter-spacing:.08em;
-  font-size:13px;
+  border:1.5px solid var(--color-line-strong);
+  border-radius:var(--radius-pill);
+  padding:13px 24px;
+  letter-spacing:.02em;
+  font-size:14px;
+  font-weight:600;
+  transition:border-color .15s,color .15s;
 }
-.hero-cta:hover{background:rgba(255,255,255,.12)}
-.section-header{text-align:center;padding:58px 24px 28px}
-.section-label{font-size:11px;letter-spacing:.18em;color:var(--tan-dark);margin-bottom:8px}
+.hero-cta:hover{border-color:var(--tan);color:var(--tan-dark);background:transparent}
+.hero-line-cta{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  color:#fff;
+  background:var(--tan);
+  text-decoration:none;
+  border-radius:var(--radius-pill);
+  padding:13px 24px;
+  letter-spacing:.02em;
+  font-size:14px;
+  font-weight:600;
+  box-shadow:var(--shadow-md);
+  transition:background .15s;
+}
+.hero-line-cta:hover{background:var(--tan-dark)}
+.section-header{text-align:left;padding:58px 40px 28px}
+.section-label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.2em;color:var(--tan-dark);margin-bottom:8px}
 .section-title{
-  font-family:"Noto Serif TC",serif;
+  font-family:var(--font-heading);
   font-size:29px;
-  font-weight:500;
+  font-weight:600;
   color:var(--charcoal);
-  margin-bottom:12px;
 }
-.section-line{width:42px;height:2px;background:var(--tan);margin:auto}
-#categories{padding-bottom:64px}
+#categories{padding-bottom:64px;scroll-margin-top:62px}
+
+/* ── 本月選品／分類磚（Phase 2）───────────────────────────── */
+.sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.sec-head h3{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--charcoal)}
+.sec-head a{font-family:var(--font-mono);font-size:12px;color:var(--tan-dark);text-decoration:none}
+.sec-head a:hover{color:var(--tan)}
+.pick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;max-width:1200px;margin:0 auto}
+.p-card{
+  position:relative;display:flex;flex-direction:column;gap:11px;
+  padding:14px;background:var(--paper);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);
+  text-decoration:none;color:inherit;cursor:pointer;
+}
+.p-card__media{aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden;display:grid;place-items:center}
+.p-card__media img{width:88%;height:88%;object-fit:contain}
+.p-card__title{font-size:15px;color:var(--charcoal);line-height:1.4}
+.p-card__foot{display:flex;justify-content:space-between;align-items:baseline;padding-top:9px;border-top:1px solid var(--line)}
+.p-card__foot .mono{font-size:11.5px;color:var(--muted)}
+.p-card__foot .price{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--tan-dark)}
+.p-card__fav{
+  position:absolute;top:22px;right:22px;width:30px;height:30px;border:none;
+  border-radius:var(--radius-pill);background:rgba(249,244,237,.92);color:var(--tan-dark);
+  display:grid;place-items:center;cursor:pointer;transition:background .15s,color .15s;
+}
+.p-card__fav svg{width:15px;height:15px}
+.p-card__fav.active{background:var(--tan);color:#fff}
+.p-card__fav.active svg path{fill:currentColor}
+
+.cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;max-width:1200px;margin:0 auto}
+.cat-tile{
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 12px;
+  border-radius:var(--radius-lg);background:var(--color-surface);text-align:center;
+  text-decoration:none;color:inherit;cursor:pointer;transition:background .15s;border:0;
+}
+.cat-tile:hover{background:#e1d3b9}
+.cat-tile__thumb{width:74px;height:74px;border-radius:var(--radius-pill);background:var(--paper);overflow:hidden;display:grid;place-items:center}
+.cat-tile__thumb img{width:76%;height:76%;object-fit:contain}
+.cat-tile__name{font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--charcoal)}
+.cat-tile__count{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
+.cat-tile--cta{justify-content:center;background:var(--sage);color:#fff}
+.cat-tile--cta:hover{background:var(--accent2-press,#728157)}
+.cat-tile--cta .cat-tile__name{color:#fff}
+.cat-tile--cta span.cta-link{font-size:11.5px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.5)}
+@media(max-width:860px){
+  .pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat-grid{grid-template-columns:repeat(2,1fr)}
+  #picks,#catTiles{padding-left:18px!important;padding-right:18px!important}
+}
 .search-bar{
   display:flex;
   align-items:center;
@@ -201,14 +304,15 @@ nav{
 }
 .search-bar:focus-within{border-color:var(--tan)}
 .search-clear{
+  display:inline-flex;
+  align-items:center;
   border:0;
   background:transparent;
   color:var(--soft);
-  font-size:16px;
-  line-height:1;
   padding:0 2px;
 }
 .search-clear:hover{color:var(--danger)}
+.cat-toolbar{padding:38px 38px 0;border-top:1px solid var(--line)}
 .cat-layout{padding:0 38px}
 .cat-sidebar{display:none}
 .categories-bar,.sub-categories-bar{
@@ -235,21 +339,22 @@ nav{
 .sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
 .products-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  grid-template-columns:repeat(2,minmax(0,1fr));
   gap:0;
   border-top:1px solid var(--line);
   border-left:1px solid var(--line);
 }
 @media(min-width:761px){
-  .cat-layout{display:grid;grid-template-columns:220px 1fr;gap:36px;align-items:start}
-  .cat-main{min-width:0}
+  .cat-layout{display:grid;grid-template-columns:236px 1fr;gap:34px;align-items:start;margin-top:22px}
+  .products-grid{grid-template-columns:repeat(5,minmax(0,1fr));min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
     display:flex;
     flex-direction:column;
     gap:2px;
     position:sticky;
-    /* 62px 是頂部固定導覽列的高度；top 值要蓋過它，不然側欄吸頂時上緣會被導覽列擋住 */
+    /* 62px 導覽列高度 + 28px 呼吸間距 = 90px，跟 #categories 的 scroll-margin-top
+       用同一組數字，確保往下捲動吸頂時側欄離導覽列的間距跟標題當初一致，不會緊貼 */
     top:90px;
     max-height:calc(100vh - 110px);
     overflow-y:auto;
@@ -260,8 +365,8 @@ nav{
     align-items:center;
     justify-content:space-between;
     gap:8px;
-    padding:7px 10px;
-    border-radius:6px;
+    padding:8px 14px;
+    border-radius:var(--radius-pill);
     border:0;
     background:transparent;
     color:var(--muted);
@@ -269,9 +374,11 @@ nav{
     text-align:left;
     cursor:pointer;
   }
-  .cat-side-btn:hover{background:rgba(185,146,99,.1);color:var(--tan-dark)}
+  .cat-side-btn .mono{font-family:var(--font-mono);font-size:11px;color:inherit;opacity:.68}
+  .cat-side-btn:hover{background:rgba(185,146,99,.12);color:var(--tan-dark)}
   .cat-side-btn.active{background:var(--charcoal);color:var(--white);font-weight:500}
-  .cat-subs{display:flex;flex-direction:column;gap:1px;margin:2px 0 8px;padding-left:14px;border-left:2px solid var(--line)}
+  .cat-side-btn.active .mono{opacity:.72}
+  .cat-subs{display:flex;flex-direction:column;gap:1px;margin:2px 0 10px;padding-left:14px;border-left:2px solid var(--tan)}
   .cat-sub-btn{
     width:100%;
     display:flex;
@@ -287,9 +394,26 @@ nav{
     text-align:left;
     cursor:pointer;
   }
+  .cat-sub-btn .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--soft)}
   .cat-sub-btn:hover{color:var(--tan-dark)}
   .cat-sub-btn.active{color:var(--sage);font-weight:600}
 }
+.listing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0 0 14px}
+.listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}
+.sort-select{
+  appearance:none;-webkit-appearance:none;
+  border:1px solid var(--color-line-strong);border-radius:var(--radius-pill);
+  background:var(--paper) url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14"%3E%3Cpath d="M6 9l6 6 6-6" fill="none" stroke="%23645c50" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/%3E%3C/svg%3E') no-repeat right 12px center;
+  background-size:13px;
+  padding:9px 34px 9px 16px;font-size:12.5px;color:var(--charcoal);cursor:pointer;
+}
+.applied-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-bottom:18px}
+.chip-applied{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 13px;border-radius:var(--radius-pill);
+  background:var(--charcoal);color:#fff;font-size:12px;font-weight:500;flex:none;white-space:nowrap;border:0;cursor:pointer;
+}
+.chip-applied svg{width:12px;height:12px;flex:none}
+.chip-clear-all{font-size:12px;color:var(--tan-dark);background:none;border:0;cursor:pointer;text-decoration:underline;flex:none;white-space:nowrap}
 .product-card{
   background:var(--paper);
   border-right:1px solid var(--line);
@@ -307,9 +431,10 @@ nav{
 }
 .product-img-wrap{
   position:relative;
-  aspect-ratio:4/5;
+  aspect-ratio:1/1;
   overflow:hidden;
   background:var(--paper);
+  border-radius:0;
 }
 .product-img-wrap img{
   position:absolute;
@@ -357,16 +482,16 @@ nav{
   font-size:13px;
 }
 .placeholder svg{width:44px;height:44px;opacity:.52;margin-bottom:6px}
-.product-info{padding:4px 13px 8px}
+.product-info{padding:8px 12px 10px}
 .product-name{
-  font-family:"Noto Serif TC",serif;
+  font-family:var(--font-heading);
   color:var(--charcoal);
   font-size:14.5px;
   font-weight:500;
   margin-bottom:3px;
 }
 .product-size{font-size:11px;color:var(--tan-dark);margin-bottom:4px}
-.product-price{font-family:"Noto Serif TC",serif;font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:2px}
+.product-price{font-family:var(--font-heading);font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:2px}
 .favorite-btn{
   position:absolute;
   top:8px;
@@ -386,77 +511,45 @@ nav{
 .favorite-btn:hover{transform:scale(1.1)}
 .favorite-btn.active{color:var(--danger)}
 .favorite-btn.active svg path{fill:currentColor}
+.nav-end{display:flex;align-items:center;gap:16px;justify-self:end;flex:none}
 .favorites-fab{
-  position:fixed;
-  right:22px;
-  bottom:22px;
-  z-index:190;
-  width:52px;
-  height:52px;
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  flex:none;
+  flex-wrap:nowrap;
+  white-space:nowrap;
+  gap:7px;
   border:0;
-  border-radius:50%;
-  background:var(--charcoal);
-  color:var(--white);
-  display:grid;
-  place-items:center;
-  font-size:22px;
-  box-shadow:0 14px 34px rgba(0,0,0,.24);
-  transition:transform .16s ease;
-}
-.favorites-fab:hover{transform:scale(1.06)}
-.favorites-count{
-  position:absolute;
-  top:-3px;
-  right:-3px;
-  min-width:20px;
-  height:20px;
-  padding:0 4px;
-  display:grid;
-  place-items:center;
-  border-radius:999px;
-  background:var(--tan);
+  border-radius:var(--radius-pill);
+  padding:9px 15px;
+  background:var(--color-surface);
   color:var(--charcoal);
+  font-size:12.5px;
+  font-weight:600;
+  transition:background .15s ease;
+}
+.favorites-fab:hover{background:#e1d3b9}
+.favorites-count{
+  display:grid;
+  place-items:center;
+  min-width:19px;
+  height:19px;
+  padding:0 4px;
+  border-radius:var(--radius-pill);
+  background:var(--tan);
+  color:#fff;
+  font-family:var(--font-mono);
   font-size:11px;
   font-weight:600;
-  box-shadow:0 2px 6px rgba(0,0,0,.22);
 }
-.line-fab{
-  position:fixed;
-  right:22px;
-  bottom:86px;
-  z-index:190;
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  overflow:hidden;
-  box-shadow:0 14px 34px rgba(0,0,0,.24);
-  transition:transform .16s ease;
-}
-.line-fab img{width:100%;height:100%;display:block;object-fit:cover}
-.line-fab:hover{transform:scale(1.06)}
-.map-fab{
-  position:fixed;
-  right:22px;
-  bottom:150px;
-  z-index:190;
-  width:52px;
-  height:52px;
-  border-radius:50%;
-  background:var(--tan-dark);
-  color:#fff;
-  display:grid;
-  place-items:center;
-  box-shadow:0 14px 34px rgba(0,0,0,.24);
-  transition:transform .16s ease;
-}
-.map-fab:hover{transform:scale(1.06)}
 .favorites-panel{
   position:fixed;
   top:0;
   right:0;
   bottom:0;
   z-index:620;
-  width:min(390px,100%);
+  width:min(520px,100%);
   background:var(--paper);
   box-shadow:-24px 0 70px rgba(0,0,0,.24);
   transform:translateX(105%);
@@ -467,46 +560,88 @@ nav{
 .favorites-panel.open{transform:translateX(0)}
 .favorites-head{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
   justify-content:space-between;
   gap:14px;
-  padding:22px;
+  padding:22px 22px 16px;
   border-bottom:1px solid var(--line);
 }
-.favorites-title{font-family:"Noto Serif TC",serif;font-size:22px;color:var(--charcoal)}
-.favorites-close{border:0;background:#ece3d8;color:var(--muted);border-radius:50%;width:34px;height:34px}
-.favorites-list{padding:18px;display:grid;gap:12px;overflow:auto}
-.favorite-item{
-  display:grid;
-  grid-template-columns:84px 1fr auto;
-  gap:12px;
-  align-items:center;
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:10px;
-  background:#fff;
+.favorites-title{font-family:var(--font-heading);font-size:22px;color:var(--charcoal)}
+.favorites-subtitle{font-size:12.5px;color:var(--muted);margin-top:4px}
+.favorites-close{border:0;background:#ece3d8;color:var(--muted);border-radius:50%;width:34px;height:34px;display:grid;place-items:center;flex:none}
+.favorites-room-tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 22px;border-bottom:1px solid var(--line)}
+.favorites-room-tab{
+  border:1px solid var(--color-line-strong);background:transparent;color:var(--muted);
+  border-radius:var(--radius-pill);padding:6px 14px;font-size:12.5px;cursor:pointer;
 }
-.favorite-item img{width:84px;height:64px;object-fit:cover;border-radius:6px;background:var(--cream)}
-.favorite-item-name{font-weight:700;color:var(--charcoal);font-size:14px}
-.favorite-item-size{font-size:12px;color:var(--soft)}
-.favorite-item button{border:0;background:transparent;color:var(--danger);font-size:18px}
-.favorites-empty{padding:34px 18px;text-align:center;color:var(--soft);font-size:14px}
+.favorites-room-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:#fff;font-weight:600}
+.favorites-list{padding:16px 22px;display:grid;gap:14px;overflow:auto;flex:1}
+.favorite-item{
+  position:relative;
+  display:grid;
+  grid-template-columns:78px 1fr;
+  gap:14px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line);
+}
+.favorite-item img{width:78px;height:78px;object-fit:contain;border-radius:12px;background:var(--cream);cursor:pointer}
+.favorite-item-name{font-weight:600;color:var(--charcoal);font-size:14px;cursor:pointer;padding-right:26px}
+.favorite-item-meta{font-family:var(--font-mono);font-size:11px;color:var(--soft);margin-top:2px}
+.favorite-item-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.favorite-item-qty{display:flex;align-items:center;gap:8px}
+.qty-btn{
+  width:26px;height:26px;border-radius:50%;border:0;background:var(--color-surface);
+  color:var(--charcoal);display:grid;place-items:center;cursor:pointer;font-size:15px;line-height:1;
+}
+.qty-btn:hover{background:#e1d3b9}
+.favorite-item-qty span{font-family:var(--font-mono);font-size:13px;min-width:16px;text-align:center}
+.favorite-item-subtotal{font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--tan-dark)}
+.favorite-item-remove{
+  position:absolute;top:0;right:0;border:0;background:transparent;color:var(--soft);
+  width:22px;height:22px;display:grid;place-items:center;cursor:pointer;
+}
+.favorite-item-remove:hover{color:var(--danger)}
+.favorite-item-goto{position:absolute;top:0;right:0;border:0;background:transparent;color:var(--tan-dark);font-size:18px;cursor:pointer}
+.favorite-item-goto:hover{color:var(--tan)}
+.favorite-item-note{
+  width:100%;border:0;border-bottom:1px dashed var(--line);background:transparent;
+  font-size:12px;color:var(--muted);padding:6px 0;margin-top:8px;
+}
+.favorite-item-note::placeholder{color:var(--color-text-4,#a19786)}
+.favorite-item-note:focus{outline:none;border-color:var(--tan)}
+.favorites-empty{padding:34px 20px;text-align:center;color:var(--soft);font-size:13px;background:var(--color-surface);border-radius:16px;margin:16px 22px;line-height:1.7}
+.favorites-footer{padding:16px 22px 20px;background:var(--color-surface);border-top:1px solid var(--line)}
+.favorites-total{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--charcoal);margin-bottom:12px}
+.favorites-total span:first-child{font-family:var(--font-body);font-size:13px;font-weight:400;color:var(--muted)}
 .favorites-inquire-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
-  margin:0 18px 18px;padding:13px 16px;
-  background:#06c755;color:#fff;border:0;border-radius:8px;
-  font-size:14px;font-weight:500;
+  width:100%;margin-bottom:10px;padding:13px 16px;
+  background:#06c755;color:#fff;border:0;border-radius:var(--radius-pill);
+  font-size:14px;font-weight:600;
   transition:background .18s ease;
 }
 .favorites-inquire-btn:hover{background:#05a648}
 .favorites-inquire-btn svg{flex-shrink:0}
+.favorites-copy-btn{
+  width:100%;padding:11px 16px;background:transparent;border:1px solid var(--color-line-strong);
+  border-radius:var(--radius-pill);color:var(--charcoal);font-size:13px;cursor:pointer;
+}
+.favorites-copy-btn:hover{border-color:var(--tan);color:var(--tan-dark)}
+.favorites-preview{padding:24px 22px;overflow:auto;flex:1}
+.favorites-preview-check{display:flex;align-items:center;gap:8px;color:var(--sage);font-weight:600;font-size:14px;margin-bottom:16px}
+.favorites-preview-bubble{
+  background:var(--color-accent-2-tint,#e1eecc);color:var(--charcoal);
+  border-radius:20px 20px 20px 6px;padding:16px 18px;font-size:13px;line-height:1.8;
+  white-space:pre-line;margin-bottom:18px;
+}
+.favorites-preview-back{background:transparent;border:0;color:var(--tan-dark);font-size:13px;cursor:pointer;text-decoration:underline}
 #contact{background:var(--charcoal);padding:70px 38px;text-align:center}
 .contact-inner{
   max-width:1400px;
   margin:auto;
 }
 .contact-heading{
-  font-family:"Noto Serif TC",serif;
+  font-family:var(--font-heading);
   color:var(--white);
   font-size:27px;
   font-weight:500;
@@ -523,6 +658,8 @@ nav{
 }
 .contact-line .item{white-space:nowrap}
 .contact-line b{color:var(--tan);font-weight:500;letter-spacing:.04em;margin-right:6px}
+.contact-line a{color:rgba(255,255,255,.82);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.32);transition:color .15s,border-color .15s}
+.contact-line a:hover{color:var(--tan);border-color:var(--tan)}
 .contact-line .dot{color:rgba(255,255,255,.28);margin:0 14px;font-size:12px}
 .fb-icon{
   display:inline-flex;
@@ -537,16 +674,19 @@ nav{
 }
 .fb-icon:hover{color:var(--white);background:rgba(255,255,255,.08)}
 footer{
-  background:#232220;
-  color:rgba(255,255,255,.42);
+  background:var(--charcoal);
+  color:var(--color-on-dark-2);
   padding:22px 38px;
   display:flex;
   justify-content:space-between;
+  align-items:center;
   gap:12px;
   flex-wrap:wrap;
   font-size:12px;
 }
-.footer-brand{font-family:"Noto Serif TC",serif;letter-spacing:.08em}
+footer a{color:var(--color-on-dark-2);transition:color .15s}
+footer a:hover{color:var(--color-on-dark)}
+.footer-brand{font-family:var(--font-heading);letter-spacing:.08em;color:var(--color-on-dark)}
 .modal-overlay{
   display:flex;
   position:fixed;
@@ -581,7 +721,7 @@ footer{
 .modal-overlay.open .modal{transform:scale(1)}
 .modal-scroll{flex:1;min-height:0;overflow-y:auto;padding:32px}
 .modal-title{
-  font-family:"Noto Serif TC",serif;
+  font-family:var(--font-heading);
   font-size:21px;
   color:var(--charcoal);
   margin-bottom:22px;
@@ -728,8 +868,8 @@ footer{
   backdrop-filter:blur(10px);
 }
 .lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
-.lb-product-title{font-family:"Noto Serif TC",serif;font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
-.lb-product-price{font-family:"Noto Serif TC",serif;font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
+.lb-product-title{font-family:var(--font-heading);font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
+.lb-product-price{font-family:var(--font-heading);font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
 .lb-inquire-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:13px 16px;margin-bottom:18px;
@@ -807,14 +947,21 @@ footer{
 .lb-thumb.active,.lb-thumb:hover{border-color:var(--tan);opacity:1}
 .lb-counter{font-size:12px;color:rgba(255,255,255,.55)}
 .lb-hint{font-size:11px;color:rgba(255,255,255,.42);text-align:center}
+
 @media(max-width:760px){
-  nav{padding:0 12px;grid-template-columns:auto 1fr auto}
+  nav{padding:0 12px;grid-template-columns:auto 1fr auto auto}
   .nav-links{display:none}
+  .favorites-fab .fav-label{display:none}
+  .favorites-fab{padding:9px 11px}
   .nav-hamburger{display:flex}
-  .hero-content{padding:58px 24px}
+  .hero-inner{grid-template-columns:1fr;gap:26px;padding:36px 24px}
+  .hero-content{padding:0;max-width:none}
+  .hero-photo{aspect-ratio:4/3;border-radius:var(--radius-lg)}
+  .hero-photo img{width:60%;height:60%}
   .hero-title{font-size:34px}
-  .products-grid{grid-template-columns:1fr 1fr;gap:0}
-  .cat-layout{padding:0 15px}
+  .products-grid{grid-template-columns:1fr 1fr}
+  .cat-toolbar{padding:28px 15px 0}
+  .cat-layout{padding:0 15px;margin-top:14px}
   #navSearchBar{width:100%}
   #contact{padding:54px 22px}
   footer{padding:20px 22px}
@@ -839,9 +986,6 @@ footer{
   .lb-hint{display:none}
   .lb-spec-grid{grid-template-columns:repeat(3,1fr);gap:6px}
   .lb-spec-box{padding:8px 6px}
-  .favorites-fab{right:14px;bottom:14px}
-  .line-fab{right:14px;bottom:78px}
-  .map-fab{right:14px;bottom:142px}
 }
 @media(max-width:470px){
   .lb-arrow{display:none!important}
@@ -854,13 +998,20 @@ footer{
   <div class="search-bar" id="navSearchBar">
     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
     <input type="text" id="productSearch" placeholder="搜尋商品名稱、說明或分類…" oninput="handleSearchInput()">
-    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" style="display:none" aria-label="清除搜尋">×</button>
+    <button class="search-clear" id="searchClearBtn" onclick="clearSearch()" style="display:none" aria-label="清除搜尋"><svg viewBox="0 0 24 24" width="14" height="14" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
   </div>
-  <ul class="nav-links">
-    <li><a href="#hero">首頁</a></li>
-    <li><a href="#categories">商品</a></li>
-    <li><a href="#contact">聯繫</a></li>
-  </ul>
+  <div class="nav-end">
+    <ul class="nav-links">
+      <li><a href="#hero">首頁</a></li>
+      <li><a href="#categories">商品</a></li>
+      <li><a href="#contact">聯繫</a></li>
+    </ul>
+    <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
+      <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span class="fav-label">收藏</span>
+      <span class="favorites-count" id="favoritesCount">0</span>
+    </button>
+  </div>
   <button class="nav-hamburger" id="navHamburger" onclick="toggleMobileNav()" aria-label="開啟選單" aria-expanded="false">
     <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
@@ -873,28 +1024,54 @@ footer{
 
 
 <section id="hero">
-  <div class="hero-content">
-    <div class="hero-tag" data-page-field="heroTag">XIN TONG FURNITURE</div>
-    <h1 class="hero-title" data-page-field="heroTitle">信通家俱行</h1>
-    <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
-    <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
-    <a href="#categories" class="hero-cta" data-page-field="heroCta">探索商品</a>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-tag" data-page-field="heroTag">XIN TONG FURNITURE</div>
+      <h1 class="hero-title" data-page-field="heroTitle">信通家俱行</h1>
+      <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
+      <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
+      <div class="hero-actions">
+        <a class="hero-line-cta" id="lineFab" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" width="17" height="17" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          LINE 詢問商品
+        </a>
+        <a href="#categories" class="hero-cta" data-page-field="heroCta">探索商品</a>
+      </div>
+    </div>
+    <figure class="hero-photo" id="heroPhoto" style="display:none">
+      <img id="heroPhotoImg" src="" alt="">
+    </figure>
   </div>
 </section>
 
+<section id="picks" style="padding:34px 40px 0">
+  <div class="sec-head">
+    <h3>本月選品</h3>
+    <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
+  </div>
+  <div class="pick-grid" id="picksGrid"></div>
+</section>
+
+<section id="catTiles" style="padding:26px 40px 46px">
+  <div class="cat-grid" id="catTilesGrid"></div>
+</section>
+
 <section id="categories">
-  <div class="section-header">
-    <div class="section-label">PRODUCTS</div>
-    <h2 class="section-title" data-page-field="productsTitle">精選商品</h2>
-    <div class="section-line"></div>
+  <div class="cat-toolbar">
+    <div class="categories-bar" id="categoriesBar"></div>
+    <div class="sub-categories-bar" id="subCategoriesBar"></div>
+    <div class="listing-head">
+      <h2 class="listing-title" id="listingTitle">全部商品</h2>
+      <select class="sort-select" id="sortSelect" onchange="setSortMode(this.value)">
+        <option value="width-asc">寬度：小 → 大</option>
+        <option value="default">依後台排序</option>
+      </select>
+    </div>
+    <div class="applied-chips" id="appliedChips"></div>
   </div>
   <div class="cat-layout">
     <aside class="cat-sidebar" id="catSidebar"></aside>
-    <div class="cat-main">
-      <div class="categories-bar" id="categoriesBar"></div>
-      <div class="sub-categories-bar" id="subCategoriesBar"></div>
-      <div class="products-grid" id="productsGrid"></div>
-    </div>
+    <div class="products-grid" id="productsGrid"></div>
   </div>
 </section>
 
@@ -911,30 +1088,40 @@ footer{
 
 <footer>
   <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
+  <a id="mapFab" href="#" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:inherit">
+    <svg viewBox="0 0 24 24" width="14" height="14" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+    Google 地圖
+  </a>
   <div>© 2026 信通家俱行</div>
 </footer>
 
 <div class="toast" id="toast"></div>
-<a class="map-fab" id="mapFab" href="#" target="_blank" rel="noopener" aria-label="Google 地圖">
-  <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
-</a>
-<a class="line-fab" id="lineFab" href="#" target="_blank" rel="noopener" aria-label="LINE 加好友">
-  <img src="data:image/png;base64,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" alt="LINE">
-</a>
-<button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
-  ♡
-  <span class="favorites-count" id="favoritesCount">0</span>
-</button>
 <aside class="favorites-panel" id="favoritesPanel">
   <div class="favorites-head">
-    <div class="favorites-title">喜愛清單</div>
-    <button class="favorites-close" onclick="toggleFavoritesPanel(false)">×</button>
+    <div>
+      <div class="favorites-title">收藏清單</div>
+      <div class="favorites-subtitle" id="favoritesSubtitle"></div>
+    </div>
+    <button class="favorites-close" onclick="toggleFavoritesPanel(false)" aria-label="關閉"><svg viewBox="0 0 24 24" width="16" height="16" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
   </div>
+  <div class="favorites-room-tabs" id="favoritesRoomTabs" style="display:none"></div>
   <div class="favorites-list" id="favoritesList"></div>
-  <button class="favorites-inquire-btn" id="favoritesInquireBtn" onclick="inquireAllFavorites()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-    LINE 詢問所有收藏商品
-  </button>
+  <div class="favorites-preview" id="favoritesPreview" style="display:none">
+    <div class="favorites-preview-check">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      已帶入 LINE，等你按送出
+    </div>
+    <div class="favorites-preview-bubble" id="favoritesPreviewBubble"></div>
+    <button class="favorites-preview-back" onclick="resetFavoritesPreview()">← 回到收藏清單</button>
+  </div>
+  <div class="favorites-footer" id="favoritesFooter">
+    <div class="favorites-total" id="favoritesTotal"></div>
+    <button class="favorites-inquire-btn" id="favoritesInquireBtn" onclick="inquireAllFavorites()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      整份用 LINE 詢價
+    </button>
+    <button class="favorites-copy-btn" onclick="copyFavoritesLink()">複製清單連結</button>
+  </div>
 </aside>
 
 <div class="modal-overlay" id="wishlistModal">
@@ -1087,6 +1274,7 @@ const DEFAULT_STATE={
   catalog:structuredClone(DEFAULT_CATALOG),
   activeMain:"全部",
   activeSub:null,
+  sortMode:"width-asc",
   favorites:[],
   products:[
     {id:uid(),mainCat:"cat-bed",subCat:"sub-bed-frame",name:"日式低床架",size:"Queen 153 x 203 cm",price:"12,800",desc:"低矮設計，原木質感，附床頭收納空間。",photos:[sampleSvg("日式低床架","#8a7b68","#5b5448"),sampleSvg("床架細節","#9b8a70","#6b5f50")]},
@@ -1122,6 +1310,8 @@ function normalizeProduct(product){
   return product;
 }
 let searchQuery="";
+let favoritesRoomFilter="全部";
+let favoritesSent=false;
 function extractGdriveId(url){
   const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
   for(const pattern of patterns){
@@ -1156,6 +1346,12 @@ function getSizeSummary(product){
   if(d.height)parts.push(`高 ${withCm(d.height)}`);
   return parts.length?parts.join(" x "):(product.size||"尺寸洽詢");
 }
+function parseWidthCm(product){
+  const raw=product.dimensions?.width;
+  if(!raw)return null;
+  const m=String(raw).match(/[\d.]+/);
+  return m?parseFloat(m[0]):null;
+}
 function formatPrice(price){
   const text=String(price||"").trim();
   if(!text)return "";
@@ -1177,6 +1373,13 @@ function applyPageText(){
     const key=el.dataset.pageField;
     if(state.pageText?.[key])el.textContent=state.pageText[key];
   });
+}
+function applyLayoutVisibility(){
+  // 後台「首頁版面設定」的顯示/隱藏開關；沒設定過（undefined）一律預設顯示
+  const picks=document.getElementById("picks");
+  const catTiles=document.getElementById("catTiles");
+  if(picks)picks.style.display=state.layout?.showPicks===false?"none":"";
+  if(catTiles)catTiles.style.display=state.layout?.showCatTiles===false?"none":"";
 }
 
 function activeProducts(){return state.products.filter(p=>p.status!=="archived")}
@@ -1203,7 +1406,7 @@ function renderCategories(){
     // 桌面版左側分類清單：跟水平分類列共用同一組資料與點擊邏輯
     const sideBtn=document.createElement("button");
     sideBtn.className="cat-side-btn"+(isActive?" active":"");
-    sideBtn.innerHTML=escapeHTML(getMainName(id));
+    sideBtn.innerHTML=`<span>${escapeHTML(getMainName(id))}</span><span class="mono">${count}</span>`;
     sideBtn.onclick=btn.onclick;
     sidebar.appendChild(sideBtn);
     if(isActive&&cat?.subs?.length){
@@ -1214,7 +1417,7 @@ function renderCategories(){
         if(sub.hidden||n===0)return;
         const subBtn=document.createElement("button");
         subBtn.className="cat-sub-btn"+(state.activeSub===sub.id?" active":"");
-        subBtn.innerHTML=escapeHTML(sub.name);
+        subBtn.innerHTML=`<span>${escapeHTML(sub.name)}</span><span class="mono">${n}</span>`;
         subBtn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
         subsWrap.appendChild(subBtn);
       });
@@ -1262,9 +1465,15 @@ function toggleMobileNav(force){
   menu.classList.toggle("open",open);
   btn.setAttribute("aria-expanded",String(open));
 }
+function setSortMode(value){
+  state.sortMode=value;
+  renderProducts();
+}
 function renderProducts(){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
+  const sortEl=document.getElementById("sortSelect");
+  if(sortEl)sortEl.value=state.sortMode;
   let list=state.products.filter(p=>p.status!=="archived");
   const q=searchQuery.trim().toLowerCase();
   if(q){
@@ -1278,7 +1487,19 @@ function renderProducts(){
     list=list.filter(p=>p.mainCat===state.activeMain);
     if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
   }
-  list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  if(state.sortMode==="width-asc"){
+    list.sort((a,b)=>{
+      const wa=parseWidthCm(a),wb=parseWidthCm(b);
+      if(wa==null&&wb==null)return (a.sortOrder??0)-(b.sortOrder??0);
+      if(wa==null)return 1;
+      if(wb==null)return -1;
+      return wa-wb;
+    });
+  }else{
+    list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  }
+  renderListingTitle();
+  renderAppliedChips();
   if(!list.length){
     const empty=document.createElement("div");
     empty.style.cssText="grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--soft)";
@@ -1292,7 +1513,7 @@ function renderProducts(){
     const wrap=document.createElement("div");
     wrap.className="product-img-wrap";
     const fav=document.createElement("button");
-    fav.className="favorite-btn"+(state.favorites.includes(product.id)?" active":"");
+    fav.className="favorite-btn"+(isFavorite(product.id)?" active":"");
     fav.title="加入喜愛清單";
     fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
@@ -1359,6 +1580,116 @@ function renderProducts(){
     grid.appendChild(card);
   });
 }
+function renderListingTitle(){
+  const el=document.getElementById("listingTitle");
+  if(!el)return;
+  el.textContent=state.activeSub?getSubName(state.activeMain,state.activeSub):getMainName(state.activeMain);
+}
+function renderAppliedChips(){
+  const wrap=document.getElementById("appliedChips");
+  if(!wrap)return;
+  const chips=[];
+  if(state.activeMain!=="全部"){
+    chips.push({label:getMainName(state.activeMain),clear:()=>{state.activeMain="全部";state.activeSub=null}});
+  }
+  if(state.activeSub){
+    chips.push({label:getSubName(state.activeMain,state.activeSub),clear:()=>{state.activeSub=null}});
+  }
+  if(!chips.length){wrap.innerHTML="";return}
+  const closeSvg='<svg viewBox="0 0 24 24" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
+  wrap.innerHTML=chips.map((c,i)=>`<button class="chip-applied" data-idx="${i}">${escapeHTML(c.label)}${closeSvg}</button>`).join("")
+    +`<button class="chip-clear-all" id="clearAllChips">全部清除</button>`;
+  wrap.querySelectorAll(".chip-applied").forEach((btn,i)=>{
+    btn.onclick=()=>{chips[i].clear();renderCategories();renderProducts()};
+  });
+  document.getElementById("clearAllChips").onclick=()=>{
+    state.activeMain="全部";state.activeSub=null;
+    renderCategories();renderProducts();
+  };
+}
+function renderPicks(){
+  const grid=document.getElementById("picksGrid");
+  const countEl=document.getElementById("picksTotalCount");
+  if(!grid)return;
+  const all=activeProducts().slice().sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  if(countEl)countEl.textContent=all.length;
+  // 後台「首頁版面設定」手動挑選的商品優先（照選好的順序顯示）；沒有手動選的話自動抓排序最前面 4 件
+  const pickedIds=(state.layout?.picksProductIds||[]).filter(id=>activeProducts().some(p=>p.id===id));
+  const picks=pickedIds.length?pickedIds.map(id=>state.products.find(p=>p.id===id)).filter(Boolean):all.slice(0,4);
+  grid.innerHTML="";
+  picks.forEach(product=>{
+    const photos=(product.photos||[]).filter(Boolean);
+    const card=document.createElement("article");
+    card.className="p-card";
+    card.innerHTML=`
+      <div class="p-card__media">${photos.length?`<img src="${normalizePhotoUrl(photos[0])}" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
+      <div class="p-card__title">${escapeHTML(product.name)}</div>
+      <div class="p-card__foot">
+        <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
+        ${product.price?`<span class="price">${escapeHTML(formatPrice(product.price))}</span>`:""}
+      </div>
+      <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" aria-label="加入收藏">
+        <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      </button>
+    `;
+    card.querySelector(".p-card__fav").addEventListener("click",event=>{
+      event.stopPropagation();
+      toggleFavorite(product.id);
+    });
+    card.addEventListener("click",()=>openProductDetail(product.id));
+    grid.appendChild(card);
+  });
+}
+function renderCategoryTiles(){
+  const grid=document.getElementById("catTilesGrid");
+  if(!grid)return;
+  const cats=state.catalog.slice(0,4);
+  grid.innerHTML=cats.map(cat=>{
+    // 後台「首頁版面設定」為這個分類上傳的縮圖優先；沒有的話自動抓分類底下第一件商品的照片
+    const thumbSrc=cat.image||normalizePhotoUrl(activeProducts().find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"");
+    return `
+      <button class="cat-tile" type="button" data-cat="${escapeHTML(cat.id)}">
+        <span class="cat-tile__thumb">${thumbSrc?`<img src="${thumbSrc}" alt="">`:""}</span>
+        <span class="cat-tile__name">${escapeHTML(cat.name)}</span>
+        <span class="cat-tile__count">${mainCount(cat.id)} 件</span>
+      </button>
+    `;
+  }).join("")+`
+    <a class="cat-tile cat-tile--cta" id="catCta" href="#" target="_blank" rel="noopener">
+      <span class="cat-tile__name">不確定<br>就問</span>
+      <span class="cta-link">LINE 問老闆 →</span>
+    </a>
+  `;
+  grid.querySelectorAll(".cat-tile[data-cat]").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      state.activeMain=btn.dataset.cat;
+      state.activeSub=null;
+      renderCategories();
+      renderProducts();
+      document.getElementById("categories").scrollIntoView({behavior:"smooth",block:"start"});
+    });
+  });
+  const cta=document.getElementById("catCta");
+  if(cta)cta.href=state.contact?.lineUrl||"#";
+}
+function renderHeroPhoto(){
+  const fig=document.getElementById("heroPhoto");
+  const img=document.getElementById("heroPhotoImg");
+  if(!fig||!img)return;
+  // 後台「首頁版面設定」上傳的圖優先；沒有上傳的話才自動抓第一件有照片的商品
+  const customImage=state.layout?.heroImage;
+  if(customImage){
+    img.src=customImage;
+    img.alt="";
+    fig.style.display="";
+    return;
+  }
+  const withPhoto=activeProducts().find(p=>(p.photos||[]).length);
+  if(!withPhoto)return;
+  img.src=normalizePhotoUrl(withPhoto.photos[0]);
+  img.alt=withPhoto.name;
+  fig.style.display="";
+}
 const FAVORITES_KEY="xintong_favorites_v1";
 const FAVORITES_TTL_MS=4*60*60*1000; // 收藏清單超過 4 小時沒更新就視為過期
 function placeholderMarkup(text){
@@ -1375,37 +1706,105 @@ function loadFavoritesLocal(){
     const data=JSON.parse(s);
     if(!data||!Array.isArray(data.items)||!data.savedAt)return []; // 舊格式或缺時間戳記一律視為過期
     if(Date.now()-data.savedAt>FAVORITES_TTL_MS)return [];
-    return data.items;
+    // 舊格式是純 id 字串陣列，升級成 {id,qty,note,addedAt} 物件，數量預設 1
+    return data.items.map(item=>typeof item==="string"?{id:item,qty:1,note:"",addedAt:data.savedAt}:item);
   }catch(e){return []}
 }
 function saveFavoritesLocal(){
   try{localStorage.setItem(FAVORITES_KEY,JSON.stringify({items:state.favorites,savedAt:Date.now()}))}catch(e){}
 }
+function isFavorite(id){return state.favorites.some(f=>f.id===id)}
+function getFavorite(id){return state.favorites.find(f=>f.id===id)}
 function toggleFavorite(id){
-  if(state.favorites.includes(id)){
-    state.favorites=state.favorites.filter(favId=>favId!==id);
+  if(isFavorite(id)){
+    state.favorites=state.favorites.filter(f=>f.id!==id);
     toast("已從喜愛清單移除");
   }else{
-    state.favorites.push(id);
+    state.favorites.push({id,qty:1,note:"",addedAt:Date.now()});
     toast("已加入喜愛清單");
   }
   saveFavoritesLocal();
   renderProducts();
+  renderPicks();
   renderFavorites();
+}
+function setFavoriteQty(id,qty){
+  if(qty<=0){
+    state.favorites=state.favorites.filter(f=>f.id!==id);
+  }else{
+    const fav=getFavorite(id);
+    if(fav)fav.qty=qty;
+  }
+  saveFavoritesLocal();
+  renderProducts();
+  renderPicks();
+  renderFavorites();
+}
+function setFavoriteNote(id,note){
+  const fav=getFavorite(id);
+  if(!fav)return;
+  fav.note=note;
+  saveFavoritesLocal();
+}
+function parsePriceNumber(price){
+  const text=String(price||"").replace(/[,，]/g,"").trim();
+  const n=parseFloat(text);
+  return Number.isFinite(n)?n:null;
 }
 function toggleFavoritesPanel(force){
   const panel=document.getElementById("favoritesPanel");
   panel.classList.toggle("open",typeof force==="boolean"?force:!panel.classList.contains("open"));
 }
+function favoriteProductsWithMeta(){
+  return state.favorites.map(f=>{
+    const product=state.products.find(p=>p.id===f.id);
+    return product&&product.status!=="archived"?{...product,_qty:f.qty||1,_note:f.note||""}:null;
+  }).filter(Boolean);
+}
+function renderFavoritesRoomTabs(allProducts){
+  const tabsWrap=document.getElementById("favoritesRoomTabs");
+  const rooms=[...new Set(allProducts.map(p=>p.room).filter(Boolean))];
+  const hasUnassigned=allProducts.some(p=>!p.room);
+  if(!rooms.length){
+    tabsWrap.style.display="none";
+    tabsWrap.innerHTML="";
+    return;
+  }
+  const tabs=["全部",...rooms,...(hasUnassigned?["未分類"]:[])];
+  if(!tabs.includes(favoritesRoomFilter))favoritesRoomFilter="全部";
+  tabsWrap.style.display="flex";
+  tabsWrap.innerHTML=tabs.map(room=>{
+    const n=room==="全部"?allProducts.length:allProducts.filter(p=>(p.room||"未分類")===room).length;
+    return `<button class="favorites-room-tab${favoritesRoomFilter===room?" active":""}" data-room="${escapeHTML(room)}">${escapeHTML(room)}<span class="mono" style="margin-left:5px">${n}</span></button>`;
+  }).join("");
+  tabsWrap.querySelectorAll(".favorites-room-tab").forEach(btn=>{
+    btn.onclick=()=>{favoritesRoomFilter=btn.dataset.room;renderFavorites()};
+  });
+}
 function renderFavorites(){
   const list=document.getElementById("favoritesList");
   const count=document.getElementById("favoritesCount");
-  const inquireBtn=document.getElementById("favoritesInquireBtn");
-  const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
-  count.textContent=products.length;
-  if(inquireBtn)inquireBtn.style.display=products.length?"flex":"none";
+  const footer=document.getElementById("favoritesFooter");
+  const subtitle=document.getElementById("favoritesSubtitle");
+  favoritesSent=false;
+  document.getElementById("favoritesPreview").style.display="none";
+  list.style.display="";
+  const allProducts=favoriteProductsWithMeta();
+  const totalQty=allProducts.reduce((sum,p)=>sum+p._qty,0);
+  count.textContent=allProducts.length;
+  subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 30 天`:"";
+  renderFavoritesRoomTabs(allProducts);
+  if(!allProducts.length){
+    footer.style.display="none";
+    list.innerHTML='<div class="favorites-empty">尚未加入商品。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
+    return;
+  }
+  footer.style.display="block";
+  const products=favoritesRoomFilter==="全部"?allProducts:allProducts.filter(p=>(p.room||"未分類")===favoritesRoomFilter);
+  const total=products.reduce((sum,p)=>{const price=parsePriceNumber(p.price);return price!=null?sum+price*p._qty:sum},0);
+  document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>NT$ ${total.toLocaleString()}</span>`:"";
   if(!products.length){
-    list.innerHTML='<div class="favorites-empty">尚未加入商品。點商品卡右上角愛心即可收藏。</div>';
+    list.innerHTML='<div class="favorites-empty">這個房間還沒收藏。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
     return;
   }
   list.innerHTML="";
@@ -1413,17 +1812,32 @@ function renderFavorites(){
     const item=document.createElement("div");
     item.className="favorite-item";
     const photo=normalizePhotoUrl((product.photos||[])[0]||"");
+    const price=parsePriceNumber(product.price);
+    const subtotal=price!=null?`NT$ ${(price*product._qty).toLocaleString()}`:"";
     item.innerHTML=`
       <img src="${photo}" alt="">
       <div>
         <div class="favorite-item-name">${escapeHTML(product.name)}</div>
-        <div class="favorite-item-size">${escapeHTML(getSizeSummary(product))}</div>
+        <div class="favorite-item-meta">${escapeHTML(getSizeSummary(product))} ・ ${escapeHTML(product.sku||product.id)}</div>
+        <div class="favorite-item-row">
+          <div class="favorite-item-qty">
+            <button class="qty-btn" data-dir="-1">−</button>
+            <span>${product._qty}</span>
+            <button class="qty-btn" data-dir="1">+</button>
+          </div>
+          ${subtotal?`<div class="favorite-item-subtotal">${subtotal}</div>`:""}
+        </div>
+        <input class="favorite-item-note" type="text" placeholder="＋ 備註（例如：想問能不能換顏色）" value="${escapeHTML(product._note)}">
       </div>
-      <button title="移除">×</button>
+      <button class="favorite-item-remove" title="移除"><svg viewBox="0 0 24 24" width="14" height="14" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
     `;
     item.querySelector("img").onclick=()=>openProductDetail(product.id);
     item.querySelector(".favorite-item-name").onclick=()=>openProductDetail(product.id);
-    item.querySelector("button").onclick=()=>toggleFavorite(product.id);
+    item.querySelector(".favorite-item-remove").onclick=()=>setFavoriteQty(product.id,0);
+    item.querySelectorAll(".qty-btn").forEach(btn=>{
+      btn.onclick=()=>setFavoriteQty(product.id,product._qty+parseInt(btn.dataset.dir,10));
+    });
+    item.querySelector(".favorite-item-note").addEventListener("input",e=>setFavoriteNote(product.id,e.target.value));
     list.appendChild(item);
   });
 }
@@ -1469,7 +1883,7 @@ function closeLightbox(){
 function updateLbFavoriteBtn(){
   const btn=document.getElementById("lbFavoriteBtn");
   if(!btn||!lbProduct)return;
-  const active=state.favorites.includes(lbProduct.id);
+  const active=isFavorite(lbProduct.id);
   btn.classList.toggle("active",active);
   btn.textContent=active?"♥":"♡";
   btn.setAttribute("aria-label",active?"從喜愛清單移除":"加入喜愛清單");
@@ -1478,6 +1892,54 @@ function toggleLbFavorite(){
   if(!lbProduct)return;
   toggleFavorite(lbProduct.id);
   updateLbFavoriteBtn();
+}
+function getProductDisplayParts(product){
+  const d=product.dimensions||{};
+  const specs=(product.specs||[]).filter(spec=>spec.part||spec.w||spec.d||spec.h||spec.label);
+  const cat=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
+  const rawDesc=product.desc||"";
+  const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?rawDesc:escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
+
+  // 判斷是新格式還是舊格式規格
+  const isNewSpec=specs.length>0&&("part" in specs[0]);
+
+  let specsHtml="";
+  if(isNewSpec){
+    // 檢查哪些欄位有資料，決定要顯示的欄位
+    const hasW=specs.some(s=>s.w);
+    const hasD=specs.some(s=>s.d);
+    const hasH=specs.some(s=>s.h);
+    if(specs.length){
+      specsHtml=`
+        <div class="lb-spec-title">詳細尺寸規格</div>
+        <div class="lb-spec-table-wrap">
+          <table class="lb-spec-table">
+            <thead><tr>
+              <th></th>
+              ${hasW?`<th>寬（W）</th>`:""}
+              ${hasD?`<th>深（D）</th>`:""}
+              ${hasH?`<th>高（H）</th>`:""}
+            </tr></thead>
+            <tbody>
+              ${specs.map(spec=>`<tr>
+                <td class="lb-spec-part">${escapeHTML(spec.part||"—")}</td>
+                ${hasW?`<td>${escapeHTML(withCm(spec.w)||"—")}</td>`:""}
+                ${hasD?`<td>${escapeHTML(withCm(spec.d)||"—")}</td>`:""}
+                ${hasH?`<td>${escapeHTML(withCm(spec.h)||"—")}</td>`:""}
+              </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>`;
+    }
+  }else if(specs.length){
+    // 舊格式：label/value 列表
+    specsHtml=`
+      <div class="lb-spec-title">詳細規格</div>
+      <div class="lb-detail-list">
+        ${specs.map(spec=>`<div class="lb-detail-row"><span>${escapeHTML(spec.label)}</span><strong>${escapeHTML(withCm(spec.value)||"—")}</strong></div>`).join("")}
+      </div>`;
+  }
+  return {d,cat,desc,specsHtml};
 }
 function lbRender(){
   const img=document.getElementById("lbImg");
@@ -1502,52 +1964,7 @@ function lbRender(){
     });
   }
   if(lbProduct){
-    const d=lbProduct.dimensions||{};
-    const specs=(lbProduct.specs||[]).filter(spec=>spec.part||spec.w||spec.d||spec.h||spec.label);
-    const cat=getSubName(lbProduct.mainCat,lbProduct.subCat)||getMainName(lbProduct.mainCat);
-    const rawDesc=lbProduct.desc||"";
-    const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?rawDesc:escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
-
-    // 判斷是新格式還是舊格式規格
-    const isNewSpec=specs.length>0&&("part" in specs[0]);
-
-    let specsHtml="";
-    if(isNewSpec){
-      // 檢查哪些欄位有資料，決定要顯示的欄位
-      const hasW=specs.some(s=>s.w);
-      const hasD=specs.some(s=>s.d);
-      const hasH=specs.some(s=>s.h);
-      if(specs.length){
-        specsHtml=`
-          <div class="lb-spec-title">詳細尺寸規格</div>
-          <div class="lb-spec-table-wrap">
-            <table class="lb-spec-table">
-              <thead><tr>
-                <th></th>
-                ${hasW?`<th>寬（W）</th>`:""}
-                ${hasD?`<th>深（D）</th>`:""}
-                ${hasH?`<th>高（H）</th>`:""}
-              </tr></thead>
-              <tbody>
-                ${specs.map(spec=>`<tr>
-                  <td class="lb-spec-part">${escapeHTML(spec.part||"—")}</td>
-                  ${hasW?`<td>${escapeHTML(withCm(spec.w)||"—")}</td>`:""}
-                  ${hasD?`<td>${escapeHTML(withCm(spec.d)||"—")}</td>`:""}
-                  ${hasH?`<td>${escapeHTML(withCm(spec.h)||"—")}</td>`:""}
-                </tr>`).join("")}
-              </tbody>
-            </table>
-          </div>`;
-      }
-    }else if(specs.length){
-      // 舊格式：label/value 列表
-      specsHtml=`
-        <div class="lb-spec-title">詳細規格</div>
-        <div class="lb-detail-list">
-          ${specs.map(spec=>`<div class="lb-detail-row"><span>${escapeHTML(spec.label)}</span><strong>${escapeHTML(withCm(spec.value)||"—")}</strong></div>`).join("")}
-        </div>`;
-    }
-
+    const {d,cat,desc,specsHtml}=getProductDisplayParts(lbProduct);
     info.innerHTML=`
       <div class="lb-cat-row">
         <div class="lb-product-cat">${escapeHTML(cat)}</div>
@@ -1568,38 +1985,74 @@ function lbRender(){
     updateLbFavoriteBtn();
   }
 }
-function lineInquireBtnHtml(product){
+function buildLineInquireUrl(product){
   const lineId=(state.contact?.line||"").trim();
   if(!lineId)return "";
   // LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
   const productUrl=`${location.origin}${location.pathname}#product-${product.id}`;
   const msg=`您好，我想詢問這件商品：${product.name||""}\n${productUrl}`;
-  const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
+  return `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
+}
+function lineInquireBtnHtml(product){
+  const url=buildLineInquireUrl(product);
+  if(!url)return "";
   return `<a class="lb-inquire-btn" href="${escapeHTML(url)}" target="_blank" rel="noopener">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
     LINE 詢問這件商品
   </a>`;
 }
+async function buildWishlistUrl(ids){
+  try{
+    const code=await Storage.createWishlist(ids);
+    return `${location.origin}${location.pathname}#w=${code}`;
+  }catch(e){
+    console.warn("心願清單短碼建立失敗，改用完整網址",e);
+    return `${location.origin}${location.pathname}#wishlist=${ids.join(",")}`;
+  }
+}
+function buildFavoritesMessage(products,wishlistUrl){
+  const lines=products.map((p,i)=>{
+    let line=`${i+1}. ${p.name} ${getSizeSummary(p)} × ${p._qty}`;
+    if(p._note)line+=`\n　　備註：${p._note}`;
+    return line;
+  });
+  return `想詢問這幾件，麻煩幫我報價和運送時間：\n\n${lines.join("\n")}\n\n${wishlistUrl}`;
+}
 async function inquireAllFavorites(){
   const lineId=(state.contact?.line||"").trim();
   if(!lineId){toast("店家尚未設定 LINE");return}
-  const products=state.favorites.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
-  if(!products.length){toast("喜愛清單是空的");return}
+  const products=favoriteProductsWithMeta();
+  if(!products.length){toast("收藏清單是空的");return}
   const ids=products.map(p=>p.id);
   // 先同步開一個空白分頁佔位，避免非同步等待期間被瀏覽器判定成彈窗封鎖
   const win=window.open("","_blank","noopener");
-  let wishlistUrl;
-  try{
-    const code=await Storage.createWishlist(ids);
-    wishlistUrl=`${location.origin}${location.pathname}#w=${code}`;
-  }catch(e){
-    console.warn("心願清單短碼建立失敗，改用完整網址",e);
-    wishlistUrl=`${location.origin}${location.pathname}#wishlist=${ids.join(",")}`;
-  }
-  // 分隔線固定 10 個字元，不會因為太長在手機上被迫換行；下面留白給客人接著打字
-  const msg=`您好，我想詢問以下收藏商品（共 ${products.length} 件）：\n${wishlistUrl}\n——————————\n`;
+  const wishlistUrl=await buildWishlistUrl(ids);
+  const msg=buildFavoritesMessage(products,wishlistUrl);
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
   if(win)win.location.href=url;else window.open(url,"_blank","noopener");
+  showFavoritesPreview(msg);
+}
+function showFavoritesPreview(msg){
+  favoritesSent=true;
+  document.getElementById("favoritesRoomTabs").style.display="none";
+  document.getElementById("favoritesList").style.display="none";
+  document.getElementById("favoritesFooter").style.display="none";
+  document.getElementById("favoritesPreviewBubble").textContent=msg;
+  document.getElementById("favoritesPreview").style.display="block";
+}
+function resetFavoritesPreview(){
+  renderFavorites();
+}
+async function copyFavoritesLink(){
+  const products=favoriteProductsWithMeta();
+  if(!products.length){toast("收藏清單是空的");return}
+  const wishlistUrl=await buildWishlistUrl(products.map(p=>p.id));
+  try{
+    await navigator.clipboard.writeText(wishlistUrl);
+    toast("清單連結已複製");
+  }catch(e){
+    toast("複製失敗，請手動複製連結");
+  }
 }
 function renderSharedWishlist(ids){
   const container=document.getElementById("wishlistItems");
@@ -1619,9 +2072,9 @@ function renderSharedWishlist(ids){
           <img src="${photo}" alt="">
           <div>
             <div class="favorite-item-name">${escapeHTML(p.name||"")}</div>
-            <div class="favorite-item-size">${escapeHTML(getSizeSummary(p))}</div>
+            <div class="favorite-item-meta">${escapeHTML(getSizeSummary(p))}</div>
           </div>
-          <button title="查看商品">→</button>
+          <button class="favorite-item-goto" title="查看商品">→</button>
         </div>`;
     }).join("");
     container.querySelectorAll(".favorite-item").forEach(el=>{
@@ -1693,13 +2146,17 @@ function renderContact(){
   document.getElementById("lineFab").href=c.lineUrl||"#";
   document.getElementById("mapFab").href=c.mapUrl||"#";
   const items=[
-    {label:"地址",val:c.addr},
-    {label:"電話",val:c.phone},
-    {label:"LINE",val:c.line},
+    {label:"地址",val:c.addr,href:c.mapUrl},
+    {label:"電話",val:c.phone,href:c.phone?`tel:${c.phone.replace(/[^\d+]/g,"")}`:null},
+    {label:"LINE",val:c.line,href:c.lineUrl},
     {label:"營業時間",val:c.hours},
     {label:"信箱",val:c.email}
   ].filter(item=>item.val);
-  document.getElementById("contactItems").innerHTML=items.map(item=>`<span class="item"><b>${escapeHTML(item.label)}</b>${escapeHTML(item.val)}</span>`).join('<span class="dot">·</span>');
+  document.getElementById("contactItems").innerHTML=items.map(item=>{
+    const isTel=item.href?.startsWith("tel:");
+    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
+    return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
+  }).join('<span class="dot">·</span>');
 }
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});
@@ -1717,6 +2174,9 @@ Object.assign(window,{
   handleSearchInput,
   clearSearch,
   toggleMobileNav,
+  setSortMode,
+  copyFavoritesLink,
+  resetFavoritesPreview,
 });
 /* ── 啟動：從 Firebase 載入資料 ────────────────────────────────── */
 (async()=>{
@@ -1727,7 +2187,7 @@ Object.assign(window,{
 
   const loadingEl=document.createElement("div");
   loadingEl.id="site-loading";
-  loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:'Noto Serif TC',serif;color:var(--muted)";
+  loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:var(--font-heading);color:var(--muted)";
   loadingEl.innerHTML='<div style="font-size:28px;letter-spacing:.1em;color:var(--charcoal)">信通家俱行</div><div style="font-size:13px;letter-spacing:.08em">載入中...</div>';
   document.body.appendChild(loadingEl);
 
@@ -1759,8 +2219,12 @@ Object.assign(window,{
 
   loadingEl.remove();
   applyPageText();
+  applyLayoutVisibility();
   renderCategories();
   renderProducts();
+  renderPicks();
+  renderCategoryTiles();
+  renderHeroPhoto();
   renderContact();
   renderFavorites();
   // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面

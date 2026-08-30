@@ -16,8 +16,8 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://firestore.googleapis.com">
-<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -345,6 +345,40 @@ nav{
   gap:0;
   border-top:1px solid var(--line);
   border-left:1px solid var(--line);
+}
+.loading-breathe{
+  grid-column:1/-1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:80px 20px;
+  border:0; /* 蓋掉外層 grid 的邊框，避免載入中畫面出現多餘框線 */
+}
+.loading-breathe-text{
+  font-family:var(--font-heading);
+  font-size:22px;
+  letter-spacing:.15em;
+  color:var(--charcoal);
+  animation:breatheOpacity 1.8s ease-in-out infinite;
+}
+.loading-breathe-line{
+  width:56px;
+  height:1px;
+  background:var(--tan);
+  animation:breatheScale 1.8s ease-in-out infinite;
+}
+@keyframes breatheOpacity{
+  0%,100%{opacity:.35;transform:translateY(0)}
+  50%{opacity:1;transform:translateY(-2px)}
+}
+@keyframes breatheScale{
+  0%,100%{transform:scaleX(.36);opacity:.4}
+  50%{transform:scaleX(1);opacity:1}
+}
+@media(prefers-reduced-motion:reduce){
+  .loading-breathe-text,.loading-breathe-line{animation:none;opacity:.8}
 }
 @media(min-width:761px){
   .cat-layout{display:grid;grid-template-columns:236px 1fr;gap:34px;align-items:start;margin-top:22px}
@@ -998,41 +1032,6 @@ footer a:hover{color:var(--color-on-dark)}
 @media(max-width:470px){
   .lb-arrow{display:none!important}
 }
-#site-loading .load-mark{
-  width:56px;height:56px;border-radius:16px;
-  background:var(--charcoal);
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-heading);
-  color:var(--tan);
-  font-size:26px;
-  animation:loadPulse 1.7s ease-in-out infinite;
-}
-#site-loading .load-name{
-  font-family:var(--font-heading);
-  font-size:19px;
-  letter-spacing:.14em;
-  color:var(--charcoal);
-  margin-top:4px;
-}
-#site-loading .load-dots{display:flex;gap:6px;margin-top:2px}
-#site-loading .load-dots span{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--tan);
-  animation:loadDot 1.3s ease-in-out infinite;
-}
-#site-loading .load-dots span:nth-child(2){animation-delay:.16s}
-#site-loading .load-dots span:nth-child(3){animation-delay:.32s}
-@keyframes loadPulse{
-  0%,100%{transform:scale(1);opacity:1}
-  50%{transform:scale(1.1);opacity:.72}
-}
-@keyframes loadDot{
-  0%,80%,100%{opacity:.25;transform:translateY(0)}
-  40%{opacity:1;transform:translateY(-4px)}
-}
-@media(prefers-reduced-motion:reduce){
-  #site-loading .load-mark,#site-loading .load-dots span{animation:none}
-}
 </style>
 </head>
 <body>
@@ -1114,7 +1113,12 @@ footer a:hover{color:var(--color-on-dark)}
   </div>
   <div class="cat-layout">
     <aside class="cat-sidebar" id="catSidebar"></aside>
-    <div class="products-grid" id="productsGrid"></div>
+    <div class="products-grid" id="productsGrid">
+      <div class="loading-breathe">
+        <div class="loading-breathe-text">信通家俱行</div>
+        <div class="loading-breathe-line"></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1254,7 +1258,9 @@ const Storage={
   },
   async get(){
     try{
-      const[metaSnap,productsSnap]=await Promise.all([
+      // meta（catalog/contact/pageText）跟商品清單是各自獨立的資料，用 Promise.all
+      // 平行讀取，不用排隊等兩次，可以省下接近一半的網路等待時間。
+      const [metaSnap,productsSnap]=await Promise.all([
         getDoc(doc(db,"sitedata",SITE_DOC)),
         getDocs(productsCol())
       ]);
@@ -2233,11 +2239,9 @@ Object.assign(window,{
   const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
   const wishlistPromise=wishlistCodeMatch?Storage.getWishlist(wishlistCodeMatch[1]):null;
 
-  const loadingEl=document.createElement("div");
-  loadingEl.id="site-loading";
-  loadingEl.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--cream);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;font-family:var(--font-heading);color:var(--muted)";
-  loadingEl.innerHTML='<div class="load-mark">信</div><div class="load-name">信通家俱行</div><div class="load-dots"><span></span><span></span><span></span></div>';
-  document.body.appendChild(loadingEl);
+  // 注意：不再用全螢幕遮罩擋住整個畫面。導覽列、Hero 大圖本來就是靜態內容，
+  // 不需要等 Firebase 資料回來就能先顯示；只有商品區塊（本來就要靠資料庫）
+  // 顯示「商品載入中…」，其餘頁面可以馬上被看到，加快使用者感受到的載入速度。
 
   try{
     const saved=await Storage.get();
@@ -2265,7 +2269,6 @@ Object.assign(window,{
   // 喜愛清單一律以「這台瀏覽器」的本機資料為準，不使用從雲端讀回來的舊資料
   state.favorites=loadFavoritesLocal();
 
-  loadingEl.remove();
   applyPageText();
   applyLayoutVisibility();
   renderCategories();

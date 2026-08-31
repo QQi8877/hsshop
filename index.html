@@ -1324,21 +1324,25 @@ const Storage={
       return [];
     }
   },
-  async get(){
+  // meta（catalog/contact/pageText/layout）跟商品清單分開抓：meta 文件很小，不用被商品
+  // 這個大集合卡住——meta 一回來就能先把首頁大圖、聯繫資訊等畫面準備好，不用整頁等
+  // 商品資料到齊才有東西可以畫，改善首次有內容顯示的速度。
+  async getMeta(){
     try{
-      // meta（catalog/contact/pageText）跟商品清單是各自獨立的資料，用 Promise.all
-      // 平行讀取，不用排隊等兩次，可以省下接近一半的網路等待時間。
-      const [metaSnap,productsSnap]=await Promise.all([
-        getDoc(doc(db,"sitedata",SITE_DOC)),
-        getDocs(productsCol())
-      ]);
-      const meta=metaSnap.exists()?metaSnap.data():null;
-      const products=productsSnap.docs.map(d=>d.data());
-      if(!meta&&!products.length)return null;
-      return {...meta,products};
+      const snap=await getDoc(doc(db,"sitedata",SITE_DOC));
+      return snap.exists()?snap.data():null;
     }catch(e){
-      console.warn("Firestore 讀取失敗，改用 localStorage",e);
-      try{const s=localStorage.getItem(STORAGE_KEY);return s?JSON.parse(s):null}catch(e2){return null}
+      console.warn("網站設定讀取失敗",e);
+      return null;
+    }
+  },
+  async getProducts(){
+    try{
+      const snap=await getDocs(productsCol());
+      return snap.docs.map(d=>d.data());
+    }catch(e){
+      console.warn("商品清單讀取失敗",e);
+      return null;
     }
   },
   async set(data){
@@ -2285,13 +2289,25 @@ Object.assign(window,{
   // 不需要等 Firebase 資料回來就能先顯示；只有商品區塊（本來就要靠資料庫）
   // 顯示「商品載入中…」，其餘頁面可以馬上被看到，加快使用者感受到的載入速度。
 
-  try{
-    const saved=await Storage.get();
-    if(saved&&saved.products&&saved.products.length){
-      saved.products=saved.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
-      Object.assign(state,saved);
-    }else{
-      // 沒有雲端資料，試試 localStorage
+  // meta 跟商品清單各自平行發出請求，但分開等待：meta 文件小、通常很快回來，
+  // 不用被商品那個大集合拖住——meta 一到就先把首頁大圖／聯繫資訊等畫面渲染出來，
+  // 不用整頁乾等商品資料才有東西可以畫，直接改善使用者第一眼看到內容的速度。
+  const metaPromise=Storage.getMeta();
+  const productsPromise=Storage.getProducts();
+
+  const meta=await metaPromise;
+  if(meta)Object.assign(state,meta);
+  applyPageText();
+  applyLayoutVisibility();
+  renderContact();
+  renderHeroPhoto();
+
+  const products=await productsPromise;
+  if(products&&products.length){
+    state.products=products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
+  }else if(!meta&&(!products||!products.length)){
+    // 雲端完全沒有資料（meta 跟商品都沒抓到），試試 localStorage
+    try{
       const local=localStorage.getItem(STORAGE_KEY);
       if(local){
         const data=JSON.parse(local);
@@ -2300,10 +2316,7 @@ Object.assign(window,{
         await Storage.set(data);
         toast("資料已從本機同步到 Firebase ☁️");
       }
-    }
-  }catch(e){
-    const local=localStorage.getItem(STORAGE_KEY);
-    if(local){try{Object.assign(state,JSON.parse(local))}catch(e2){}}
+    }catch(e){}
   }
 
   state.products=state.products.map(normalizeProduct);
@@ -2311,14 +2324,11 @@ Object.assign(window,{
   // 喜愛清單一律以「這台瀏覽器」的本機資料為準，不使用從雲端讀回來的舊資料
   state.favorites=loadFavoritesLocal();
 
-  applyPageText();
-  applyLayoutVisibility();
   renderCategories();
   renderProducts();
   renderPicks();
   renderCategoryTiles();
-  renderHeroPhoto();
-  renderContact();
+  renderHeroPhoto(); // 沒設定自訂大圖的話，要等商品資料到齊才找得到可用照片，這裡再跑一次
   renderFavorites();
   // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面
   const hashMatch=location.hash.match(/^#product-(.+)$/);

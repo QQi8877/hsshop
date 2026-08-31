@@ -703,7 +703,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button class="add-btn" onclick="openPageTextManage()" style="background:var(--tan-dark)">📝 頁面文字</button>
       <button class="add-btn" onclick="openLayoutSettings()" style="background:var(--tan-dark)">🎨 首頁版面</button>
       <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
-      <button class="add-btn" onclick="migrateOldPhotos()" id="migratePhotosBtn" style="background:var(--tan-dark)">☁️ 搬遷舊照片</button>
       <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
       <button class="add-btn" onclick="exportProductsCSV()" style="background:var(--tan-dark)">⬇ 匯出 CSV</button>
       <button class="add-btn" onclick="document.getElementById('csvFileInput').click()" style="background:var(--tan-dark)">⬆ 匯入 CSV</button>
@@ -1019,7 +1018,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
-import{getStorage,ref as storageRef,uploadString,deleteObject,getDownloadURL}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-storage.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1031,60 +1029,7 @@ const firebaseConfig={
 };
 const fbApp=initializeApp(firebaseConfig);
 const db=getFirestore(fbApp);
-const storage=getStorage(fbApp);
 const SITE_DOC="hsshop-10bd9";
-
-/* ── 商品照片改存 Firebase Storage：資料庫只存下載網址，不再塞 base64 ──
-   路徑固定用「商品ID＋槽位」命名（不用時間戳記），換照片＝原地覆寫舊檔，
-   不用額外清理；只有「這格從有變沒有」跟「刪整個商品」才需要主動刪除。 */
-function photoStoragePath(productId,slot){
-  return `products/${productId}/${slot==="thumb"?"thumb":`photo-${slot}`}.jpg`;
-}
-async function uploadPhotoDataUrl(dataUrl,path){
-  const r=storageRef(storage,path);
-  await uploadString(r,dataUrl,"data_url");
-  return getDownloadURL(r);
-}
-async function deletePhotoAtPath(path){
-  try{
-    await deleteObject(storageRef(storage,path));
-  }catch(e){
-    // 檔案本來就不存在，或規則還沒設定好，都不影響其他刪除動作
-  }
-}
-// 換過的照片（還是 base64）才需要重新產生封面縮圖並上傳；沒改第一張的話沿用原本
-// 存的縮圖網址，避免對已經在 Storage 上的檔案再做一次 canvas 讀取（不一定有開 CORS）。
-async function uploadCoverThumb(productId,firstFullPhoto,existingCoverUrl){
-  if(!firstFullPhoto)return "";
-  if(!firstFullPhoto.startsWith("data:"))return existingCoverUrl||firstFullPhoto;
-  const thumbSrc=await resizeToThumb(firstFullPhoto);
-  try{
-    return await uploadPhotoDataUrl(thumbSrc,photoStoragePath(productId,"thumb"));
-  }catch(e){
-    console.warn("縮圖上傳到 Storage 失敗，暫時改用原本存檔方式",e);
-    return thumbSrc;
-  }
-}
-// 存檔時把 workingPhotos 裡還是 base64 的項目上傳到 Storage，已經是網址的直接跳過
-// （沒改過的照片不用重傳）。上傳失敗（例如 Storage 規則還沒設定）就整批退回原本
-// 存 base64 的行為，不會讓存檔失敗——等規則設定好，下次存檔會自動改用新方式。
-async function uploadWorkingPhotos(productId,photos,previousCount){
-  const uploaded=[];
-  for(let i=0;i<photos.length;i++){
-    const src=photos[i];
-    if(!src||/^https?:\/\//i.test(src)){uploaded.push(src);continue}
-    try{
-      uploaded.push(await uploadPhotoDataUrl(src,photoStoragePath(productId,i)));
-    }catch(e){
-      console.warn("照片上傳到 Storage 失敗，暫時改用原本存檔方式",e);
-      uploaded.push(src);
-    }
-  }
-  for(let i=photos.length;i<(previousCount||0);i++){
-    await deletePhotoAtPath(photoStoragePath(productId,i));
-  }
-  return uploaded;
-}
 
 /* ── 管理員登入（Firebase Authentication）───────────────────────
    用 try/catch 包起來：萬一 Authentication 服務端還沒設定好，
@@ -1700,10 +1645,9 @@ async function handleBulkFiles(event){
       photos.push(await resizeImageToUniform(dataUrl));
     }
     const existing=products.find(p=>p.status!=="archived"&&(p.name||"").trim()===name);
-    let fullPhotos,targetId,product,previousPhotoCount=0;
+    let fullPhotos,targetId,product;
     if(existing){
       targetId=existing.id;
-      previousPhotoCount=existing.photoCount||0;
       if(bulkReplaceMode){
         fullPhotos=photos;
       }else{
@@ -1716,9 +1660,7 @@ async function handleBulkFiles(event){
           fullPhotos.push(photo);
         }
       }
-      const coverPhoto=await uploadCoverThumb(targetId,fullPhotos[0],existing.photos?.[0]);
-      fullPhotos=await uploadWorkingPhotos(targetId,fullPhotos,previousPhotoCount);
-      existing.photos=coverPhoto?[coverPhoto]:[];
+      existing.photos=[await resizeToThumb(fullPhotos[0])];
       existing.photoCount=fullPhotos.length;
       product=existing;
       matchedCount++;
@@ -1726,12 +1668,10 @@ async function handleBulkFiles(event){
     }else{
       targetId=uid();
       fullPhotos=photos;
-      const coverPhoto=await uploadCoverThumb(targetId,fullPhotos[0],"");
-      fullPhotos=await uploadWorkingPhotos(targetId,fullPhotos,0);
       product={
         id:targetId,status:"active",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
         dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
-        photos:coverPhoto?[coverPhoto]:[],photoCount:fullPhotos.length
+        photos:[await resizeToThumb(fullPhotos[0])],photoCount:fullPhotos.length
       };
       products.push(product);
       createdCount++;
@@ -1752,41 +1692,6 @@ async function handleBulkFiles(event){
 }
 document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
 document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
-
-/* ── 一鍵搬遷舊照片到 Firebase Storage ──────────────────────────
-   把還在用 base64 存的舊商品，重新跑一次「上傳到 Storage、資料庫改存網址」的流程。
-   可以安全重複點：已經搬過的商品（photos[0] 已經是網址）會直接跳過，
-   中途關掉分頁也沒關係，之後再點一次會從還沒搬的商品繼續。單一商品失敗不會中斷整批。 */
-window.migrateOldPhotos=async function(){
-  const btn=document.getElementById("migratePhotosBtn");
-  const targets=products.filter(p=>(p.photos||[])[0]&&p.photos[0].startsWith("data:"));
-  if(!targets.length){toast("沒有需要搬遷的舊照片，全部商品都已經在用新的儲存方式了 ☁️");return}
-  if(!confirm(`即將搬遷 ${targets.length} 件商品的照片到 Firebase Storage，過程中請不要關閉此分頁，確定要開始嗎？`))return;
-  btn.disabled=true;
-  let done=0,failed=0;
-  for(const existing of targets){
-    btn.textContent=`☁️ 搬遷中 ${done+failed+1}/${targets.length}...`;
-    try{
-      const previousPhotoCount=existing.photoCount||0;
-      const cachedCount=(existing.photos||[]).filter(Boolean).length;
-      const fullPhotosRaw=previousPhotoCount>cachedCount?await loadGallery(existing.id):(existing.photos||[]).filter(Boolean);
-      const coverPhoto=await uploadCoverThumb(existing.id,fullPhotosRaw[0],existing.photos?.[0]);
-      const fullPhotos=await uploadWorkingPhotos(existing.id,fullPhotosRaw,previousPhotoCount);
-      existing.photos=coverPhoto?[coverPhoto]:[];
-      existing.photoCount=fullPhotos.length;
-      await setDoc(doc(productsCol(),existing.id),existing);
-      await saveGallery(existing.id,fullPhotos);
-      done++;
-    }catch(e){
-      console.warn(`商品「${existing.name}」搬遷失敗`,e);
-      failed++;
-    }
-  }
-  btn.disabled=false;
-  btn.textContent="☁️ 搬遷舊照片";
-  renderTable();
-  toast(failed?`搬遷完成：成功 ${done} 件、失敗 ${failed} 件（可以再點一次重試失敗的）`:`搬遷完成，成功 ${done} 件商品的照片都已經搬到新的儲存空間 ☁️`,4000);
-};
 
 /* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
 window.toggleQuickCatMode=function(force){
@@ -2469,16 +2374,9 @@ window.saveProduct=async function(){
     })),
     desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
-  const productId=editingProductId||uid();
-  const existingProduct=editingProductId?products.find(p=>p.id===editingProductId):null;
-  const previousPhotoCount=existingProduct?.photoCount||0;
-  const rawFullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
-  const coverPhoto=await uploadCoverThumb(productId,rawFullPhotos[0],existingProduct?.photos?.[0]);
-  if(!rawFullPhotos.length&&previousPhotoCount>0)await deletePhotoAtPath(photoStoragePath(productId,"thumb"));
-  // 商品文件只存封面照的縮圖版本（現在是 Storage 網址）＋photoCount，
-  // 原始畫質照片一樣另外上傳、寫進 gallery 子文件
-  const fullPhotos=await uploadWorkingPhotos(productId,rawFullPhotos,previousPhotoCount);
-  data.photos=coverPhoto?[coverPhoto]:[];
+  const fullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
+  // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
+  data.photos=fullPhotos.length?[await resizeToThumb(fullPhotos[0])]:[];
   data.photoCount=fullPhotos.length;
   let product;
   if(editingProductId){
@@ -2486,7 +2384,7 @@ window.saveProduct=async function(){
     product={id:editingProductId,status:products[index].status,sortOrder:products[index].sortOrder,...data};
     products[index]=product;
   }else{
-    product={id:productId,status:"active",sortOrder:nextSortOrder(),...data};
+    product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
     products.push(product);
   }
   try{
@@ -2528,8 +2426,6 @@ window.deleteProductRow=async function(id){
   if(!confirm(`此操作無法復原，確定要永久刪除「${p.name}」嗎？`))return;
   await deleteDoc(doc(productsCol(),id));
   try{await deleteDoc(galleryDocRef(id))}catch(e){}
-  await deletePhotoAtPath(photoStoragePath(id,"thumb"));
-  for(let i=0;i<MAX_PHOTOS;i++)await deletePhotoAtPath(photoStoragePath(id,i));
   products=products.filter(p=>p.id!==id);
   toast("已永久刪除");
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;

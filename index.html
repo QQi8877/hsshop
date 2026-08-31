@@ -346,6 +346,7 @@ nav{
   border-top:1px solid var(--line);
   border-left:1px solid var(--line);
 }
+.products-grid:has(.loading-breathe){border:0} /* 蓋掉外層 grid 的邊框，避免載入中畫面出現多餘框線 */
 .loading-breathe{
   grid-column:1/-1;
   display:flex;
@@ -354,7 +355,6 @@ nav{
   justify-content:center;
   gap:10px;
   padding:80px 20px;
-  border:0; /* 蓋掉外層 grid 的邊框，避免載入中畫面出現多餘框線 */
 }
 .loading-breathe-text{
   font-family:var(--font-heading);
@@ -377,11 +377,25 @@ nav{
   0%,100%{transform:scaleX(.36);opacity:.4}
   50%{transform:scaleX(1);opacity:1}
 }
+.cat-sidebar-skel{display:flex;flex-direction:column;gap:10px;padding:8px 14px}
+.cat-sidebar-skel span{
+  display:block;
+  height:14px;
+  border-radius:7px;
+  background:var(--line);
+  animation:breatheOpacity 1.8s ease-in-out infinite;
+}
+.cat-sidebar-skel span:nth-child(1){width:70%}
+.cat-sidebar-skel span:nth-child(2){width:90%;animation-delay:.12s}
+.cat-sidebar-skel span:nth-child(3){width:60%;animation-delay:.24s}
+.cat-sidebar-skel span:nth-child(4){width:85%;animation-delay:.36s}
+.cat-sidebar-skel span:nth-child(5){width:75%;animation-delay:.48s}
 @media(prefers-reduced-motion:reduce){
-  .loading-breathe-text,.loading-breathe-line{animation:none;opacity:.8}
+  .loading-breathe-text,.loading-breathe-line,.cat-sidebar-skel span{animation:none;opacity:.8}
 }
 @media(min-width:761px){
-  .cat-layout{display:grid;grid-template-columns:236px 1fr;gap:34px;align-items:start;margin-top:22px}
+  :root{--cat-sidebar-w:236px;--cat-gap:34px}
+  .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:22px}
   .products-grid{grid-template-columns:repeat(5,minmax(0,1fr));min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
@@ -433,7 +447,7 @@ nav{
   .cat-sub-btn .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--soft)}
   .cat-sub-btn:hover{color:var(--tan-dark)}
   .cat-sub-btn.active{color:var(--sage);font-weight:600}
-  .listing-head,.applied-chips{margin-left:270px}
+  .listing-head,.applied-chips{margin-left:calc(var(--cat-sidebar-w) + var(--cat-gap))}
 }
 .listing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0 0 14px}
 .listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}
@@ -1112,7 +1126,9 @@ footer a:hover{color:var(--color-on-dark)}
     <div class="applied-chips" id="appliedChips"></div>
   </div>
   <div class="cat-layout">
-    <aside class="cat-sidebar" id="catSidebar"></aside>
+    <aside class="cat-sidebar" id="catSidebar">
+      <div class="cat-sidebar-skel"><span></span><span></span><span></span><span></span><span></span></div>
+    </aside>
     <div class="products-grid" id="productsGrid">
       <div class="loading-breathe">
         <div class="loading-breathe-text">信通家俱行</div>
@@ -1201,7 +1217,7 @@ footer a:hover{color:var(--color-on-dark)}
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{initializeFirestore,persistentLocalCache,persistentMultipleTabManager,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{initializeFirestore,persistentLocalCache,getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1214,7 +1230,16 @@ const firebaseConfig={
 const fbApp=initializeApp(firebaseConfig);
 // 開啟本機（IndexedDB）持久化快取：回訪客人不用整包商品資料重新下載一次，
 // 先顯示快取內容，背景再跟雲端同步最新資料，載入體感明顯變快。
-const db=initializeFirestore(fbApp,{localCache:persistentLocalCache({tabManager:persistentMultipleTabManager()})});
+// 客人幾乎不會同時開兩個分頁逛這個網站，所以不用多分頁協調（tabManager），避免額外背景開銷；
+// 若這台裝置的瀏覽器不支援/擋掉 IndexedDB（例如某些私密瀏覽模式），改用沒有離線快取的一般連線模式，
+// 避免整個 <script type="module"> 因為初始化失敗而中斷，導致全站按鈕都失效。
+let db;
+try{
+  db=initializeFirestore(fbApp,{localCache:persistentLocalCache({})});
+}catch(e){
+  console.warn("Firestore 本機快取初始化失敗，改用一般連線模式",e);
+  db=getFirestore(fbApp);
+}
 const SITE_DOC="hsshop-10bd9";
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
@@ -1398,7 +1423,7 @@ function getSizeSummary(product){
   if(d.depth)parts.push(`深 ${withCm(d.depth)}`);
   if(d.height)parts.push(`高 ${withCm(d.height)}`);
   if(!parts.length)return product.size||"尺寸洽詢";
-  return parts.join(" x ").replace(/ cm(?= x )/g," ");
+  return parts.join(" x ").replace(/ cm(?= x )/g,"");
 }
 function parseWidthCm(product){
   const raw=product.dimensions?.width;

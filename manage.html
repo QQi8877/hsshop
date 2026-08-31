@@ -1857,6 +1857,11 @@ function rteInit(id){
   };
   editor.addEventListener("mouseup",saveSel);
   editor.addEventListener("keyup",saveSel);
+  // 讓瀏覽器原生 Enter 換行也統一存成 <br>（不用自訂攔截 Enter 那種寫法，
+  // 避免影響上下清單的 Enter 行為），這樣跟貼上文字、自動產文案的格式一致。
+  editor.addEventListener("focus",()=>{
+    try{document.execCommand("defaultParagraphSeparator",false,"br")}catch(e){}
+  });
   editor.addEventListener("paste",e=>{
     e.preventDefault();
     const text=(e.clipboardData||window.clipboardData).getData("text/plain");
@@ -1886,19 +1891,20 @@ window.rteApply=function(id,styleProp,value){
 };
 window.rteList=function(id,command){
   const editor=document.getElementById(id);
-  const range=rteSavedRange[id];
   if(!editor)return;
+  const range=rteSavedRange[id];
+  const rangeStillValid=range&&editor.contains(range.startContainer)&&editor.contains(range.endContainer);
   const sel=window.getSelection();
   sel.removeAllRanges();
-  if(range)sel.addRange(range);
-  else{
-    editor.focus();
+  editor.focus();
+  if(rangeStillValid){
+    sel.addRange(range);
+  }else{
     const r=document.createRange();
     r.selectNodeContents(editor);
     r.collapse(false);
     sel.addRange(r);
   }
-  editor.focus();
   document.execCommand(command,false,null);
 };
 window.rteClear=function(id){
@@ -2338,10 +2344,10 @@ window.openProductModal=async function(id){
 
 function getSizeSummary(dimensions,size){
   const parts=[];
-  if(dimensions.width)parts.push(`寬 ${dimensions.width}cm`);
-  if(dimensions.depth)parts.push(`深 ${dimensions.depth}cm`);
-  if(dimensions.height)parts.push(`高 ${dimensions.height}cm`);
-  return parts.length?parts.join(" x "):(size||"");
+  if(dimensions.width)parts.push(`寬 ${dimensions.width}`);
+  if(dimensions.depth)parts.push(`深 ${dimensions.depth}`);
+  if(dimensions.height)parts.push(`高 ${dimensions.height}`);
+  return parts.length?`${parts.join(" x ")} cm`:(size||"");
 }
 
 window.saveProduct=async function(){

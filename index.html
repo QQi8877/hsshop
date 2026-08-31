@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com">
-<link rel="preconnect" href="https://firestore.googleapis.com">
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"></noscript>
@@ -31,6 +31,7 @@
   --muted:#645c50;
   --soft:#696255;
   --tan:#905229;
+  --tan-on-dark:#c67139; /* 深色底色（例如 #contact）專用的較亮橘色，維持文字對比度 ≥4.5:1 */
   --tan-dark:#8c491a;
   --sage:#5b6746;
   --cream:#f5ead8;
@@ -740,9 +741,9 @@ nav{
   font-size:14px;
 }
 .contact-line .item{white-space:nowrap}
-.contact-line b{color:var(--tan);font-weight:500;letter-spacing:.04em;margin-right:6px}
+.contact-line b{color:var(--tan-on-dark);font-weight:500;letter-spacing:.04em;margin-right:6px}
 .contact-line a{color:rgba(255,255,255,.82);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.32);transition:color .15s,border-color .15s}
-.contact-line a:hover{color:var(--tan);border-color:var(--tan)}
+.contact-line a:hover{color:var(--tan-on-dark);border-color:var(--tan-on-dark)}
 .contact-line .dot{color:rgba(255,255,255,.28);margin:0 14px;font-size:12px}
 .fb-icon{
   display:inline-flex;
@@ -1133,7 +1134,7 @@ footer a:hover{color:var(--color-on-dark)}
   </div>
 </section>
 
-<section id="picks" style="padding:34px 40px 0">
+<section id="picks" style="padding:34px 40px 0;display:none">
   <div class="sec-head">
     <h3>本月選品</h3>
     <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
@@ -1146,7 +1147,7 @@ footer a:hover{color:var(--color-on-dark)}
   </div>
 </section>
 
-<section id="catTiles" style="padding:26px 40px 46px">
+<section id="catTiles" style="padding:26px 40px 46px;display:none">
   <div class="cat-grid" id="catTilesGrid">
     <div class="cat-tile skeleton"><span class="cat-tile__thumb"></span><div class="sk-line sk-line--tile"></div><div class="sk-line sk-line--tile sk-line--tile2"></div></div>
     <div class="cat-tile skeleton"><span class="cat-tile__thumb"></span><div class="sk-line sk-line--tile"></div><div class="sk-line sk-line--tile sk-line--tile2"></div></div>

@@ -1133,7 +1133,15 @@ function hasSize(p){
   return !!(d.width||d.depth||d.height||p.size);
 }
 const sorters={
-  order:(a,b)=>(a.sortOrder??0)-(b.sortOrder??0),
+  // 「自訂順序」要跟前台的排序邏輯一致：先照主分類筆畫、再照子分類筆畫分組，
+  // 同一個子分類內才用 sortOrder 排——避免不同分類的商品在「全部」畫面裡穿插。
+  order:(a,b)=>{
+    const mainCmp=strokeCollator.compare(getMainName(a.mainCat),getMainName(b.mainCat));
+    if(mainCmp)return mainCmp;
+    const subCmp=strokeCollator.compare(getSubName(a.mainCat,a.subCat),getSubName(b.mainCat,b.subCat));
+    if(subCmp)return subCmp;
+    return (a.sortOrder??0)-(b.sortOrder??0);
+  },
   name:(a,b)=>strokeCollator.compare(a.name||"",b.name||""),
   cat:(a,b)=>strokeCollator.compare(categoryLabel(a),categoryLabel(b)),
   size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
@@ -2414,6 +2422,9 @@ window.restoreProductRow=async function(id){
   const p=products.find(p=>p.id===id);
   if(!p)return;
   p.status="active";
+  // 還原上架時排到最後面，避免沿用封存前的舊排序數值跟現在其他商品「撞號」，
+  // 導致還原後的商品出現在畫面上很奇怪的位置。
+  p.sortOrder=nextSortOrder();
   await setDoc(doc(productsCol(),id),p);
   toast("已還原上架");
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
@@ -2502,6 +2513,12 @@ window.toggleCatNode=function(id){
 window.setCatFilter=function(mainId,subId){
   catFilterMain=mainId;
   catFilterSub=subId;
+  if(!mainId&&dragModeEnabled){
+    // 拖曳排序只在選了分類的畫面下有意義，回到「全部分類」就順便關掉，
+    // 避免表頭一直顯示拖曳模式已開啟、但商品列其實已經不能拖了
+    dragModeEnabled=false;
+    document.querySelectorAll("thead th").forEach(t=>t.classList.remove("drag-active","sorted"));
+  }
   renderSidebar();
   renderTable();
 };
@@ -2795,9 +2812,21 @@ document.querySelectorAll("thead th[data-sort]").forEach(th=>{
   th.addEventListener("click",()=>{
     const key=th.dataset.sort;
     if(key==="order"){
-      // 這顆是「開放拖曳排序」的開關，只切換拖曳模式，不改變目前的排序欄位／順序
+      // 拖曳排序現在只在「已選一個主分類」的畫面下開放：因為自訂順序只在同一個
+      // 主／子分類內才有意義（跨分類的話，畫面重新整理時會依分類分組跳回原位，
+      // 拖曳看起來像沒生效），選了分類才能保證拖曳的結果會真的被記住。
+      if(!dragModeEnabled&&!catFilterMain){
+        toast("請先在左側選一個分類，才能拖曳調整該分類內的順序");
+        return;
+      }
+      // 開啟拖曳排序時，強制把目前排序欄位切成「自訂順序」本身，
+      // 拖曳時看到的、動到的都是真正的自訂順序，不會因為表格當下剛好用
+      // 名稱／分類等其他欄位排序，而讓拖曳結果變成「不是你以為的順序」。
       dragModeEnabled=!dragModeEnabled;
+      if(dragModeEnabled){sortKey="order";sortDir=1}
       th.classList.toggle("drag-active",dragModeEnabled);
+      document.querySelectorAll("thead th").forEach(t=>t.classList.remove("sorted"));
+      if(sortKey==="order")th.classList.add("sorted");
       renderTable();
       return;
     }
@@ -2858,7 +2887,7 @@ window.renderTable=function(){
   }
   // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂；
   // 拖曳模式本身用獨立的開關（⠿ 按鈕）控制，不綁定目前的排序欄位
-  const canReorder=dragModeEnabled&&!quickCatMode&&!q&&currentFilter==="all";
+  const canReorder=dragModeEnabled&&!quickCatMode&&!q&&currentFilter==="all"&&!!catFilterMain;
   tbody.innerHTML=list.map(p=>{
     const m=missingFlags(p);
     const photos=(p.photos||[]).filter(Boolean);

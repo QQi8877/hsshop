@@ -1372,6 +1372,8 @@ const Storage={
 };
 /* ─────────────────────────────────────────────────────────────── */
 const STORAGE_KEY="xintong_furniture_site_v1";
+let strokeCollator;
+try{strokeCollator=new Intl.Collator("zh-Hant-u-co-stroke",{numeric:true})}catch(e){strokeCollator=new Intl.Collator("zh-Hant")}
 const DEFAULT_CATALOG=[
   {id:"cat-bed",name:"寢具",subs:[{id:"sub-bed-frame",name:"床架"},{id:"sub-bed-mattress",name:"床墊"},{id:"sub-bed-head",name:"床頭板"},{id:"sub-bed-side",name:"床邊桌"}]},
   {id:"cat-table",name:"桌子",subs:[{id:"sub-tbl-dining",name:"餐桌"},{id:"sub-tbl-coffee",name:"茶几／邊桌"},{id:"sub-tbl-desk",name:"書桌／工作桌"},{id:"sub-tbl-dressing",name:"梳妝台"}]},
@@ -1600,7 +1602,16 @@ function renderProducts(){
     list=list.filter(p=>p.mainCat===state.activeMain);
     if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
   }
-  list.sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  // 全部商品要先照主分類筆畫排、再照子分類筆畫排，同一個子分類內才用後台拖曳出來的
+  // 自訂順序排——這樣不同分類的商品才不會混在一起穿插，子分類裡排好的順序，
+  // 看主分類或「全部」的時候也會照樣套用。
+  list.sort((a,b)=>{
+    const mainCmp=strokeCollator.compare(getMainName(a.mainCat),getMainName(b.mainCat));
+    if(mainCmp)return mainCmp;
+    const subCmp=strokeCollator.compare(getSubName(a.mainCat,a.subCat),getSubName(b.mainCat,b.subCat));
+    if(subCmp)return subCmp;
+    return (a.sortOrder??0)-(b.sortOrder??0);
+  });
   renderListingTitle();
   renderAppliedChips();
   if(!list.length){

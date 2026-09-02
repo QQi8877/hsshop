@@ -2464,7 +2464,13 @@ async function boot(){
     layout=metaRaw.layout||{};
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
-    products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
+    products.forEach((p,i)=>{
+      if(typeof p.sortOrder!=="number")p.sortOrder=i;
+      // 早期建立的商品文件可能沒有 status 欄位（undefined），Firestore 的批次寫入
+      // 不接受 undefined 欄位值——排序/同步功能一次寫回多筆商品時會直接報錯，
+      // 在這裡統一補成 "active"，從源頭避免這個問題再冒出來。
+      if(typeof p.status!=="string")p.status="active";
+    });
   }catch(e){
     document.getElementById("tbody").innerHTML=`<tr><td colspan="11" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;

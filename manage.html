@@ -311,6 +311,40 @@ tbody tr.is-archived{opacity:.55}
 }
 .add-btn.active{background:var(--sage)}
 .add-btn:hover{background:var(--tan-dark)}
+.dropdown{position:relative;display:inline-block}
+.dropdown-menu{
+  display:none;
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0;
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+  padding:6px;
+  min-width:170px;
+  z-index:50;
+  flex-direction:column;
+  gap:2px;
+}
+.dropdown.open .dropdown-menu{display:flex}
+@media (hover:hover) and (pointer:fine){
+  /* 電腦版有滑鼠可以真正 hover，滑過去就直接顯示選單，不用點一下；
+     手機/平板沒有 hover 這個手勢，維持原本點一下才展開的行為 */
+  .dropdown:hover .dropdown-menu{display:flex}
+}
+.dropdown-menu button{
+  border:0;
+  background:transparent;
+  color:var(--charcoal);
+  text-align:left;
+  padding:9px 12px;
+  border-radius:7px;
+  font-size:13px;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.dropdown-menu button:hover{background:var(--cream)}
 .qc-cell{display:none}
 body.quickcat-mode .qc-cell{display:table-cell;text-align:center}
 .qc-cell input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:var(--tan-dark)}
@@ -698,14 +732,24 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <span id="totalCount"></span>
     </div>
     <div class="header-links">
-      <button class="add-btn" onclick="openCategoryManage()" style="background:var(--tan-dark)">🗂 分類管理</button>
-      <button class="add-btn" onclick="openContactManage()" style="background:var(--tan-dark)">📇 聯繫資訊</button>
-      <button class="add-btn" onclick="openPageTextManage()" style="background:var(--tan-dark)">📝 頁面文字</button>
-      <button class="add-btn" onclick="openLayoutSettings()" style="background:var(--tan-dark)">🎨 首頁版面</button>
-      <button class="add-btn" onclick="openBulkUploadModal()" style="background:var(--tan-dark)">🖼 批次上傳照片</button>
-      <button class="add-btn" onclick="toggleQuickCatMode()" id="quickCatToggleBtn" style="background:var(--tan-dark)">☑ 快速分類</button>
-      <button class="add-btn" onclick="exportProductsCSV()" style="background:var(--tan-dark)">⬇ 匯出 CSV</button>
-      <button class="add-btn" onclick="document.getElementById('csvFileInput').click()" style="background:var(--tan-dark)">⬆ 匯入 CSV</button>
+      <div class="dropdown" id="settingsDropdown">
+        <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('settingsDropdown')">⚙ 網站設定 ▾</button>
+        <div class="dropdown-menu">
+          <button onclick="closeHeaderDropdowns();openCategoryManage()">🗂 分類管理</button>
+          <button onclick="closeHeaderDropdowns();openContactManage()">📇 聯繫資訊</button>
+          <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 頁面文字</button>
+          <button onclick="closeHeaderDropdowns();openLayoutSettings()">🎨 首頁版面</button>
+        </div>
+      </div>
+      <div class="dropdown" id="toolsDropdown">
+        <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('toolsDropdown')">🛠 商品工具 ▾</button>
+        <div class="dropdown-menu">
+          <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
+          <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 快速分類</button>
+          <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
+          <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
+        </div>
+      </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <button class="add-btn" onclick="logoutGate()" style="background:transparent;border:1px solid var(--line);color:var(--muted)">登出</button>
@@ -1702,6 +1746,20 @@ document.getElementById("bulkFileInput").addEventListener("change",handleBulkFil
 document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
 
 /* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
+/* ── 頂部工具列的「網站設定」「商品工具」下拉選單 ───────────────── */
+window.toggleHeaderDropdown=function(id){
+  const el=document.getElementById(id);
+  const willOpen=!el.classList.contains("open");
+  closeHeaderDropdowns();
+  if(willOpen)el.classList.add("open");
+};
+window.closeHeaderDropdowns=function(){
+  document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open"));
+};
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".dropdown"))closeHeaderDropdowns();
+});
+
 window.toggleQuickCatMode=function(force){
   quickCatMode=typeof force==="boolean"?force:!quickCatMode;
   quickCatSelected.clear();

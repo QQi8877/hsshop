@@ -315,15 +315,23 @@ tbody tr.is-archived{opacity:.55}
 .dropdown-menu{
   display:none;
   position:absolute;
-  top:calc(100% + 6px);
+  top:100%;
   left:0;
+  /* 用透明的 padding-top 撐出跟按鈕的視覺間距，而不是用 margin/top 位移——
+     這樣選單實際可以 hover 到的範圍會跟按鈕緊貼、中間沒有空隙，
+     滑鼠從主選單移到子選單項目的路徑上才不會中途「滑出」導致選單先收起來。 */
+  padding-top:6px;
+  min-width:170px;
+  z-index:50;
+  flex-direction:column;
+}
+.dropdown-menu-inner{
   background:var(--white);
   border:1px solid var(--line);
   border-radius:10px;
   box-shadow:0 8px 24px rgba(0,0,0,.14);
   padding:6px;
-  min-width:170px;
-  z-index:50;
+  display:flex;
   flex-direction:column;
   gap:2px;
 }
@@ -734,21 +742,21 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="header-links">
       <div class="dropdown" id="settingsDropdown">
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('settingsDropdown')">⚙ 網站設定 ▾</button>
-        <div class="dropdown-menu">
+        <div class="dropdown-menu"><div class="dropdown-menu-inner">
           <button onclick="closeHeaderDropdowns();openCategoryManage()">🗂 分類管理</button>
           <button onclick="closeHeaderDropdowns();openContactManage()">📇 聯繫資訊</button>
           <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 頁面文字</button>
           <button onclick="closeHeaderDropdowns();openLayoutSettings()">🎨 首頁版面</button>
-        </div>
+        </div></div>
       </div>
       <div class="dropdown" id="toolsDropdown">
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('toolsDropdown')">🛠 商品工具 ▾</button>
-        <div class="dropdown-menu">
+        <div class="dropdown-menu"><div class="dropdown-menu-inner">
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 快速分類</button>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
-        </div>
+        </div></div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>

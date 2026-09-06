@@ -260,7 +260,7 @@ nav{
 .p-card__media{aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden;display:grid;place-items:center}
 .p-card__media img{width:88%;height:88%;object-fit:contain}
 .p-card__title{font-size:15px;color:var(--charcoal);line-height:1.4}
-.p-card__foot{display:flex;justify-content:space-between;align-items:baseline;padding-top:9px;border-top:1px solid var(--line)}
+.p-card__foot{display:flex;justify-content:space-between;align-items:baseline;padding-top:9px;border-top:1px solid var(--line);margin-top:auto}
 .p-card__foot .mono{font-size:11.5px;color:var(--muted)}
 .p-card__foot .price{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--tan-dark)}
 .p-card__fav{
@@ -271,6 +271,7 @@ nav{
 .p-card__fav svg{width:15px;height:15px}
 .p-card__fav.active{background:var(--tan);color:#fff}
 .p-card__fav.active svg path{fill:currentColor}
+.p-card__badge{position:absolute;top:22px;left:22px;z-index:6}
 
 .cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;max-width:1200px;margin:0 auto}
 .cat-tile{
@@ -429,7 +430,7 @@ nav{
   .loading-breathe-text,.loading-breathe-line,.cat-sidebar-skel span{animation:none;opacity:.8}
 }
 @media(min-width:761px){
-  :root{--cat-sidebar-w:236px;--cat-gap:34px}
+  :root{--cat-sidebar-w:165px;--cat-gap:34px}
   .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:22px}
   .products-grid{grid-template-columns:repeat(5,minmax(0,1fr));min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
@@ -501,6 +502,8 @@ nav{
   overflow:hidden;
   position:relative;
   cursor:pointer;
+  display:flex;
+  flex-direction:column;
   transition:box-shadow .22s ease,border-color .22s ease;
 }
 .product-card:hover{
@@ -561,7 +564,7 @@ nav{
   font-size:13px;
 }
 .placeholder svg{width:44px;height:44px;opacity:.52;margin-bottom:6px}
-.product-info{padding:8px 12px 10px}
+.product-info{padding:8px 12px 10px;display:flex;flex-direction:column;flex:1}
 .product-name{
   font-family:var(--font-heading);
   color:var(--charcoal);
@@ -570,7 +573,7 @@ nav{
   margin-bottom:3px;
 }
 .product-size{font-size:11px;color:var(--tan-dark);margin-bottom:4px}
-.product-price{font-family:var(--font-heading);font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:2px}
+.product-price{font-family:var(--font-heading);font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:auto;padding-top:2px}
 .favorite-btn{
   position:absolute;
   top:8px;
@@ -590,6 +593,12 @@ nav{
 .favorite-btn:hover{transform:scale(1.1)}
 .favorite-btn.active{color:var(--danger)}
 .favorite-btn.active svg path{fill:currentColor}
+.tag-badge{
+  display:inline-block;font-size:10.5px;font-weight:600;color:#fff;
+  padding:3px 9px;border-radius:999px;letter-spacing:.03em;
+  box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.15) inset;
+}
+.product-tag-badge{position:absolute;top:8px;left:8px;z-index:6}
 .nav-end{display:flex;align-items:center;gap:16px;justify-self:end;flex:none}
 .favorites-fab{
   position:relative;
@@ -1415,7 +1424,8 @@ const DEFAULT_STATE={
     lineUrl:"https://line.me/",
     mapUrl:"https://maps.app.goo.gl/iWKwKGHVVPiFbbFw9"
   },
-  pageText:{}
+  pageText:{},
+  tagDefs:[]
 };
 let state=structuredClone(DEFAULT_STATE);
 function normalizeProduct(product){
@@ -1424,11 +1434,33 @@ function normalizeProduct(product){
   product.dimensions=product.dimensions||{width:"",depth:"",height:""};
   product.specs=Array.isArray(product.specs)?product.specs:[];
   product.status=product.status==="archived"?"archived":"active";
+  product.badges=Array.isArray(product.badges)?product.badges:[];
   const hasDims=product.dimensions.width||product.dimensions.depth||product.dimensions.height;
   if(!product.specs.length&&product.size&&!hasDims){
     product.specs=[{label:"尺寸備註",value:product.size}];
   }
   return product;
+}
+/* ── 商品標籤（左上角徽章）─────────────────────────────────────
+   state.tagDefs 的排列順序就是優先順序：一件商品若同時符合多個標籤，
+   只顯示排在最前面的那一個，避免卡片被塞太多徽章。標籤本身（改名／
+   顏色／新增／刪除）在後台「標籤管理」設定，這裡只負責讀取、顯示。 */
+const DEFAULT_TAG_DEFS=[
+  {key:"sale",label:"特價促銷",color:"#b84236"},
+  {key:"limited",label:"限量",color:"#8c491a"},
+  {key:"preorder",label:"預購",color:"#4d5d6b"},
+  {key:"new",label:"新品",color:"#5b6746"},
+  {key:"bestseller",label:"熱銷",color:"#905229"},
+  {key:"multicolor",label:"多色",color:"#201e1d"},
+  {key:"custom",label:"可客製化",color:"#696255"},
+  {key:"madeintw",label:"台灣製造",color:"#645c50"},
+];
+function primaryTagBadgeHtml(product){
+  const badges=product.badges||[];
+  const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
+  const def=defs.find(d=>badges.includes(d.key));
+  if(!def)return "";
+  return `<span class="tag-badge" style="background:${escapeHTML(def.color)}">${escapeHTML(def.label)}</span>`;
 }
 let searchQuery="";
 let favoritesRoomFilter="全部";
@@ -1676,6 +1708,13 @@ function renderProducts(){
     }else{
       wrap.innerHTML=placeholderMarkup("尚無圖片");
     }
+    const badgeHtml=primaryTagBadgeHtml(product);
+    if(badgeHtml){
+      const badgeWrap=document.createElement("div");
+      badgeWrap.className="product-tag-badge";
+      badgeWrap.innerHTML=badgeHtml;
+      wrap.appendChild(badgeWrap);
+    }
     card.appendChild(wrap);
     const info=document.createElement("div");
     info.className="product-info";
@@ -1740,6 +1779,7 @@ function renderPicks(){
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" aria-label="加入收藏">
         <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
+      ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
     `;
     card.querySelector(".p-card__fav").addEventListener("click",event=>{
       event.stopPropagation();

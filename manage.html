@@ -2009,7 +2009,13 @@ function sanitizeRichText(html){
   div.querySelectorAll("script,iframe,object,embed,link,style").forEach(el=>el.remove());
   div.querySelectorAll("*").forEach(el=>{
     [...el.attributes].forEach(attr=>{
-      if(/^on/i.test(attr.name)||(attr.name==="style"&&/expression|javascript:/i.test(attr.value)))el.removeAttribute(attr.name);
+      const name=attr.name.toLowerCase();
+      const isEventHandler=/^on/i.test(name);
+      const isDangerousStyle=name==="style"&&/expression|javascript:/i.test(attr.value);
+      // href／src 也要擋 javascript: 或 data:text/html 這類會執行程式碼的網址格式，
+      // 不只檢查 style 屬性（例如 <a href="javascript:...">、<img src="javascript:...">）
+      const isDangerousUrl=(name==="href"||name==="src")&&/^\s*(javascript:|data:text\/html)/i.test(attr.value);
+      if(isEventHandler||isDangerousStyle||isDangerousUrl)el.removeAttribute(attr.name);
     });
   });
   return div.innerHTML;

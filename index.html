@@ -166,11 +166,19 @@ nav{
 .hero-photo{
   aspect-ratio:1/1;
   border-radius:var(--radius-pill);
-  background:var(--paper);
+  background:linear-gradient(90deg,#eee2ce 25%,#f7efe1 37%,#eee2ce 63%);
+  background-size:400% 100%;
+  animation:sk-shimmer 1.6s ease-in-out infinite;
   box-shadow:var(--shadow);
   display:grid;
   place-items:center;
   overflow:hidden;
+}
+/* 圖片真的載入之後，圓圈改回原本的米白底色、停止閃爍——跟商品卡片、分類磚
+   用的是同一套 sk-shimmer 骨架屏效果，避免圖片還沒到之前圓圈只是死白一片 */
+.hero-photo:has(img[src]:not([src=""])){
+  background:var(--paper);
+  animation:none;
 }
 .hero-photo img{
   width:70%;height:70%;object-fit:contain;
@@ -1116,7 +1124,7 @@ footer a:hover{color:var(--color-on-dark)}
 <section id="hero">
   <div class="hero-inner">
     <div class="hero-content">
-      <div class="hero-tag" data-page-field="heroTag">XIN TONG FURNITURE</div>
+      <div class="hero-tag" data-page-field="heroTag">HSIN TONG FURNITURE</div>
       <h1 class="hero-title" data-page-field="heroTitle">信通家俱行</h1>
       <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
       <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
@@ -1134,7 +1142,7 @@ footer a:hover{color:var(--color-on-dark)}
   </div>
 </section>
 
-<section id="picks" style="padding:34px 40px 0;display:none">
+<section id="picks" style="padding:34px 40px 0">
   <div class="sec-head">
     <h3>本月選品</h3>
     <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
@@ -1147,7 +1155,7 @@ footer a:hover{color:var(--color-on-dark)}
   </div>
 </section>
 
-<section id="catTiles" style="padding:26px 40px 46px;display:none">
+<section id="catTiles" style="padding:26px 40px 46px">
   <div class="cat-grid" id="catTilesGrid">
     <div class="cat-tile skeleton"><span class="cat-tile__thumb"></span><div class="sk-line sk-line--tile"></div><div class="sk-line sk-line--tile sk-line--tile2"></div></div>
     <div class="cat-tile skeleton"><span class="cat-tile__thumb"></span><div class="sk-line sk-line--tile"></div><div class="sk-line sk-line--tile sk-line--tile2"></div></div>
@@ -1162,7 +1170,7 @@ footer a:hover{color:var(--color-on-dark)}
     <div class="categories-bar" id="categoriesBar"></div>
     <div class="sub-categories-bar" id="subCategoriesBar"></div>
     <div class="listing-head">
-      <h2 class="listing-title" id="listingTitle">全部商品</h2>
+      <h2 class="listing-title" id="listingTitle">全部</h2>
     </div>
     <div class="applied-chips" id="appliedChips"></div>
   </div>

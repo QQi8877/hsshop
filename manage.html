@@ -20,7 +20,7 @@
   --sage:#7f9076;
   --cream:#f3eee6;
   --paper:#fffaf3;
-  --line:#ddd2c4;
+  --line:#d6cfc6;
   --white:#fff;
   --danger:#b84236;
   --warn:#c78a3a;
@@ -407,6 +407,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
   max-height:92vh;
   overflow:hidden;
   background:var(--paper);
+  border:1px solid var(--line);
   border-radius:14px;
   position:relative;
   box-shadow:0 24px 80px rgba(0,0,0,.22);
@@ -458,6 +459,12 @@ body.quickcat-mode .quickcat-bar{display:flex}
   color:var(--ink);
   padding:10px 12px;
   outline:none;
+}
+.modal input[type="checkbox"],.modal input[type="radio"]{
+  width:auto;height:auto;padding:0;border:0;background:none;border-radius:0;
+}
+.modal input[type="range"]{
+  width:100%;height:auto;padding:0;border:0;background:none;
 }
 .modal textarea{min-height:78px;resize:vertical}
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
@@ -542,6 +549,14 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
 .catmgr-hint{font-size:12px;color:var(--soft);margin:-4px 0 14px;line-height:1.6}
 .dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tag-checkbox-grid{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+.tag-checkbox-item{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--line);border-radius:999px;padding:6px 12px;
+  cursor:pointer;font-size:13px;user-select:none;
+}
+.tag-checkbox-item input{margin:0;cursor:pointer}
+.tag-checkbox-item .swatch{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .spec-editor{margin-top:8px}
 .spec-table{width:100%;min-width:0;border-collapse:collapse;font-size:13px;table-layout:fixed}
 .spec-table th{
@@ -663,6 +678,70 @@ body.quickcat-mode .quickcat-bar{display:flex}
   line-height:1;
 }
 .has-img:hover .slot-del{display:grid;place-items:center}
+.slot-crop{
+  display:none;
+  position:absolute;
+  top:4px;
+  left:4px;
+  z-index:6;
+  width:19px;
+  height:19px;
+  border:0;
+  border-radius:50%;
+  background:rgba(0,0,0,.55);
+  color:var(--white);
+  line-height:1;
+  font-size:11px;
+}
+.has-img:hover .slot-crop{display:grid;place-items:center}
+.crop-viewport{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  overflow:hidden;
+  border-radius:10px;
+  background:#1a1917;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+}
+.crop-viewport.dragging{cursor:grabbing}
+.crop-grid{
+  position:absolute;inset:0;pointer-events:none;z-index:2;
+  background-image:
+    linear-gradient(to right, rgba(52,51,49,.8) 1px, transparent 1px),
+    linear-gradient(to right, rgba(52,51,49,.8) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52,51,49,.8) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(52,51,49,.8) 1px, transparent 1px);
+  background-size:33.333% 100%,66.666% 100%,100% 33.333%,100% 66.666%;
+  background-repeat:no-repeat;
+  background-position:33.333% 0,66.666% 0,0 33.333%,0 66.666%;
+  border:2px solid rgba(52,51,49,.9);
+  box-sizing:border-box;
+  border-radius:10px;
+}
+.crop-badge-zone{
+  position:absolute;top:0;left:0;z-index:3;pointer-events:none;
+  width:34%;height:22%;
+  background:repeating-linear-gradient(45deg,rgba(198,113,57,.28) 0 6px,rgba(198,113,57,.14) 6px 12px);
+  border-right:1px dashed rgba(52,51,49,.85);
+  border-bottom:1px dashed rgba(52,51,49,.85);
+  border-radius:10px 0 0 0;
+  display:flex;align-items:flex-start;justify-content:flex-start;
+  padding:6px;
+  font-size:10px;color:#fff;font-weight:600;letter-spacing:.05em;
+  text-shadow:0 1px 3px rgba(0,0,0,.6);
+}
+.crop-viewport img{
+  position:absolute;
+  top:0;left:0;
+  transform-origin:0 0;
+  pointer-events:none;
+  max-width:none;
+  max-height:none;
+}
+.crop-zoom-row{display:flex;align-items:center;gap:10px;margin:14px 0 6px}
+.crop-zoom-row input[type="range"]{flex:1;width:auto}
 .slot-drag-handle{
   display:none;
   position:absolute;
@@ -689,15 +768,25 @@ body.quickcat-mode .quickcat-bar{display:flex}
 }
 .photo-slot.dragging{opacity:.4}
 .modal-actions{display:flex;gap:10px;margin-top:26px}
-.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--cream)}
+.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--cream);cursor:grab}
+.catmgr-main-row.dragging{opacity:.4}
+.catmgr-main-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .catmgr-row-top{display:flex;align-items:center;gap:6px}
 .catmgr-row-top input[type="text"]{flex:1;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:6px}
 .catmgr-icon-btn{border:1px solid var(--line);background:var(--white);width:30px;height:30px;border-radius:6px;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--muted)}
+.tagmgr-row{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--cream);cursor:grab}
+.tagmgr-row.dragging{opacity:.4}
+.tagmgr-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
+.drag-handle{flex-shrink:0;color:var(--soft);font-size:15px;line-height:1;padding:0 2px;cursor:grab;user-select:none}
+.tagmgr-row input[type="text"]{flex:1;padding:8px 10px;font-size:14px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.tagmgr-row input[type="color"]{width:34px;height:30px;padding:2px;border:1px solid var(--line);border-radius:6px;cursor:pointer;flex-shrink:0}
 .catmgr-icon-btn:hover{border-color:var(--tan);color:var(--tan-dark)}
 .catmgr-icon-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
 .catmgr-icon-btn.on{background:var(--sage);border-color:var(--sage);color:var(--white)}
 .catmgr-subs{margin:8px 0 0 18px;display:flex;flex-direction:column;gap:6px}
-.catmgr-sub-row{display:flex;align-items:center;gap:6px}
+.catmgr-sub-row{display:flex;align-items:center;gap:6px;cursor:grab}
+.catmgr-sub-row.dragging{opacity:.4}
+.catmgr-sub-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .catmgr-sub-row input[type="text"]{flex:1;padding:6px 9px;font-size:13px;border:1px solid var(--line);border-radius:6px}
 .catmgr-add-sub{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:6px;padding:6px 10px;font-size:12px;margin-top:4px;align-self:flex-start}
 .btn-secondary,.btn-primary{
@@ -744,6 +833,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('settingsDropdown')">⚙ 網站設定 ▾</button>
         <div class="dropdown-menu"><div class="dropdown-menu-inner">
           <button onclick="closeHeaderDropdowns();openCategoryManage()">🗂 分類管理</button>
+          <button onclick="closeHeaderDropdowns();openTagManage()">🏷 標籤管理</button>
           <button onclick="closeHeaderDropdowns();openContactManage()">📇 聯繫資訊</button>
           <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 頁面文字</button>
           <button onclick="closeHeaderDropdowns();openLayoutSettings()">🎨 首頁版面</button>
@@ -834,6 +924,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <input type="text" id="pName" placeholder="例：北歐實木餐桌">
     <label>參考售價（選填，格式自由，例如 3,200 或 洽詢）</label>
     <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
+    <label>商品標籤（會顯示在前台商品卡片左上角；同時勾選多個時，畫面只會顯示優先度最高的一個）</label>
+    <div class="tag-checkbox-grid" id="pBadges"></div>
     <input type="hidden" id="pSize">
     <div class="dimension-grid">
       <div>
@@ -915,6 +1007,52 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <button onclick="addMainCategoryInline()" style="border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:8px;padding:10px;font-size:13px;width:100%;text-align:center">＋ 新增主分類</button>
     <div class="modal-actions">
       <button class="btn-primary" onclick="closeCategoryManage()">完成</button>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="tagMgrModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('tagMgrModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">標籤管理</div>
+    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可改名、改顏色、排序（▲▼，順序＝前台顯示的優先度）、刪除。刪除已經有商品在用的標籤時，會一併從那些商品身上移除。</p>
+    <div id="tagMgrList" style="display:flex;flex-direction:column;gap:8px;margin:10px 0 16px"></div>
+    <button onclick="addTagInline()" style="border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:8px;padding:10px;font-size:13px;width:100%;text-align:center">＋ 新增標籤</button>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeTagManage()">完成</button>
+    </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="cropModal">
+  <div class="modal" style="max-width:440px">
+    <button class="modal-close" onclick="closeCropModal()">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">調整照片</div>
+    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">拖曳照片調整想要露出的位置，用下方滑桿縮放。<b>整個方框就是前台實際會顯示的正方形卡片範圍</b>，虛線是三分構圖參考線，左上角淺色區塊是商品標籤（例如「新品」「特價」）出現的位置，重要的部分建議避開那個角落。調整好按「套用」。</p>
+    <div class="crop-viewport" id="cropViewport">
+      <img id="cropImg" src="" alt="" draggable="false">
+      <div class="crop-grid"></div>
+      <div class="crop-badge-zone">標籤區</div>
+    </div>
+    <div class="crop-zoom-row">
+      <span style="font-size:14px;color:var(--soft)">縮放</span>
+      <span style="font-size:14px;color:var(--soft)">－</span>
+      <input type="range" id="cropZoomSlider" min="0" max="100" value="0">
+      <span style="font-size:14px;color:var(--soft)">＋</span>
+    </div>
+    <div class="crop-zoom-row">
+      <span style="font-size:14px;color:var(--soft)">旋轉</span>
+      <span style="font-size:14px;color:var(--soft)">↺</span>
+      <input type="range" id="cropRotateSlider" min="-45" max="45" value="0">
+      <span style="font-size:14px;color:var(--soft)">↻</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeCropModal()">取消</button>
+      <button class="btn-primary" onclick="applyCrop()">套用</button>
     </div>
     </div>
   </div>
@@ -1153,6 +1291,17 @@ let contact={};
 let pageText={};
 let layout={};
 let metaRaw={};
+const DEFAULT_TAG_DEFS=[
+  {key:"sale",label:"特價促銷",color:"#b84236"},
+  {key:"limited",label:"限量",color:"#8c491a"},
+  {key:"preorder",label:"預購",color:"#4d5d6b"},
+  {key:"new",label:"新品",color:"#5b6746"},
+  {key:"bestseller",label:"熱銷",color:"#905229"},
+  {key:"multicolor",label:"多色",color:"#201e1d"},
+  {key:"custom",label:"可客製化",color:"#696255"},
+  {key:"madeintw",label:"台灣製造",color:"#645c50"},
+];
+let tagDefs=[];
 let currentFilter="all";
 let sortKey="name";
 let sortDir=1;
@@ -1232,6 +1381,7 @@ async function saveMeta(){
   metaRaw.contact=contact;
   metaRaw.pageText=pageText;
   metaRaw.layout=layout;
+  metaRaw.tagDefs=tagDefs;
   try{
     await setDoc(doc(db,"sitedata",SITE_DOC),metaRaw);
     return true;
@@ -1272,22 +1422,6 @@ function renameSubCategory(mainId,subId,value){
   const main=getMainCat(mainId);
   const sub=main?.subs?.find(s=>s.id===subId);
   if(sub)sub.name=value;
-}
-function moveMainCategory(mainId,dir){
-  const idx=catalog.findIndex(c=>c.id===mainId);
-  const target=idx+dir;
-  if(idx<0||target<0||target>=catalog.length)return;
-  [catalog[idx],catalog[target]]=[catalog[target],catalog[idx]];
-  renderCatMgrList();
-}
-function moveSubCategory(mainId,subId,dir){
-  const main=getMainCat(mainId);
-  if(!main?.subs)return;
-  const idx=main.subs.findIndex(s=>s.id===subId);
-  const target=idx+dir;
-  if(idx<0||target<0||target>=main.subs.length)return;
-  [main.subs[idx],main.subs[target]]=[main.subs[target],main.subs[idx]];
-  renderCatMgrList();
 }
 function toggleMainHidden(mainId){
   const cat=getMainCat(mainId);
@@ -1400,40 +1534,40 @@ function renderCatMgrList(){
   const wrap=document.getElementById("catmgrList");
   if(!wrap)return;
   wrap.innerHTML="";
-  catalog.forEach((cat,mIdx)=>{
+  catalog.forEach((cat)=>{
     const row=document.createElement("div");
     row.className="catmgr-main-row";
+    row.draggable=true;
+    row.dataset.catId=cat.id;
     const top=document.createElement("div");
     top.className="catmgr-row-top";
     top.innerHTML=`
-      <button class="catmgr-icon-btn" title="上移" ${mIdx===0?"disabled":""}>▲</button>
-      <button class="catmgr-icon-btn" title="下移" ${mIdx===catalog.length-1?"disabled":""}>▼</button>
+      <span class="drag-handle" title="拖曳調整順序">⠿</span>
       <input type="text" value="${escapeHTML(cat.name)}">
       <button class="catmgr-icon-btn${cat.hidden?" on":""}" title="${cat.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${cat.hidden?"🙈":"👁"}</button>
       <button class="catmgr-icon-btn danger" title="刪除主分類">🗑</button>
     `;
-    const [upBtn,downBtn,nameInput,hideBtn,delBtn]=top.children;
-    upBtn.onclick=()=>moveMainCategory(cat.id,-1);
-    downBtn.onclick=()=>moveMainCategory(cat.id,1);
+    const [handle,nameInput,hideBtn,delBtn]=top.children;
     nameInput.addEventListener("input",()=>renameMainCategory(cat.id,nameInput.value));
     hideBtn.onclick=()=>toggleMainHidden(cat.id);
     delBtn.onclick=()=>deleteMainCategoryRequest(cat.id);
     row.appendChild(top);
     const subsWrap=document.createElement("div");
     subsWrap.className="catmgr-subs";
-    (cat.subs||[]).forEach((sub,sIdx)=>{
+    subsWrap.dataset.mainId=cat.id;
+    (cat.subs||[]).forEach((sub)=>{
       const subRow=document.createElement("div");
       subRow.className="catmgr-sub-row";
+      subRow.draggable=true;
+      subRow.dataset.mainId=cat.id;
+      subRow.dataset.subId=sub.id;
       subRow.innerHTML=`
-        <button class="catmgr-icon-btn" title="上移" ${sIdx===0?"disabled":""}>▲</button>
-        <button class="catmgr-icon-btn" title="下移" ${sIdx===cat.subs.length-1?"disabled":""}>▼</button>
+        <span class="drag-handle" title="拖曳調整順序">⠿</span>
         <input type="text" value="${escapeHTML(sub.name)}">
         <button class="catmgr-icon-btn${sub.hidden?" on":""}" title="${sub.hidden?"目前對顧客隱藏，點擊改為顯示":"目前顧客可見，點擊隱藏"}">${sub.hidden?"🙈":"👁"}</button>
         <button class="catmgr-icon-btn danger" title="刪除子分類">🗑</button>
       `;
-      const [sUp,sDown,sName,sHide,sDel]=subRow.children;
-      sUp.onclick=()=>moveSubCategory(cat.id,sub.id,-1);
-      sDown.onclick=()=>moveSubCategory(cat.id,sub.id,1);
+      const [sHandle,sName,sHide,sDel]=subRow.children;
       sName.addEventListener("input",()=>renameSubCategory(cat.id,sub.id,sName.value));
       sHide.onclick=()=>toggleSubHidden(cat.id,sub.id);
       sDel.onclick=()=>deleteSubCategoryRequest(cat.id,sub.id);
@@ -1448,6 +1582,91 @@ function renderCatMgrList(){
     wrap.appendChild(row);
   });
 }
+/* ── 分類管理：主分類拖曳排序 ───────────────────────────────────── */
+let dragMainCatId=null;
+let dragSubKey=null;
+const catmgrListEl=document.getElementById("catmgrList");
+catmgrListEl.addEventListener("dragstart",e=>{
+  // 子分類列自己有獨立的拖曳處理（見下方），這裡只處理主分類列；
+  // 用 stopPropagation 避免子分類的拖曳事件被主分類列誤判成拖主分類。
+  const subRow=e.target.closest(".catmgr-sub-row");
+  if(subRow){
+    dragSubKey={mainId:subRow.dataset.mainId,subId:subRow.dataset.subId};
+    subRow.classList.add("dragging");
+    e.stopPropagation();
+    return;
+  }
+  const row=e.target.closest(".catmgr-main-row");
+  if(!row)return;
+  dragMainCatId=row.dataset.catId;
+  row.classList.add("dragging");
+});
+catmgrListEl.addEventListener("dragend",e=>{
+  const subRow=e.target.closest(".catmgr-sub-row");
+  if(subRow){
+    catmgrListEl.querySelectorAll(".catmgr-sub-row").forEach(r=>r.classList.remove("dragging","drag-over"));
+    dragSubKey=null;
+    return;
+  }
+  catmgrListEl.querySelectorAll(".catmgr-main-row").forEach(r=>r.classList.remove("dragging","drag-over"));
+  dragMainCatId=null;
+});
+catmgrListEl.addEventListener("dragover",e=>{
+  const subRow=e.target.closest(".catmgr-sub-row");
+  if(subRow&&dragSubKey){
+    if(subRow.dataset.mainId!==dragSubKey.mainId||subRow.dataset.subId===dragSubKey.subId)return;
+    e.preventDefault();
+    e.stopPropagation();
+    subRow.classList.add("drag-over");
+    return;
+  }
+  const row=e.target.closest(".catmgr-main-row");
+  if(!row||!dragMainCatId||row.dataset.catId===dragMainCatId)return;
+  e.preventDefault();
+  row.classList.add("drag-over");
+});
+catmgrListEl.addEventListener("dragleave",e=>{
+  const subRow=e.target.closest(".catmgr-sub-row");
+  if(subRow){subRow.classList.remove("drag-over");return}
+  const row=e.target.closest(".catmgr-main-row");
+  if(row)row.classList.remove("drag-over");
+});
+catmgrListEl.addEventListener("drop",e=>{
+  const subRow=e.target.closest(".catmgr-sub-row");
+  if(subRow&&dragSubKey){
+    e.preventDefault();
+    e.stopPropagation();
+    subRow.classList.remove("drag-over");
+    const targetMainId=subRow.dataset.mainId;
+    const targetSubId=subRow.dataset.subId;
+    const srcKey=dragSubKey;
+    dragSubKey=null;
+    if(targetMainId!==srcKey.mainId||targetSubId===srcKey.subId)return;
+    const main=getMainCat(targetMainId);
+    if(!main||!main.subs)return;
+    const srcIdx=main.subs.findIndex(s=>s.id===srcKey.subId);
+    const targetIdx=main.subs.findIndex(s=>s.id===targetSubId);
+    if(srcIdx<0||targetIdx<0)return;
+    const [moved]=main.subs.splice(srcIdx,1);
+    main.subs.splice(targetIdx,0,moved);
+    renderCatMgrList();
+    return;
+  }
+  const row=e.target.closest(".catmgr-main-row");
+  if(!row||!dragMainCatId)return;
+  e.preventDefault();
+  row.classList.remove("drag-over");
+  const targetId=row.dataset.catId;
+  const srcId=dragMainCatId;
+  dragMainCatId=null;
+  if(targetId===srcId)return;
+  const srcIdx=catalog.findIndex(c=>c.id===srcId);
+  const targetIdx=catalog.findIndex(c=>c.id===targetId);
+  if(srcIdx<0||targetIdx<0)return;
+  const [moved]=catalog.splice(srcIdx,1);
+  catalog.splice(targetIdx,0,moved);
+  renderCatMgrList();
+});
 
 /* ── 聯繫資訊 ─────────────────────────────────────────────────── */
 function openContactManage(){
@@ -1700,25 +1919,30 @@ async function handleBulkFiles(event){
   let matchedCount=0,createdCount=0;
   for(const [name,items] of groups){
     const photos=[];
+    const rawOriginals=[];
     for(const {file} of items.slice(0,MAX_PHOTOS)){
       const dataUrl=await fileToDataUrl(file);
+      rawOriginals.push(dataUrl);
       photos.push(await resizeImageToUniform(dataUrl));
     }
     const existing=products.find(p=>p.status!=="archived"&&(p.name||"").trim()===name);
-    let fullPhotos,targetId,product;
+    let fullPhotos,fullOriginals,targetId,product;
     if(existing){
       targetId=existing.id;
       if(bulkReplaceMode){
         fullPhotos=photos;
+        fullOriginals=rawOriginals;
       }else{
         const cachedCount=(existing.photos||[]).filter(Boolean).length;
         const totalCount=existing.photoCount??cachedCount;
-        const existingFull=totalCount>cachedCount?await loadGallery(existing.id):(existing.photos||[]).filter(Boolean);
-        fullPhotos=existingFull.slice();
-        for(const photo of photos){
-          if(fullPhotos.length>=MAX_PHOTOS)break;
+        const galleryData=totalCount>cachedCount?await loadGallery(existing.id):{photos:(existing.photos||[]).filter(Boolean),originals:[]};
+        fullPhotos=galleryData.photos.slice();
+        fullOriginals=galleryData.originals.slice();
+        photos.forEach((photo,idx)=>{
+          if(fullPhotos.length>=MAX_PHOTOS)return;
           fullPhotos.push(photo);
-        }
+          fullOriginals.push(rawOriginals[idx]);
+        });
       }
       existing.photos=[await resizeToThumb(fullPhotos[0])];
       existing.photoCount=fullPhotos.length;
@@ -1728,6 +1952,7 @@ async function handleBulkFiles(event){
     }else{
       targetId=uid();
       fullPhotos=photos;
+      fullOriginals=rawOriginals;
       product={
         id:targetId,status:"active",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
         dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
@@ -1739,7 +1964,7 @@ async function handleBulkFiles(event){
     }
     try{
       await setDoc(doc(productsCol(),product.id),product);
-      await saveGallery(targetId,fullPhotos);
+      await saveGallery(targetId,fullPhotos,fullOriginals);
     }catch(e){
       console.warn("商品／圖庫寫入失敗",e);
     }
@@ -1894,6 +2119,9 @@ async function reorderProductRow(srcId,targetId){
 const MAX_PHOTOS=5;
 let editingProductId=null;
 let workingPhotos=[];
+// 跟 workingPhotos 一一對應的「裁切前原圖」，只有在真的上傳新照片時才會被換掉；
+// 套用裁切／縮放時只改 workingPhotos，這個陣列維持原樣，之後才有辦法回去重新調整。
+let workingPhotosOriginal=[];
 let workingSpecs=[];
 let uploadMethod="file";
 
@@ -1911,17 +2139,23 @@ function sanitizeProductForWrite(p){
 }
 // 商品文件只存封面照＋photoCount，完整多張照片存在 products/{id}/gallery/full 子文件，
 // 編輯商品時才讀取，前台清單／表格讀取才不會把所有照片都抓下來。
+// photoOriginals 是跟 photos 一一對應的「裁切前原圖」，讓管理員之後還能回去重新調整裁切／縮放。
 async function loadGallery(id){
   try{
     const snap=await getDoc(galleryDocRef(id));
-    return snap.exists()?(snap.data().photos||[]).filter(Boolean):[];
+    if(!snap.exists())return{photos:[],originals:[]};
+    const data=snap.data();
+    return{photos:(data.photos||[]).filter(Boolean),originals:data.photoOriginals||[]};
   }catch(e){
     console.warn("圖庫讀取失敗",e);
-    return [];
+    return{photos:[],originals:[]};
   }
 }
-async function saveGallery(id,photos){
-  await setDoc(galleryDocRef(id),{photos:(photos||[]).filter(Boolean)});
+async function saveGallery(id,photos,originals){
+  await setDoc(galleryDocRef(id),{
+    photos:(photos||[]).filter(Boolean),
+    photoOriginals:originals||[]
+  });
 }
 
 window.openModal=function(id){document.getElementById(id).classList.add("open")};
@@ -2120,7 +2354,138 @@ function loadImage(src){
     img.src=src;
   });
 }
-const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1500;
+const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1200;
+
+/* ── 照片裁切／縮放編輯器 ─────────────────────────────────────────
+   拖曳移動、滑桿縮放，套用時直接把目前看到的框選範圍畫成
+   PHOTO_TARGET_W x PHOTO_TARGET_H 的最終圖片，取代原本自動置中的做法，
+   讓每張商品照片可以自己決定要露出哪個部分、佔框架多大比例。 */
+let cropState=null;
+window.openCropEditor=async function(slotIdx){
+  // 一律從「裁切前的原圖」重新裁，不是拿上次裁完的結果再裁一次，
+  // 這樣才能保留原始畫質、也才能隨時改變主意調回去。
+  // 如果這個欄位還沒有原圖紀錄（例如這個功能上線前就存在的舊商品），
+  // 就把目前看到的這張照片直接當作原圖存起來，之後至少不會再繼續劣化。
+  if(!workingPhotosOriginal[slotIdx]&&workingPhotos[slotIdx]){
+    workingPhotosOriginal[slotIdx]=workingPhotos[slotIdx];
+  }
+  const src=workingPhotosOriginal[slotIdx]||workingPhotos[slotIdx];
+  if(!src)return;
+  const cropImg=document.getElementById("cropImg");
+  const viewport=document.getElementById("cropViewport");
+  openModal("cropModal");
+  cropImg.style.transform="none";
+  try{
+    const img=await loadImage(normalizePhotoUrl(src));
+    // 用實際版面量出來的視窗大小來算，不用寫死的數字，避免手機/桌面版尺寸不同時算錯
+    const vw=viewport.clientWidth,vh=viewport.clientHeight;
+    const iw=img.naturalWidth,ih=img.naturalHeight;
+    const minScale=Math.max(vw/iw,vh/ih);
+    // 用「圖片中心點目前落在視窗座標的哪裡」來描述位置，比左上角座標更直覺，
+    // 旋轉時的邊界計算也比較單純。
+    cropState={slotIdx,iw,ih,vw,vh,minScale,scale:minScale,rotation:0,centerX:vw/2,centerY:vh/2};
+    cropImg.src=img.src;
+    document.getElementById("cropZoomSlider").value=0;
+    document.getElementById("cropRotateSlider").value=0;
+    updateCropTransform();
+  }catch(e){
+    toast("圖片載入失敗，無法調整");
+    closeCropModal();
+  }
+};
+window.closeCropModal=function(){
+  closeModal("cropModal");
+  cropState=null;
+};
+function updateCropTransform(){
+  if(!cropState)return;
+  const img=document.getElementById("cropImg");
+  img.style.width=cropState.iw+"px";
+  img.style.height=cropState.ih+"px";
+  img.style.transformOrigin="50% 50%";
+  img.style.transform=`translate(${cropState.centerX-cropState.iw/2}px,${cropState.centerY-cropState.ih/2}px) rotate(${cropState.rotation}deg) scale(${cropState.scale})`;
+}
+// 圖片旋轉後，四個角落會凸出方框之外，要放大到「旋轉後的外接框」剛好蓋住整個
+// 視窗才不會露出黑底——這裡算的就是「目前這個旋轉角度下，最少要放大多少倍」。
+function minScaleForRotation(rotationDeg){
+  const rad=rotationDeg*Math.PI/180;
+  const cos=Math.abs(Math.cos(rad)),sin=Math.abs(Math.sin(rad));
+  const bboxW=cropState.vw*cos+cropState.vh*sin;
+  const bboxH=cropState.vw*sin+cropState.vh*cos;
+  return Math.max(bboxW/cropState.iw,bboxH/cropState.ih);
+}
+function clampCropCenter(){
+  const rad=cropState.rotation*Math.PI/180;
+  const cos=Math.abs(Math.cos(rad)),sin=Math.abs(Math.sin(rad));
+  // 旋轉＋縮放後，圖片在畫面上實際占用的外接矩形大小
+  const bboxW=cropState.iw*cropState.scale*cos+cropState.ih*cropState.scale*sin;
+  const bboxH=cropState.iw*cropState.scale*sin+cropState.ih*cropState.scale*cos;
+  const minCx=cropState.vw-bboxW/2,maxCx=bboxW/2;
+  const minCy=cropState.vh-bboxH/2,maxCy=bboxH/2;
+  cropState.centerX=Math.min(maxCx,Math.max(minCx,cropState.centerX));
+  cropState.centerY=Math.min(maxCy,Math.max(minCy,cropState.centerY));
+}
+(function initCropDrag(){
+  const viewport=document.getElementById("cropViewport");
+  let dragStart=null;
+  viewport.addEventListener("pointerdown",e=>{
+    if(!cropState)return;
+    dragStart={x:e.clientX,y:e.clientY,centerX:cropState.centerX,centerY:cropState.centerY};
+    viewport.setPointerCapture(e.pointerId);
+    viewport.classList.add("dragging");
+  });
+  viewport.addEventListener("pointermove",e=>{
+    if(!dragStart||!cropState)return;
+    cropState.centerX=dragStart.centerX+(e.clientX-dragStart.x);
+    cropState.centerY=dragStart.centerY+(e.clientY-dragStart.y);
+    clampCropCenter();
+    updateCropTransform();
+  });
+  const endDrag=()=>{dragStart=null;viewport.classList.remove("dragging")};
+  viewport.addEventListener("pointerup",endDrag);
+  viewport.addEventListener("pointercancel",endDrag);
+  document.getElementById("cropZoomSlider").addEventListener("input",e=>{
+    if(!cropState)return;
+    const t=Number(e.target.value)/100;
+    const baseMin=minScaleForRotation(cropState.rotation);
+    const maxScale=baseMin*3;
+    cropState.scale=baseMin+t*(maxScale-baseMin);
+    clampCropCenter();
+    updateCropTransform();
+  });
+  document.getElementById("cropRotateSlider").addEventListener("input",e=>{
+    if(!cropState)return;
+    cropState.rotation=Number(e.target.value);
+    // 換了角度之後，「最小要放大多少倍才蓋得住畫面」也會跟著變，
+    // 目前的縮放倍數如果已經不夠蓋住畫面了，要自動補上去，不然角落會露出黑底。
+    const newMinScale=minScaleForRotation(cropState.rotation);
+    if(cropState.scale<newMinScale)cropState.scale=newMinScale;
+    clampCropCenter();
+    updateCropTransform();
+  });
+})();
+window.applyCrop=function(){
+  if(!cropState)return;
+  const img=document.getElementById("cropImg");
+  const canvas=document.createElement("canvas");
+  canvas.width=PHOTO_TARGET_W;
+  canvas.height=PHOTO_TARGET_H;
+  const ctx=canvas.getContext("2d");
+  const outScale=PHOTO_TARGET_W/cropState.vw; // 視窗像素 → 輸出像素 的比例（視窗跟輸出圖是同一個 1:1 正方形長寬比，可以直接套用同一個比例）
+  try{
+    ctx.translate(cropState.centerX*outScale,cropState.centerY*outScale);
+    ctx.rotate(cropState.rotation*Math.PI/180);
+    ctx.scale(cropState.scale*outScale,cropState.scale*outScale);
+    ctx.drawImage(img,-cropState.iw/2,-cropState.ih/2,cropState.iw,cropState.ih);
+    workingPhotos[cropState.slotIdx]=canvas.toDataURL("image/jpeg",0.86);
+    renderPhotoSlots();
+    toast("照片已調整");
+  }catch(e){
+    toast("套用失敗，這張圖片可能不支援線上裁切（跨網域圖片限制），請改用「新增/更換」重新上傳",4000);
+  }
+  closeCropModal();
+};
+
 function resizeImageToUniform(src){
   return loadImage(src).then(img=>{
     try{
@@ -2139,7 +2504,7 @@ function resizeImageToUniform(src){
     }
   }).catch(()=>src);
 }
-const THUMB_W=480,THUMB_H=600;
+const THUMB_W=480,THUMB_H=480;
 function resizeToThumb(src){
   // 只給商品列表封面用的小尺寸版本，畫質跟原圖無關——原圖仍完整存在圖庫子文件裡，
   // 編輯商品/前台燈箱看到的還是未經過這層縮圖的原始照片。
@@ -2298,6 +2663,9 @@ function renderPhotoSlots(){
         const tmp=workingPhotos[dragSrcIdx];
         workingPhotos[dragSrcIdx]=workingPhotos[i];
         workingPhotos[i]=tmp;
+        const tmpOrig=workingPhotosOriginal[dragSrcIdx];
+        workingPhotosOriginal[dragSrcIdx]=workingPhotosOriginal[i];
+        workingPhotosOriginal[i]=tmpOrig;
         dragSrcIdx=null;
         renderPhotoSlots();
         toast("圖片順序已更新");
@@ -2334,12 +2702,23 @@ function renderPhotoSlots(){
       del.addEventListener("click",event=>{
         event.stopPropagation();
         workingPhotos[i]="";
-        const filled=workingPhotos.filter(Boolean);
+        workingPhotosOriginal[i]="";
+        const filledPairs=workingPhotos.map((p,idx)=>[p,workingPhotosOriginal[idx]]).filter(([p])=>Boolean(p));
         workingPhotos=new Array(MAX_PHOTOS).fill("");
-        filled.forEach((photo,index)=>workingPhotos[index]=photo);
+        workingPhotosOriginal=new Array(MAX_PHOTOS).fill("");
+        filledPairs.forEach(([photo,orig],index)=>{workingPhotos[index]=photo;workingPhotosOriginal[index]=orig});
         renderPhotoSlots();
       });
       slot.appendChild(del);
+      const crop=document.createElement("button");
+      crop.className="slot-crop";
+      crop.title="調整照片位置與縮放";
+      crop.innerHTML="✂";
+      crop.addEventListener("click",event=>{
+        event.stopPropagation();
+        openCropEditor(i);
+      });
+      slot.appendChild(crop);
     }
     container.appendChild(slot);
   }
@@ -2349,6 +2728,7 @@ function handleSlotFile(slotIdx,event){
   if(!file)return;
   const reader=new FileReader();
   reader.onload=async e=>{
+    workingPhotosOriginal[slotIdx]=e.target.result;
     workingPhotos[slotIdx]=await resizeImageToUniform(e.target.result);
     renderPhotoSlots();
   };
@@ -2358,7 +2738,9 @@ async function promptUrlForSlot(slotIdx){
   const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
   const raw=document.getElementById(inputId).value.trim();
   if(!raw){toast("請先在上方輸入連結");return}
-  workingPhotos[slotIdx]=await resizeImageToUniform(normalizePhotoUrl(raw));
+  const normalized=normalizePhotoUrl(raw);
+  workingPhotosOriginal[slotIdx]=normalized;
+  workingPhotos[slotIdx]=await resizeImageToUniform(normalized);
   renderPhotoSlots();
   toast("圖片已設定");
 }
@@ -2375,14 +2757,146 @@ window.addPhotoByGdrive=async function(){
 async function addWorkingPhoto(url){
   const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
   if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
+  workingPhotosOriginal[empty]=url;
   workingPhotos[empty]=await resizeImageToUniform(url);
   renderPhotoSlots();
   toast("圖片已新增");
 }
 
+/* ── 商品標籤（可在後台新增／改名／刪除，順序＝優先順序，存進 Firestore 的 tagDefs）── */
+function renderBadgeCheckboxes(selected){
+  const wrap=document.getElementById("pBadges");
+  if(!tagDefs.length){
+    wrap.innerHTML=`<span style="font-size:13px;color:var(--soft)">尚未建立任何標籤，點右邊「標籤管理」新增</span>`;
+    return;
+  }
+  wrap.innerHTML=tagDefs.map(def=>`
+    <label class="tag-checkbox-item">
+      <input type="checkbox" value="${escapeHTML(def.key)}" ${selected.includes(def.key)?"checked":""}>
+      <span class="swatch" style="background:${escapeHTML(def.color)}"></span>
+      ${escapeHTML(def.label)}
+    </label>
+  `).join("");
+}
+function getCheckedBadges(){
+  return [...document.querySelectorAll('#pBadges input[type="checkbox"]:checked')].map(el=>el.value);
+}
+
+/* ── 標籤管理（新增／改名／刪除／排序，跟分類管理是同一套邏輯）───── */
+const TAG_SWATCH_PALETTE=["#b84236","#8c491a","#905229","#5b6746","#4d5d6b","#201e1d","#696255","#645c50","#6b4c7a","#3d6b70"];
+function nextTagColor(){
+  const used=new Set(tagDefs.map(d=>d.color));
+  return TAG_SWATCH_PALETTE.find(c=>!used.has(c))||TAG_SWATCH_PALETTE[tagDefs.length%TAG_SWATCH_PALETTE.length];
+}
+window.openTagManage=function(){
+  renderTagMgrList();
+  openModal("tagMgrModal");
+};
+window.closeTagManage=function(){
+  closeModal("tagMgrModal");
+  saveMeta();
+  toast("標籤已儲存 ☁️");
+};
+function renderTagMgrList(){
+  const wrap=document.getElementById("tagMgrList");
+  if(!tagDefs.length){
+    wrap.innerHTML=`<div style="padding:16px 0;color:var(--soft);font-size:13px">目前沒有任何標籤，點下方新增。</div>`;
+    return;
+  }
+  wrap.innerHTML="";
+  tagDefs.forEach((def)=>{
+    const row=document.createElement("div");
+    row.className="tagmgr-row";
+    row.draggable=true;
+    row.dataset.key=def.key;
+    row.innerHTML=`
+      <span class="drag-handle" title="拖曳調整順序">⠿</span>
+      <input type="color" value="${escapeHTML(def.color)}" title="標籤顏色">
+      <input type="text" value="${escapeHTML(def.label)}" placeholder="標籤名稱">
+      <button class="catmgr-icon-btn danger" title="刪除標籤">🗑</button>
+    `;
+    const [handle,colorInput,nameInput,delBtn]=row.children;
+    colorInput.addEventListener("input",()=>{def.color=colorInput.value});
+    nameInput.addEventListener("input",()=>{def.label=nameInput.value});
+    delBtn.onclick=()=>deleteTagRequest(def.key);
+    wrap.appendChild(row);
+  });
+}
+let dragTagKey=null;
+const tagMgrListEl=document.getElementById("tagMgrList");
+tagMgrListEl.addEventListener("dragstart",e=>{
+  const row=e.target.closest(".tagmgr-row");
+  if(!row)return;
+  dragTagKey=row.dataset.key;
+  row.classList.add("dragging");
+});
+tagMgrListEl.addEventListener("dragend",()=>{
+  tagMgrListEl.querySelectorAll(".tagmgr-row").forEach(r=>r.classList.remove("dragging","drag-over"));
+  dragTagKey=null;
+});
+tagMgrListEl.addEventListener("dragover",e=>{
+  const row=e.target.closest(".tagmgr-row");
+  if(!row||!dragTagKey||row.dataset.key===dragTagKey)return;
+  e.preventDefault();
+  row.classList.add("drag-over");
+});
+tagMgrListEl.addEventListener("dragleave",e=>{
+  const row=e.target.closest(".tagmgr-row");
+  if(row)row.classList.remove("drag-over");
+});
+tagMgrListEl.addEventListener("drop",e=>{
+  const row=e.target.closest(".tagmgr-row");
+  if(!row||!dragTagKey)return;
+  e.preventDefault();
+  row.classList.remove("drag-over");
+  const targetKey=row.dataset.key;
+  const srcKey=dragTagKey;
+  dragTagKey=null;
+  if(targetKey===srcKey)return;
+  const srcIdx=tagDefs.findIndex(d=>d.key===srcKey);
+  const targetIdx=tagDefs.findIndex(d=>d.key===targetKey);
+  if(srcIdx<0||targetIdx<0)return;
+  const [moved]=tagDefs.splice(srcIdx,1);
+  tagDefs.splice(targetIdx,0,moved);
+  renderTagMgrList();
+});
+window.addTagInline=function(){
+  const name=(prompt("請輸入新標籤名稱：")||"").trim();
+  if(!name)return;
+  const key="tag-"+uid();
+  tagDefs.push({key,label:name,color:nextTagColor()});
+  renderTagMgrList();
+  toast("標籤已新增");
+};
+function deleteTagRequest(key){
+  const def=tagDefs.find(d=>d.key===key);
+  if(!def)return;
+  const affected=products.filter(p=>(p.badges||[]).includes(key));
+  const msg=affected.length
+    ?`確定要刪除標籤「${def.label}」嗎？目前有 ${affected.length} 件商品掛著這個標籤，刪除後會一併從這些商品身上移除。`
+    :`確定要刪除標籤「${def.label}」嗎？`;
+  if(!confirm(msg))return;
+  tagDefs=tagDefs.filter(d=>d.key!==key);
+  if(affected.length){
+    affected.forEach(p=>{p.badges=(p.badges||[]).filter(b=>b!==key)});
+    (async()=>{
+      try{
+        const batch=writeBatch(db);
+        affected.forEach(p=>batch.set(doc(productsCol(),p.id),p));
+        await batch.commit();
+      }catch(e){
+        toast("商品標籤更新寫入失敗："+(e.message||String(e)),4000);
+      }
+    })();
+  }
+  renderTagMgrList();
+  toast("標籤已刪除");
+}
+
 window.openProductModal=async function(id){
   editingProductId=id;
   workingPhotos=new Array(MAX_PHOTOS).fill("");
+  workingPhotosOriginal=new Array(MAX_PHOTOS).fill("");
   workingSpecs=[];
   document.getElementById("productModalTitle").textContent=id?"編輯商品":"新增商品";
   document.getElementById("urlInput").value="";
@@ -2398,6 +2912,7 @@ window.openProductModal=async function(id){
     document.getElementById("pSubCat").value=product.subCat||"";
     document.getElementById("pName").value=product.name||"";
     document.getElementById("pPrice").value=product.price||"";
+    renderBadgeCheckboxes(product.badges||[]);
     document.getElementById("pSize").value=product.size||"";
     document.getElementById("pWidth").value=product.dimensions?.width||"";
     document.getElementById("pDepth").value=product.dimensions?.depth||"";
@@ -2408,21 +2923,25 @@ window.openProductModal=async function(id){
     });
     document.getElementById("pDesc").innerHTML=product.desc||"";
     let cover=(product.photos||[]).filter(Boolean);
+    let coverOriginals=[];
     // 商品文件的封面只是縮圖，編輯時一律要換成 gallery 子文件裡的原始畫質照片
     const totalCount=product.photoCount??cover.length;
     if(totalCount>0){
       renderPhotoSlots();
       openModal("productModal");
-      const full=await loadGallery(id);
+      const galleryData=await loadGallery(id);
       if(editingProductId!==id)return; // 使用者切換到別的商品了，不要覆蓋畫面
-      if(full.length)cover=full;
+      if(galleryData.photos.length){cover=galleryData.photos;coverOriginals=galleryData.originals}
     }
     cover.slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
+    workingPhotosOriginal=new Array(MAX_PHOTOS).fill("");
+    coverOriginals.slice(0,MAX_PHOTOS).forEach((orig,index)=>{if(orig)workingPhotosOriginal[index]=orig});
   }else{
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
     ["pName","pSize","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
     document.getElementById("pPrice").value="";
+    renderBadgeCheckboxes([]);
     document.getElementById("pDesc").innerHTML="";
   }
   renderSpecEditor();
@@ -2452,6 +2971,7 @@ window.saveProduct=async function(){
     subCat:document.getElementById("pSubCat").value||null,
     name,
     price:document.getElementById("pPrice").value.trim(),
+    badges:getCheckedBadges(),
     size,
     dimensions,
     specs:workingSpecs.filter(spec=>spec.part||spec.w||spec.d||spec.h).map(spec=>({
@@ -2463,6 +2983,8 @@ window.saveProduct=async function(){
     desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
   const fullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
+  // 原圖陣列要跟 fullPhotos 用同一套「哪些欄位有值」規則過濾，位置才會對得上
+  const fullOriginals=workingPhotos.map((p,i)=>p?(workingPhotosOriginal[i]||""):null).filter(v=>v!==null);
   // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
   data.photos=fullPhotos.length?[await resizeToThumb(fullPhotos[0])]:[];
   data.photoCount=fullPhotos.length;
@@ -2477,7 +2999,7 @@ window.saveProduct=async function(){
   }
   try{
     await setDoc(doc(productsCol(),product.id),product);
-    await saveGallery(product.id,fullPhotos);
+    await saveGallery(product.id,fullPhotos,fullOriginals);
     toast(editingProductId?"商品已更新 ☁️":"商品已新增 ☁️");
   }catch(e){
     toast("儲存失敗："+(e.message||String(e)),4000);
@@ -2542,6 +3064,8 @@ async function boot(){
     contact=metaRaw.contact||{};
     pageText=metaRaw.pageText||{};
     layout=metaRaw.layout||{};
+    // 第一次沒有 tagDefs 時，用內建的8個當預設值，確保舊商品身上已經標記的標籤鍵值不會失效
+    tagDefs=Array.isArray(metaRaw.tagDefs)&&metaRaw.tagDefs.length?metaRaw.tagDefs:DEFAULT_TAG_DEFS.map(d=>({...d}));
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
     products.forEach((p,i)=>{

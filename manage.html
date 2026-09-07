@@ -843,6 +843,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('toolsDropdown')">🛠 商品工具 ▾</button>
         <div class="dropdown-menu"><div class="dropdown-menu-inner">
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
+          <button onclick="closeHeaderDropdowns();batchNormalizePhotos()">🎯 統一商品照片比例</button>
+          <button onclick="closeHeaderDropdowns();undoBatchNormalizePhotos()">↩ 復原上次統一比例</button>
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 快速分類</button>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
@@ -1051,6 +1053,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <span style="font-size:14px;color:var(--soft)">↻</span>
     </div>
     <div class="modal-actions">
+      <button class="btn-secondary" onclick="autoCenterCrop()" title="自動偵測商品主體，統一縮放比例">🎯 自動置中</button>
       <button class="btn-secondary" onclick="closeCropModal()">取消</button>
       <button class="btn-primary" onclick="applyCrop()">套用</button>
     </div>
@@ -2143,18 +2146,26 @@ function sanitizeProductForWrite(p){
 async function loadGallery(id){
   try{
     const snap=await getDoc(galleryDocRef(id));
-    if(!snap.exists())return{photos:[],originals:[]};
+    if(!snap.exists())return{photos:[],originals:[],backup:null};
     const data=snap.data();
-    return{photos:(data.photos||[]).filter(Boolean),originals:data.photoOriginals||[]};
+    return{
+      photos:(data.photos||[]).filter(Boolean),
+      originals:data.photoOriginals||[],
+      backup:data.batchBackup||null
+    };
   }catch(e){
     console.warn("圖庫讀取失敗",e);
-    return{photos:[],originals:[]};
+    return{photos:[],originals:[],backup:null};
   }
 }
-async function saveGallery(id,photos,originals){
+async function saveGallery(id,photos,originals,batchBackup=null){
+  // batchBackup 預設清空：一般編輯商品照片（不是跑批次工具）本來就該把舊的批次備份
+  // 作廢，不然之後按「復原上次批次」會把已經手動改過的照片蓋回更舊的批次備份，
+  // 造成資料倒退。只有 batchNormalizePhotos／undoBatchNormalizePhotos 會明確傳值進來。
   await setDoc(galleryDocRef(id),{
     photos:(photos||[]).filter(Boolean),
-    photoOriginals:originals||[]
+    photoOriginals:originals||[],
+    batchBackup
   });
 }
 
@@ -2345,6 +2356,65 @@ window.bulkAutoDesc=async function(){
   renderTable();
 };
 
+window.batchNormalizePhotos=async function(){
+  const targets=products.filter(p=>p.status!=="archived"&&(p.photos||[]).length);
+  if(!targets.length){toast("目前沒有可以處理的商品照片");return}
+  if(!confirm(`將自動偵測每張商品照片的主體，統一縮放比例，重新儲存全部 ${targets.length} 個商品的照片。\n\n執行前會先備份每個商品目前的照片，如果效果不理想，可以用「↩ 復原上次統一比例」整批復原（只保留最近一次的備份，復原後備份就會清空）。確定要執行嗎？`))return;
+  toast(`開始統一照片比例，共 ${targets.length} 個商品…`,4000);
+  let done=0,failed=0;
+  for(const p of targets){
+    try{
+      // 優先用當初上傳的原始檔重新處理（畫質最好、不會累積劣化），
+      // 舊商品沒有留原始檔紀錄的話，退回用目前的照片處理。
+      const gallery=await loadGallery(p.id);
+      const sourcePhotos=gallery.photos.length?gallery.photos:(p.photos||[]);
+      const sourceOriginals=gallery.originals.length?gallery.originals:sourcePhotos;
+      const newFullPhotos=[];
+      for(let i=0;i<sourcePhotos.length;i++){
+        newFullPhotos.push(await autoNormalizePhotoDataUrl(sourceOriginals[i]||sourcePhotos[i]));
+      }
+      if(!newFullPhotos.length)continue;
+      // 蓋掉之前的照片以前，先把「這次批次執行前」的狀態存成備份，
+      // 讓 undoBatchNormalizePhotos 之後可以整批復原回去。
+      const backup={thumb:p.photos[0]||"",fullPhotos:sourcePhotos};
+      p.photos=[await resizeToThumb(newFullPhotos[0])];
+      await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
+      await saveGallery(p.id,newFullPhotos,sourceOriginals,backup);
+      done++;
+    }catch(e){
+      console.warn("統一照片比例失敗："+p.name,e);
+      failed++;
+    }
+  }
+  toast(failed?`完成 ${done} 個，${failed} 個失敗（可能是跨網域圖片無法讀取）`:`已統一 ${done} 個商品的照片比例 ☁️`,4500);
+  renderTable();
+};
+
+window.undoBatchNormalizePhotos=async function(){
+  toast("檢查備份中…",2000);
+  const withBackup=[];
+  for(const p of products){
+    const gallery=await loadGallery(p.id);
+    if(gallery.backup)withBackup.push({p,gallery});
+  }
+  if(!withBackup.length){toast("沒有可以復原的批次調整紀錄");return}
+  if(!confirm(`找到 ${withBackup.length} 個商品有上次「統一照片比例」的備份，確定要整批復原嗎？復原後這份備份就會清空，無法再復原第二次。`))return;
+  let done=0,failed=0;
+  for(const {p,gallery} of withBackup){
+    try{
+      p.photos=[gallery.backup.thumb||""];
+      await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
+      await saveGallery(p.id,gallery.backup.fullPhotos,gallery.originals,null);
+      done++;
+    }catch(e){
+      console.warn("復原失敗："+p.name,e);
+      failed++;
+    }
+  }
+  toast(failed?`復原 ${done} 個，${failed} 個失敗`:`已復原 ${done} 個商品的照片 ☁️`,4500);
+  renderTable();
+};
+
 function loadImage(src){
   return new Promise((resolve,reject)=>{
     const img=new Image();
@@ -2355,6 +2425,73 @@ function loadImage(src){
   });
 }
 const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1200;
+
+/* ── 自動偵測商品主體範圍，統一各張照片的縮放比例 ───────────────────
+   商品照片背景色是固定的（跟 resizeImageToUniform 烤進照片裡的底色 #fffaf3
+   一致），不用去猜背景色在哪、也不需要真的去背透明圖——直接算每個像素
+   跟這個已知底色的色差，色差夠大的範圍就是商品主體，再統一縮放成主體
+   最長邊佔畫面固定比例，商品有大有小拍出來的照片看起來就會一致大小。 */
+const SUBJECT_BG_COLOR={r:255,g:250,b:243}; // #fffaf3
+const SUBJECT_TARGET_FRACTION=0.72; // 主體最長邊要佔畫面的比例，愈小代表四周留白愈多
+function detectSubjectBBox(img){
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+  const MAX_DIM=300; // 用縮圖分析就夠了，不用掃整張原圖的像素，速度快很多
+  const scale=Math.min(1,MAX_DIM/Math.max(iw,ih));
+  const w=Math.max(1,Math.round(iw*scale)),h=Math.max(1,Math.round(ih*scale));
+  const canvas=document.createElement("canvas");
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  ctx.drawImage(img,0,0,w,h);
+  let data;
+  try{data=ctx.getImageData(0,0,w,h).data}catch(e){return null} // 跨網域圖片會擋讀取像素，直接放棄自動偵測
+  const TOLERANCE=28;
+  let minX=w,minY=h,maxX=-1,maxY=-1;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const i=(y*w+x)*4;
+      if(data[i+3]<10)continue; // 透明像素當背景看待
+      const dr=data[i]-SUBJECT_BG_COLOR.r,dg=data[i+1]-SUBJECT_BG_COLOR.g,db=data[i+2]-SUBJECT_BG_COLOR.b;
+      if(Math.sqrt(dr*dr+dg*dg+db*db)>TOLERANCE){
+        if(x<minX)minX=x;
+        if(x>maxX)maxX=x;
+        if(y<minY)minY=y;
+        if(y>maxY)maxY=y;
+      }
+    }
+  }
+  if(maxX<minX||maxY<minY)return null; // 整張都接近背景色，偵測不到主體
+  const inv=1/scale;
+  return {x:minX*inv,y:minY*inv,w:(maxX-minX+1)*inv,h:(maxY-minY+1)*inv};
+}
+// 直接輸出成 PHOTO_TARGET_W x PHOTO_TARGET_H 的最終照片（不經過互動式裁切視窗），
+// 給批次工具用；偵測不到主體時退回原本「完整置中、不裁切」的邏輯，不會裁壞照片。
+async function autoNormalizePhotoDataUrl(src){
+  const img=await loadImage(normalizePhotoUrl(src));
+  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
+  const bbox=detectSubjectBBox(img);
+  const canvas=document.createElement("canvas");
+  canvas.width=PHOTO_TARGET_W;
+  canvas.height=PHOTO_TARGET_H;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#fffaf3";
+  ctx.fillRect(0,0,PHOTO_TARGET_W,PHOTO_TARGET_H);
+  let scale,centerX,centerY;
+  if(bbox){
+    const minScale=Math.max(PHOTO_TARGET_W/iw,PHOTO_TARGET_H/ih);
+    scale=Math.max(minScale,(PHOTO_TARGET_W*SUBJECT_TARGET_FRACTION)/Math.max(bbox.w,bbox.h));
+    const dx=(bbox.x+bbox.w/2)-iw/2,dy=(bbox.y+bbox.h/2)-ih/2;
+    centerX=PHOTO_TARGET_W/2-dx*scale;
+    centerY=PHOTO_TARGET_H/2-dy*scale;
+  }else{
+    scale=Math.min(PHOTO_TARGET_W/iw,PHOTO_TARGET_H/ih);
+    centerX=PHOTO_TARGET_W/2;
+    centerY=PHOTO_TARGET_H/2;
+  }
+  ctx.translate(centerX,centerY);
+  ctx.scale(scale,scale);
+  ctx.drawImage(img,-iw/2,-ih/2,iw,ih);
+  return canvas.toDataURL("image/jpeg",0.86);
+}
 
 /* ── 照片裁切／縮放編輯器 ─────────────────────────────────────────
    拖曳移動、滑桿縮放，套用時直接把目前看到的框選範圍畫成
@@ -2464,6 +2601,25 @@ function clampCropCenter(){
     updateCropTransform();
   });
 })();
+window.autoCenterCrop=function(){
+  if(!cropState)return;
+  const img=document.getElementById("cropImg");
+  const bbox=detectSubjectBBox(img);
+  if(!bbox){
+    toast("偵測不到明顯的商品主體，這張照片請用滑桿手動調整");
+    return;
+  }
+  const minScale=minScaleForRotation(cropState.rotation);
+  const scale=Math.max(minScale,(cropState.vw*SUBJECT_TARGET_FRACTION)/Math.max(bbox.w,bbox.h));
+  const dx=(bbox.x+bbox.w/2)-cropState.iw/2,dy=(bbox.y+bbox.h/2)-cropState.ih/2;
+  cropState.scale=scale;
+  cropState.centerX=cropState.vw/2-dx*scale;
+  cropState.centerY=cropState.vh/2-dy*scale;
+  clampCropCenter();
+  updateCropTransform();
+  const maxScale=minScale*3;
+  document.getElementById("cropZoomSlider").value=Math.round(100*Math.min(1,Math.max(0,(cropState.scale-minScale)/(maxScale-minScale||1))));
+};
 window.applyCrop=function(){
   if(!cropState)return;
   const img=document.getElementById("cropImg");

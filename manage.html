@@ -105,7 +105,10 @@ header{
 .header-links a{color:var(--muted);text-decoration:none}
 .header-links a:hover{color:var(--tan-dark)}
 
-.layout{display:flex;align-items:flex-start;gap:24px;padding:22px 28px 60px;max-width:1500px;margin:auto}
+/* 寬度隨螢幕大小按比例調整（92% 視窗寬），螢幕變寬版面就跟著變寬，
+   不會再留下固定的大片留白；但超過 1800px 之後就不再繼續放大，
+   避免在超寬螢幕上表格被拉得過寬、欄位之間空得不自然。 */
+.layout{display:flex;align-items:flex-start;gap:24px;padding:22px 28px 60px;max-width:clamp(1200px,92vw,1800px)}
 
 /* ── 左側分類收合列表 ───────────────────────────── */
 .sidebar{
@@ -875,7 +878,19 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
       </div>
       <div class="summary">
-        <span id="summaryLine"></span>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span id="summaryLine"></span>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--soft)">
+            每頁顯示
+            <select id="pageSizeSelect" onchange="setPageSize(this.value)" style="padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:12.5px">
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">全部</option>
+            </select>
+          </label>
+        </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="sync-btn" id="bulkAutoDescBtn" onclick="bulkAutoDesc()">🪄 批次產生缺說明商品文案</button>
           <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()">套用目前排序到前台 →</button>
@@ -908,6 +923,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
           <tbody id="tbody"></tbody>
         </table>
       </div>
+      <div id="paginationBar" style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:14px;font-size:13px;color:var(--muted)"></div>
     </div>
   </div>
 </div>
@@ -1308,6 +1324,18 @@ let tagDefs=[];
 let currentFilter="all";
 let sortKey="name";
 let sortDir=1;
+let pageSize="all"; // "10"|"20"|"50"|"100"|"all"
+let currentPage=1;
+let lastFilterSignature="";
+window.setPageSize=function(value){
+  pageSize=value;
+  currentPage=1;
+  renderTable();
+};
+window.goToPage=function(page){
+  currentPage=page;
+  renderTable();
+};
 let catFilterMain=null;
 let catFilterSub=null;
 let dragModeEnabled=false;
@@ -3644,7 +3672,36 @@ window.renderTable=function(){
 
   list.sort((a,b)=>sortDir*sortCompare(a,b));
 
-  document.getElementById("summaryLine").textContent=`顯示 ${list.length} 個商品`;
+  // 篩選條件（搜尋／狀態篩選／分類／排序欄位）只要有任何一項變動，分頁就跳回第 1 頁，
+  // 不然容易切換篩選後停在一個已經沒有那麼多頁的頁碼、畫面變空白。
+  const filterSignature=JSON.stringify([q,currentFilter,catFilterMain,catFilterSub,sortKey,sortDir]);
+  if(filterSignature!==lastFilterSignature){currentPage=1;lastFilterSignature=filterSignature}
+
+  const totalCount=list.length;
+  const pageSizeNum=pageSize==="all"?totalCount:Number(pageSize);
+  const totalPages=pageSizeNum>0?Math.max(1,Math.ceil(totalCount/pageSizeNum)):1;
+  if(currentPage>totalPages)currentPage=totalPages;
+  if(currentPage<1)currentPage=1;
+  const startIdx=pageSizeNum>0?(currentPage-1)*pageSizeNum:0;
+  const pagedList=pageSizeNum>0?list.slice(startIdx,startIdx+pageSizeNum):list;
+
+  const pageSizeSelect=document.getElementById("pageSizeSelect");
+  if(pageSizeSelect&&pageSizeSelect.value!==pageSize)pageSizeSelect.value=pageSize;
+
+  document.getElementById("summaryLine").textContent=totalCount&&pageSizeNum<totalCount
+    ? `顯示第 ${startIdx+1}–${Math.min(startIdx+pageSizeNum,totalCount)} 個，共 ${totalCount} 個商品`
+    : `顯示 ${totalCount} 個商品`;
+
+  const paginationBar=document.getElementById("paginationBar");
+  if(totalPages<=1){
+    paginationBar.innerHTML="";
+  }else{
+    paginationBar.innerHTML=`
+      <button class="btn-secondary" ${currentPage<=1?"disabled":""} onclick="goToPage(${currentPage-1})">‹ 上一頁</button>
+      <span>第 ${currentPage} / ${totalPages} 頁</span>
+      <button class="btn-secondary" ${currentPage>=totalPages?"disabled":""} onclick="goToPage(${currentPage+1})">下一頁 ›</button>
+    `;
+  }
 
   const tbody=document.getElementById("tbody");
   if(!list.length){
@@ -3654,7 +3711,7 @@ window.renderTable=function(){
   // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂；
   // 拖曳模式本身用獨立的開關（⠿ 按鈕）控制，不綁定目前的排序欄位
   const canReorder=dragModeEnabled&&!quickCatMode&&!q&&currentFilter==="all"&&!!catFilterMain;
-  tbody.innerHTML=list.map(p=>{
+  tbody.innerHTML=pagedList.map(p=>{
     const m=missingFlags(p);
     const photos=(p.photos||[]).filter(Boolean);
     const thumb=photos.length

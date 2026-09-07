@@ -2190,9 +2190,12 @@ async function saveGallery(id,photos,originals,batchBackup=null){
   // batchBackup 預設清空：一般編輯商品照片（不是跑批次工具）本來就該把舊的批次備份
   // 作廢，不然之後按「復原上次批次」會把已經手動改過的照片蓋回更舊的批次備份，
   // 造成資料倒退。只有 batchNormalizePhotos／undoBatchNormalizePhotos 會明確傳值進來。
+  // 每次寫入前都先把原圖壓到 capOriginalDataUrl 的上限，不管是從哪個流程存進來的
+  // （單一商品編輯、批次匯入、批次調整比例…）都會經過這一關，避免單一文件超過 1MB。
+  const cappedOriginals=await Promise.all((originals||[]).map(capOriginalDataUrl));
   await setDoc(galleryDocRef(id),{
     photos:(photos||[]).filter(Boolean),
-    photoOriginals:originals||[],
+    photoOriginals:cappedOriginals,
     batchBackup
   });
 }
@@ -2709,6 +2712,29 @@ function resizeToThumb(src){
     }
   }).catch(()=>src);
 }
+// workingPhotosOriginal 存的是使用者上傳當下「未經任何縮放」的原始檔案，
+// 手機相機隨便一張都可能是 3000x4000px、好幾 MB，5 張疊在同一份 gallery/full
+// 文件裡很容易超過 Firestore 單一文件 1MB 的上限而存檔失敗。這裡把原圖限制在
+// 「重新裁切／縮放時還夠用」的最大邊長內，非 data: 的網址（Google Drive／外部連結）
+// 本來就只是短字串直接放行，不需要也不能重新編碼。
+const ORIGINAL_MAX_DIM=1600;
+function capOriginalDataUrl(src){
+  if(!src||!src.startsWith("data:"))return Promise.resolve(src);
+  return loadImage(src).then(img=>{
+    try{
+      const scale=Math.min(1,ORIGINAL_MAX_DIM/Math.max(img.width,img.height));
+      if(scale>=1)return src;
+      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const canvas=document.createElement("canvas");
+      canvas.width=w;
+      canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      return canvas.toDataURL("image/jpeg",0.86);
+    }catch(e){
+      return src;
+    }
+  }).catch(()=>src);
+}
 // 首頁大圖／分類磚縮圖用：跟商品照片同一套「白底裁切置中」邏輯，
 // 但畫面上只會顯示縮圖大小，用比商品原圖小很多的尺寸存，避免版面設定塞爆單一份 Firestore 文件
 function resizeSquareImage(src,size,quality){
@@ -3186,7 +3212,12 @@ window.saveProduct=async function(){
     await saveGallery(product.id,fullPhotos,fullOriginals);
     toast(editingProductId?"商品已更新 ☁️":"商品已新增 ☁️");
   }catch(e){
-    toast("儲存失敗："+(e.message||String(e)),4000);
+    const msg=e.message||String(e);
+    if(/exceeds the maximum allowed size/i.test(msg)){
+      toast("儲存失敗：這個商品的照片加起來太大了，請減少照片張數，或用「調整照片位置與縮放」裁切掉不必要的部分後再試一次",5000);
+    }else{
+      toast("儲存失敗："+msg,4000);
+    }
   }
   closeModal("productModal");
   document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;

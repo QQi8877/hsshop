@@ -2186,16 +2186,31 @@ async function loadGallery(id){
     return{photos:[],originals:[],backup:null};
   }
 }
+// Firestore 單一文件硬性上限 1,048,576 bytes；抓保守一點的安全值，
+// 避免加上欄位名稱等其他 JSON 開銷後還是壓線超過。
+const GALLERY_SIZE_BUDGET=950000;
+function galleryPayloadSize(photos,originals,batchBackup){
+  return JSON.stringify({photos,photoOriginals:originals,batchBackup}).length;
+}
 async function saveGallery(id,photos,originals,batchBackup=null){
   // batchBackup 預設清空：一般編輯商品照片（不是跑批次工具）本來就該把舊的批次備份
   // 作廢，不然之後按「復原上次批次」會把已經手動改過的照片蓋回更舊的批次備份，
   // 造成資料倒退。只有 batchNormalizePhotos／undoBatchNormalizePhotos 會明確傳值進來。
-  // 每次寫入前都先把原圖壓到 capOriginalDataUrl 的上限，不管是從哪個流程存進來的
-  // （單一商品編輯、批次匯入、批次調整比例…）都會經過這一關，避免單一文件超過 1MB。
-  const cappedOriginals=await Promise.all((originals||[]).map(capOriginalDataUrl));
+  const cleanPhotos=(photos||[]).filter(Boolean);
+  const rawOriginals=originals||[];
+  // 原圖畫質/尺寸階梯式往下調，直到整包資料在安全範圍內為止：多數情況第一階
+  // 就會過關、畫質幾乎沒差；只有照片內容特別難壓縮（木紋、布紋等細節很多）
+  // 或單一商品塞滿 5 張照片時，才會再往下調更保守的尺寸/畫質，確保一定存得進去，
+  // 不會因為某張照片特別難壓縮就一直存檔失敗。
+  const steps=[{maxDim:1600,quality:0.86},{maxDim:1300,quality:0.8},{maxDim:1000,quality:0.72},{maxDim:750,quality:0.6}];
+  let cleanOriginals=rawOriginals;
+  for(const step of steps){
+    cleanOriginals=await Promise.all(rawOriginals.map(o=>capOriginalDataUrl(o,step.maxDim,step.quality)));
+    if(galleryPayloadSize(cleanPhotos,cleanOriginals,batchBackup)<GALLERY_SIZE_BUDGET)break;
+  }
   await setDoc(galleryDocRef(id),{
-    photos:(photos||[]).filter(Boolean),
-    photoOriginals:cappedOriginals,
+    photos:cleanPhotos,
+    photoOriginals:cleanOriginals,
     batchBackup
   });
 }
@@ -2717,19 +2732,17 @@ function resizeToThumb(src){
 // 文件裡很容易超過 Firestore 單一文件 1MB 的上限而存檔失敗。這裡把原圖限制在
 // 「重新裁切／縮放時還夠用」的最大邊長內，非 data: 的網址（Google Drive／外部連結）
 // 本來就只是短字串直接放行，不需要也不能重新編碼。
-const ORIGINAL_MAX_DIM=1600;
-function capOriginalDataUrl(src){
+function capOriginalDataUrl(src,maxDim,quality){
   if(!src||!src.startsWith("data:"))return Promise.resolve(src);
   return loadImage(src).then(img=>{
     try{
-      const scale=Math.min(1,ORIGINAL_MAX_DIM/Math.max(img.width,img.height));
-      if(scale>=1)return src;
-      const w=Math.round(img.width*scale),h=Math.round(img.height*scale);
+      const scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+      const w=Math.max(1,Math.round(img.width*scale)),h=Math.max(1,Math.round(img.height*scale));
       const canvas=document.createElement("canvas");
       canvas.width=w;
       canvas.height=h;
       canvas.getContext("2d").drawImage(img,0,0,w,h);
-      return canvas.toDataURL("image/jpeg",0.86);
+      return canvas.toDataURL("image/jpeg",quality);
     }catch(e){
       return src;
     }

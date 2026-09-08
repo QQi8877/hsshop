@@ -376,15 +376,30 @@ nav{
 .cat-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
 .sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
 .products-grid{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:0;
+  display:flex;
+  flex-wrap:wrap;
   border-top:1px solid var(--line);
   border-left:1px solid var(--line);
 }
+/* 改用 Flexbox（不用 Grid）是刻意的：分類數量常常不是欄數的倍數，最後一列
+   缺角的話，Grid 還是會保留空的格線位置（沒有商品卡的地方缺了邊框，看起來
+   像斷掉），Flexbox 換行後多出來的空間單純留白，不會有缺邊框的視覺問題。 */
+.product-card{width:50%;min-width:0}
+@media(min-width:761px){.product-card{width:20%}}
 .products-grid:has(.loading-breathe){border:0} /* 蓋掉外層 grid 的邊框，避免載入中畫面出現多餘框線 */
+.products-section-head{
+  width:100%;
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  padding:30px 14px 12px;
+  border-bottom:1px solid var(--line);
+}
+.products-section-head.first{padding-top:14px}
+.products-section-title{font-family:var(--font-heading);font-size:19px;font-weight:600;color:var(--charcoal)}
+.products-section-count{font-family:var(--font-mono);font-size:12px;color:var(--soft)}
 .loading-breathe{
-  grid-column:1/-1;
+  width:100%;
   display:flex;
   flex-direction:column;
   align-items:center;
@@ -432,7 +447,6 @@ nav{
 @media(min-width:761px){
   :root{--cat-sidebar-w:165px;--cat-gap:34px}
   .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:22px}
-  .products-grid{grid-template-columns:repeat(5,minmax(0,1fr));min-width:0}
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
     display:flex;
@@ -1050,7 +1064,6 @@ footer a:hover{color:var(--color-on-dark)}
   .hero-photo{aspect-ratio:4/3;border-radius:var(--radius-lg)}
   .hero-photo img{width:60%;height:60%}
   .hero-title{font-size:34px}
-  .products-grid{grid-template-columns:1fr 1fr}
   .cat-toolbar{padding:28px 15px 0}
   .cat-layout{padding:0 15px;margin-top:14px}
   #navSearchBar{width:100%}
@@ -1643,11 +1656,24 @@ function renderProducts(){
   renderAppliedChips();
   if(!list.length){
     const empty=document.createElement("div");
-    empty.style.cssText="grid-column:1/-1;text-align:center;padding:56px 20px;color:var(--soft)";
+    empty.style.cssText="width:100%;text-align:center;padding:56px 20px;color:var(--soft)";
     empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`:"此分類尚無商品";
     grid.appendChild(empty);
   }
-  list.forEach(product=>{
+  // 「全部分類」瀏覽（沒有搜尋、也沒選特定分類）才加分區標題：商品本來就已經照
+  // 主分類排序好了，只是滑下去看不出分界，加個標題列把同一主分類的商品圈出來。
+  // 有搜尋或已經篩選到單一分類時，畫面上只有一組商品，不需要再多一層標題。
+  const showSections=state.activeMain==="全部"&&!q;
+  let lastSectionMain=null;
+  list.forEach((product,idx)=>{
+    if(showSections&&product.mainCat!==lastSectionMain){
+      lastSectionMain=product.mainCat;
+      const head=document.createElement("div");
+      head.className="products-section-head"+(idx===0?" first":"");
+      const count=list.filter(p=>p.mainCat===product.mainCat).length;
+      head.innerHTML=`<span class="products-section-title">${escapeHTML(getMainName(product.mainCat))}</span><span class="products-section-count">${count} 件</span>`;
+      grid.appendChild(head);
+    }
     const photos=(product.photos||[]).filter(Boolean);
     const card=document.createElement("article");
     card.className="product-card";

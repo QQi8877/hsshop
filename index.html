@@ -939,7 +939,10 @@ footer a:hover{color:var(--color-on-dark)}
   overflow:hidden;
   border-radius:8px;
   cursor:zoom-in;
-  background:rgba(255,250,243,.08);
+  /* 商品照片本身就是烤在 --paper 這個底色上傳的，燈箱框跟照片長寬比不同時
+     兩側會露出底色——這裡改成跟照片一樣的實色，露出來的部分才會跟照片
+     本身的留白無縫接在一起，而不是像現在半透明看起來灰灰一塊。 */
+  background:var(--paper);
   box-shadow:0 24px 70px rgba(0,0,0,.18);
   display:flex;
   align-items:center;

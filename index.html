@@ -248,7 +248,7 @@ nav{
 
 /* ── 本月選品／分類磚（Phase 2）───────────────────────────── */
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
-.sec-head h3{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--charcoal)}
+.sec-head h2{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--charcoal)}
 .sec-head a{font-family:var(--font-mono);font-size:12px;color:var(--tan-dark);text-decoration:none}
 .sec-head a:hover{color:var(--tan)}
 .pick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px;max-width:1200px;margin:0 auto}
@@ -1154,7 +1154,7 @@ footer a:hover{color:var(--color-on-dark)}
 
 <section id="picks" style="padding:34px 40px 0">
   <div class="sec-head">
-    <h3>本月選品</h3>
+    <h2>本月選品</h2>
     <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
   </div>
   <div class="pick-grid" id="picksGrid">
@@ -1278,7 +1278,7 @@ footer a:hover{color:var(--color-on-dark)}
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{initializeFirestore,persistentLocalCache,getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1289,18 +1289,14 @@ const firebaseConfig={
   appId:"1:693625648338:web:7460e5aa1c5e9e55b1a90b"
 };
 const fbApp=initializeApp(firebaseConfig);
-// 開啟本機（IndexedDB）持久化快取：回訪客人不用整包商品資料重新下載一次，
-// 先顯示快取內容，背景再跟雲端同步最新資料，載入體感明顯變快。
-// 客人幾乎不會同時開兩個分頁逛這個網站，所以不用多分頁協調（tabManager），避免額外背景開銷；
-// 若這台裝置的瀏覽器不支援/擋掉 IndexedDB（例如某些私密瀏覽模式），改用沒有離線快取的一般連線模式，
-// 避免整個 <script type="module"> 因為初始化失敗而中斷，導致全站按鈕都失效。
-let db;
-try{
-  db=initializeFirestore(fbApp,{localCache:persistentLocalCache({})});
-}catch(e){
-  console.warn("Firestore 本機快取初始化失敗，改用一般連線模式",e);
-  db=getFirestore(fbApp);
-}
+// 前台只需要「讀一次、顯示」，不需要即時監聽也不需要離線快取，所以改用
+// firebase-firestore-lite（純 REST 呼叫，沒有 WebChannel 長輪詢）：完整版 SDK
+// 為了維持背景即時同步／離線快取會開一條 Listen/channel 長連線，在慢速網路
+// 下這條連線的交握可能拖到 10~20 秒以上，直接卡住首頁大圖（LCP）；lite 版
+// 沒有這條連線，一個 fetch 打完就結束，換到的代價是回訪客人不會有本機快取
+// （每次都重新下載），但對於這種偶爾才逛一次的傢俱型錄網站，換取穩定的首次
+// 載入速度比較划算。
+const db=getFirestore(fbApp);
 const SITE_DOC="hsshop-10bd9";
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
@@ -1469,12 +1465,24 @@ const DEFAULT_TAG_DEFS=[
   {key:"custom",label:"可客製化",color:"#696255"},
   {key:"madeintw",label:"台灣製造",color:"#645c50"},
 ];
+// 標籤顏色是後台可以自由選的，深淺不一定，固定用白字可能對比不夠（例如淺色標籤）。
+// 這裡依背景色算出相對亮度，太淺就自動改用深色文字，確保不管後台選什麼顏色都看得清楚。
+function tagTextColor(hex){
+  const m=/^#?([0-9a-f]{6})$/i.exec((hex||"").trim());
+  if(!m)return "#fff";
+  const n=parseInt(m[1],16);
+  const toLinear=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4)};
+  const r=toLinear((n>>16)&255),g=toLinear((n>>8)&255),b=toLinear(n&255);
+  const luminance=0.2126*r+0.7152*g+0.0722*b;
+  const contrastWithWhite=1.05/(luminance+0.05);
+  return contrastWithWhite>=4.5?"#fff":"#201e1d";
+}
 function primaryTagBadgeHtml(product){
   const badges=product.badges||[];
   const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
   const def=defs.find(d=>badges.includes(d.key));
   if(!def)return "";
-  return `<span class="tag-badge" style="background:${escapeHTML(def.color)}">${escapeHTML(def.label)}</span>`;
+  return `<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`;
 }
 let searchQuery="";
 let favoritesRoomFilter="全部";

@@ -1414,6 +1414,28 @@ function uid(){return Math.random().toString(36).slice(2,10)}
 function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
+// 商品說明存的是後台富文本編輯器輸出的 HTML；後台存檔前雖然會過濾一次，但那個過濾
+// 只在後台自己的瀏覽器端執行，資料庫本身不會強制套用——前台顯示時不能假設拿到的
+// HTML 一定是乾淨的，這裡在真正塞進畫面前再過濾一次，前台才是真正擋得住的那一關。
+function sanitizeDescHtml(html){
+  const div=document.createElement("div");
+  div.innerHTML=html;
+  div.querySelectorAll("script,iframe,object,embed,link,style,form").forEach(el=>el.remove());
+  div.querySelectorAll("*").forEach(el=>{
+    [...el.attributes].forEach(attr=>{
+      const name=attr.name.toLowerCase();
+      // 瀏覽器解析網址時會先把 tab/換行等控制字元整個拿掉才判斷 scheme，
+      // 所以檢查危險網址前也要先做同樣的處理，不然 "java\tscript:" 這種
+      // 藏了控制字元的寫法會繞過純字面比對的規則。
+      const normalizedValue=attr.value.replace(/[\t\n\r]/g,"");
+      const isEventHandler=/^on/i.test(name);
+      const isDangerousStyle=name==="style"&&/expression|javascript:/i.test(normalizedValue);
+      const isDangerousUrl=(name==="href"||name==="src"||name==="formaction")&&/^\s*(javascript:|data:text\/html)/i.test(normalizedValue);
+      if(isEventHandler||isDangerousStyle||isDangerousUrl)el.removeAttribute(attr.name);
+    });
+  });
+  return div.innerHTML;
+}
 const DEFAULT_STATE={
   catalog:structuredClone(DEFAULT_CATALOG),
   activeMain:"全部",
@@ -1808,7 +1830,7 @@ function renderPicks(){
     const card=document.createElement("article");
     card.className="p-card";
     card.innerHTML=`
-      <div class="p-card__media">${photos.length?`<img src="${normalizePhotoUrl(photos[0],500)}" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
+      <div class="p-card__media">${photos.length?`<img src="${escapeHTML(normalizePhotoUrl(photos[0],500))}" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
       <div class="p-card__title">${escapeHTML(product.name)}</div>
       <div class="p-card__foot">
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
@@ -1836,7 +1858,7 @@ function renderCategoryTiles(){
     const thumbSrc=cat.image||normalizePhotoUrl(activeProducts().find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"",200);
     return `
       <button class="cat-tile" type="button" data-cat="${escapeHTML(cat.id)}">
-        <span class="cat-tile__thumb">${thumbSrc?`<img src="${thumbSrc}" alt="">`:""}</span>
+        <span class="cat-tile__thumb">${thumbSrc?`<img src="${escapeHTML(thumbSrc)}" alt="">`:""}</span>
         <span class="cat-tile__name">${escapeHTML(cat.name)}</span>
         <span class="cat-tile__count">${mainCount(cat.id)} 件</span>
       </button>
@@ -2000,7 +2022,7 @@ function renderFavorites(){
     const price=parsePriceNumber(product.price);
     const subtotal=price!=null?`NT$ ${(price*product._qty).toLocaleString()}`:"";
     item.innerHTML=`
-      <img src="${photo}" alt="">
+      <img src="${escapeHTML(photo)}" alt="">
       <div>
         <div class="favorite-item-name">${escapeHTML(product.name)}</div>
         <div class="favorite-item-meta">${escapeHTML(getSizeSummary(product))} ・ ${escapeHTML(product.sku||product.id)}</div>
@@ -2083,7 +2105,7 @@ function getProductDisplayParts(product){
   const specs=(product.specs||[]).filter(spec=>spec.part||spec.w||spec.d||spec.h||spec.label);
   const cat=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
   const rawDesc=product.desc||"";
-  const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?rawDesc:escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
+  const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?sanitizeDescHtml(rawDesc):escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
 
   // 判斷是新格式還是舊格式規格
   const isNewSpec=specs.length>0&&("part" in specs[0]);
@@ -2254,7 +2276,7 @@ function renderSharedWishlist(ids){
       const photo=normalizePhotoUrl((p.photos||[])[0]||"",200);
       return `
         <div class="favorite-item" data-id="${escapeHTML(p.id)}" style="cursor:pointer">
-          <img src="${photo}" alt="">
+          <img src="${escapeHTML(photo)}" alt="">
           <div>
             <div class="favorite-item-name">${escapeHTML(p.name||"")}</div>
             <div class="favorite-item-meta">${escapeHTML(getSizeSummary(p))}</div>

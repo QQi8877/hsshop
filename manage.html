@@ -2297,15 +2297,19 @@ window.rteClear=function(id){
 function sanitizeRichText(html){
   const div=document.createElement("div");
   div.innerHTML=html;
-  div.querySelectorAll("script,iframe,object,embed,link,style").forEach(el=>el.remove());
+  div.querySelectorAll("script,iframe,object,embed,link,style,form").forEach(el=>el.remove());
   div.querySelectorAll("*").forEach(el=>{
     [...el.attributes].forEach(attr=>{
       const name=attr.name.toLowerCase();
+      // 瀏覽器解析網址時會先把 tab/換行等控制字元整個拿掉才判斷 scheme，
+      // 所以檢查危險網址前也要先做同樣的處理，不然 "java\tscript:" 這種
+      // 藏了控制字元的寫法會繞過純字面比對的規則。
+      const normalizedValue=attr.value.replace(/[\t\n\r]/g,"");
       const isEventHandler=/^on/i.test(name);
-      const isDangerousStyle=name==="style"&&/expression|javascript:/i.test(attr.value);
-      // href／src 也要擋 javascript: 或 data:text/html 這類會執行程式碼的網址格式，
+      const isDangerousStyle=name==="style"&&/expression|javascript:/i.test(normalizedValue);
+      // href／src／formaction 都要擋 javascript: 或 data:text/html 這類會執行程式碼的網址格式，
       // 不只檢查 style 屬性（例如 <a href="javascript:...">、<img src="javascript:...">）
-      const isDangerousUrl=(name==="href"||name==="src")&&/^\s*(javascript:|data:text\/html)/i.test(attr.value);
+      const isDangerousUrl=(name==="href"||name==="src"||name==="formaction")&&/^\s*(javascript:|data:text\/html)/i.test(normalizedValue);
       if(isEventHandler||isDangerousStyle||isDangerousUrl)el.removeAttribute(attr.name);
     });
   });
@@ -3144,7 +3148,10 @@ window.openProductModal=async function(id){
       if("part" in spec)return {...spec};
       return {part:spec.label||"",w:spec.value||"",d:"",h:""};
     });
-    document.getElementById("pDesc").innerHTML=product.desc||"";
+    // 商品說明是直接從資料庫讀出來的 HTML，理論上只有存檔時經過這個編輯器
+    // 自己的過濾，但資料庫本身不會強制套用這層過濾——用同一個 sanitizeRichText
+    // 保險起見再過濾一次，才不會有已經寫進資料庫的內容一打開編輯就直接執行。
+    document.getElementById("pDesc").innerHTML=sanitizeRichText(product.desc||"");
     let cover=(product.photos||[]).filter(Boolean);
     let coverOriginals=[];
     // 商品文件的封面只是縮圖，編輯時一律要換成 gallery 子文件裡的原始畫質照片

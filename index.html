@@ -587,17 +587,22 @@ nav{
   font-weight:500;
   margin-bottom:3px;
 }
-/* 尺寸跟金額改成各自獨立一行（不共用同一列），彼此不會互相影響：
-   金額字變大不會擠壓尺寸的寬度，尺寸文字再長也不用讓位給金額、
-   不會被截斷也不會被迫換行。 */
-.product-size{font-size:11px;line-height:1.35;color:var(--tan-dark);margin-bottom:1px}
-.product-price{text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:700;margin-bottom:1px}
+/* 手機版欄位窄，尺寸跟金額各自獨立一行，彼此不會互相影響（金額字變大不會
+   擠壓尺寸的寬度，尺寸文字再長也不會被截斷或被迫換行）。桌面版欄位夠寬，
+   兩者共用一列、金額貼齊尺寸下緣往上長，卡片才不會多一行浪費的空間
+   （見下面 761px 那個 media query）。 */
+.product-meta-row{margin-bottom:1px}
+.product-size{display:block;font-size:11px;line-height:1.35;color:var(--tan-dark)}
+.product-price{display:block;text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:700}
 .product-badges-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:3px}
 .product-badges-row .tag-badge{font-size:9px;padding:2px 7px;box-shadow:none}
 /* 標籤最多顯示 3 個（JS 已經先限制），手機版欄位窄，超過 2 個容易跟金額擠在一起
    或換行讓卡片變太高，這裡在窄螢幕只留前 2 個，寬螢幕（桌面 5 欄）才顯示第 3 個。 */
 .product-badges-row .tag-badge:nth-child(3){display:none}
 @media(min-width:761px){
+  .product-meta-row{position:relative}
+  .product-meta-row:has(.product-price) .product-size{padding-right:64px}
+  .product-price{position:absolute;right:0;bottom:0;line-height:1}
   .product-badges-row{padding-top:5px}
   .product-badges-row .tag-badge:nth-child(3){display:inline-block}
 }
@@ -1797,8 +1802,10 @@ function renderProducts(){
     const badgesHtml=allTagBadgesHtml(product);
     info.innerHTML=`
       <div class="product-name">${escapeHTML(product.name)}</div>
-      <div class="product-size">${escapeHTML(getSizeSummary(product))}</div>
-      ${product.price?`<div class="product-price">${escapeHTML(formatPrice(product.price))}</div>`:""}
+      <div class="product-meta-row">
+        <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
+        ${product.price?`<span class="product-price">${escapeHTML(formatPrice(product.price))}</span>`:""}
+      </div>
       ${badgesHtml?`<div class="product-badges-row">${badgesHtml}</div>`:""}
     `;
     card.appendChild(info);

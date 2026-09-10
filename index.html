@@ -587,8 +587,20 @@ nav{
   font-weight:500;
   margin-bottom:3px;
 }
-.product-size{font-size:11px;color:var(--tan-dark);margin-bottom:4px}
-.product-price{font-family:var(--font-heading);font-size:13.5px;color:var(--tan-dark);font-weight:600;margin-top:auto;padding-top:2px}
+/* 尺寸跟金額改成各自獨立一行（不共用同一列），彼此不會互相影響：
+   金額字變大不會擠壓尺寸的寬度，尺寸文字再長也不用讓位給金額、
+   不會被截斷也不會被迫換行。 */
+.product-size{font-size:11px;line-height:1.35;color:var(--tan-dark);margin-bottom:1px}
+.product-price{text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:700;margin-bottom:1px}
+.product-badges-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:3px}
+.product-badges-row .tag-badge{font-size:9px;padding:2px 7px;box-shadow:none}
+/* 標籤最多顯示 3 個（JS 已經先限制），手機版欄位窄，超過 2 個容易跟金額擠在一起
+   或換行讓卡片變太高，這裡在窄螢幕只留前 2 個，寬螢幕（桌面 5 欄）才顯示第 3 個。 */
+.product-badges-row .tag-badge:nth-child(3){display:none}
+@media(min-width:761px){
+  .product-badges-row{padding-top:5px}
+  .product-badges-row .tag-badge:nth-child(3){display:inline-block}
+}
 .favorite-btn{
   position:absolute;
   top:8px;
@@ -613,7 +625,6 @@ nav{
   padding:3px 9px;border-radius:999px;letter-spacing:.03em;
   box-shadow:0 1px 4px rgba(0,0,0,.35),0 0 0 1px rgba(255,255,255,.15) inset;
 }
-.product-tag-badge{position:absolute;top:8px;left:8px;z-index:6}
 .nav-end{display:flex;align-items:center;gap:16px;justify-self:end;flex:none}
 .favorites-fab{
   position:relative;
@@ -1509,6 +1520,18 @@ function primaryTagBadgeHtml(product){
   if(!def)return "";
   return `<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`;
 }
+// 商品總表卡片的標籤列跟本月選品／燈箱不同：這裡要把商品符合的標籤全部顯示出來，
+// 不是只顯示排序最前面那一個。
+function allTagBadgesHtml(product){
+  const badges=product.badges||[];
+  const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
+  // 最多顯示 3 個，避免商品掛太多標籤時把卡片撐得亂七八糟；手機版欄位較窄，
+  // 第 3 個標籤改用 CSS 在窄螢幕隱藏（見 .product-badges-row 的 media query），
+  // 不用另外判斷寬度，也不會有 JS 量測寬度、resize 時重新計算的額外負擔。
+  const matched=defs.filter(d=>badges.includes(d.key)).slice(0,3);
+  if(!matched.length)return "";
+  return matched.map(def=>`<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`).join("");
+}
 let searchQuery="";
 let favoritesRoomFilter="全部";
 let favoritesSent=false;
@@ -1551,7 +1574,7 @@ function formatPrice(price){
   const text=String(price||"").trim();
   if(!text)return "";
   // 純數字／千分位符號才自動補 NT$，其他文字（例如「洽詢」）原樣顯示
-  if(/^[\d,，]+$/.test(text))return `NT$ ${text}`;
+  if(/^[\d,，]+$/.test(text))return `$ ${text}`;
   return text;
 }
 function toast(msg,dur=2200){
@@ -1768,20 +1791,15 @@ function renderProducts(){
     }else{
       wrap.innerHTML=placeholderMarkup("尚無圖片");
     }
-    const badgeHtml=primaryTagBadgeHtml(product);
-    if(badgeHtml){
-      const badgeWrap=document.createElement("div");
-      badgeWrap.className="product-tag-badge";
-      badgeWrap.innerHTML=badgeHtml;
-      wrap.appendChild(badgeWrap);
-    }
     card.appendChild(wrap);
     const info=document.createElement("div");
     info.className="product-info";
+    const badgesHtml=allTagBadgesHtml(product);
     info.innerHTML=`
       <div class="product-name">${escapeHTML(product.name)}</div>
       <div class="product-size">${escapeHTML(getSizeSummary(product))}</div>
       ${product.price?`<div class="product-price">${escapeHTML(formatPrice(product.price))}</div>`:""}
+      ${badgesHtml?`<div class="product-badges-row">${badgesHtml}</div>`:""}
     `;
     card.appendChild(info);
     card.addEventListener("click",()=>openProductDetail(product.id));
@@ -2009,7 +2027,7 @@ function renderFavorites(){
   footer.style.display="block";
   const products=favoritesRoomFilter==="全部"?allProducts:allProducts.filter(p=>(p.room||"未分類")===favoritesRoomFilter);
   const total=products.reduce((sum,p)=>{const price=parsePriceNumber(p.price);return price!=null?sum+price*p._qty:sum},0);
-  document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>NT$ ${total.toLocaleString()}</span>`:"";
+  document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>$ ${total.toLocaleString()}</span>`:"";
   if(!products.length){
     list.innerHTML='<div class="favorites-empty">這個房間還沒收藏。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
     return;
@@ -2020,7 +2038,7 @@ function renderFavorites(){
     item.className="favorite-item";
     const photo=normalizePhotoUrl((product.photos||[])[0]||"",200);
     const price=parsePriceNumber(product.price);
-    const subtotal=price!=null?`NT$ ${(price*product._qty).toLocaleString()}`:"";
+    const subtotal=price!=null?`$ ${(price*product._qty).toLocaleString()}`:"";
     item.innerHTML=`
       <img src="${escapeHTML(photo)}" alt="">
       <div>

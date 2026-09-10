@@ -1406,6 +1406,11 @@ const Storage={
 };
 /* ─────────────────────────────────────────────────────────────── */
 const STORAGE_KEY="xintong_furniture_site_v1";
+// firestore-lite 刻意不做離線快取（見下方啟動流程註解），這裡自己補一層很輕量的
+// stale-while-revalidate：回訪客人先看到「上次抓到的樣子」，Firebase 資料回來後
+// 再原地換新，不用整頁乾等。跟 STORAGE_KEY 分開存，避免混到既有的備援/還原邏輯。
+const SWR_CACHE_KEY="xintong_furniture_swr_cache_v1";
+const SWR_CACHE_MAX_AGE_MS=7*24*60*60*1000; // 快取超過 7 天就不用，避免久久沒改版的舊資料被誤當最新
 let strokeCollator;
 try{strokeCollator=new Intl.Collator("zh-Hant-u-co-stroke",{numeric:true})}catch(e){strokeCollator=new Intl.Collator("zh-Hant")}
 const DEFAULT_CATALOG=[
@@ -1669,14 +1674,27 @@ function renderCategories(){
   }
 }
 /* ── 批次上傳照片（依檔名比對商品）───────────────────────────── */
+let searchDebounceTimer=null;
+let searchWasEmptyBeforeTyping=true;
 function handleSearchInput(){
-  const prev=searchQuery;
+  // 只在「這波輸入的第一下」（還沒有排定中的計時器）記錄輸入前是不是空的，
+  // 不然連續打好幾個字時，每次都會被上一個字覆蓋掉，變成永遠讀到「上一個字」
+  // 而不是「這波輸入開始前」的狀態，導致開始打字要捲到商品區的邏輯幾乎不會觸發。
+  if(!searchDebounceTimer)searchWasEmptyBeforeTyping=!searchQuery;
   searchQuery=document.getElementById("productSearch").value;
   document.getElementById("searchClearBtn").style.display=searchQuery?"block":"none";
-  renderProducts();
-  if(searchQuery&&!prev)document.getElementById("categories").scrollIntoView({behavior:"smooth"});
+  // renderProducts() 會整個商品格重繪（含建立新的 <img> 節點），連續輸入時代價不小，
+  // 加 180ms 防抖，停手後才重繪，避免打字過程中畫面一直卡頓。
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer=setTimeout(()=>{
+    searchDebounceTimer=null;
+    renderProducts();
+    if(searchQuery&&searchWasEmptyBeforeTyping)document.getElementById("categories").scrollIntoView({behavior:"smooth"});
+  },180);
 }
 function clearSearch(){
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer=null;
   searchQuery="";
   document.getElementById("productSearch").value="";
   document.getElementById("searchClearBtn").style.display="none";
@@ -2449,6 +2467,34 @@ Object.assign(window,{
   const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
   const wishlistPromise=wishlistCodeMatch?Storage.getWishlist(wishlistCodeMatch[1]):null;
 
+  // ── 本機快取先畫一次（stale-while-revalidate）──────────────────
+  // 回訪客人不用整頁乾等 Firebase：先用上次存的快取畫面，Firebase 資料回來後
+  // （下面照舊流程）會用同一套 render 函式原地換新，不會有額外閃爍或版面跳動。
+  // 任何一步失敗（沒快取、格式壞掉、瀏覽器擋 localStorage）都直接跳過，
+  // 不影響原本「等 Firebase」的路徑。
+  try{
+    const cachedRaw=localStorage.getItem(SWR_CACHE_KEY);
+    if(cachedRaw){
+      const cached=JSON.parse(cachedRaw);
+      if(cached&&cached.savedAt&&Date.now()-cached.savedAt<SWR_CACHE_MAX_AGE_MS&&cached.meta&&cached.products&&cached.products.length){
+        Object.assign(state,cached.meta);
+        applyPageText();
+        applyLayoutVisibility();
+        renderContact();
+        renderHeroPhoto();
+        state.products=cached.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)})).map(normalizeProduct);
+        state.products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
+        state.favorites=loadFavoritesLocal();
+        renderCategories();
+        renderProducts();
+        renderPicks();
+        renderCategoryTiles();
+        renderHeroPhoto();
+        renderFavorites();
+      }
+    }
+  }catch(e){}
+
   // 注意：不再用全螢幕遮罩擋住整個畫面。導覽列、Hero 大圖本來就是靜態內容，
   // 不需要等 Firebase 資料回來就能先顯示；只有商品區塊（本來就要靠資料庫）
   // 顯示「商品載入中…」，其餘頁面可以馬上被看到，加快使用者感受到的載入速度。
@@ -2469,6 +2515,11 @@ Object.assign(window,{
   const products=await productsPromise;
   if(products&&products.length){
     state.products=products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
+    // Firebase 資料確實拿到了（meta 跟 products 都有），才更新 stale-while-revalidate 快取，
+    // 避免把不完整的資料存起來，下次回訪反而看到殘缺畫面。
+    if(meta){
+      try{localStorage.setItem(SWR_CACHE_KEY,JSON.stringify({savedAt:Date.now(),meta,products}))}catch(e){}
+    }
   }else if(!meta&&(!products||!products.length)){
     // 雲端完全沒有資料（meta 跟商品都沒抓到），試試 localStorage
     try{

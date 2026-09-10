@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /manage.html
+
+Sitemap: https://hsintong.cc/sitemap.xml

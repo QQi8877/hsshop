@@ -13,6 +13,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="信通家俱行｜讓家更有溫度">
 <meta name="twitter:description" content="用心挑選每一件家具，陪伴您每一個家的日常——溫潤、可靠、實用、美學、安心。">
+<link rel="canonical" href="https://hsintong.cc/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2389,6 +2390,38 @@ function renderContact(){
     const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
     return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
   }).join('<span class="dot">·</span>');
+  injectStructuredData(c);
+}
+/* ── 結構化資料（JSON-LD）─────────────────────────────────────
+   給 Google 讀的商家資訊，畫面上看不到。內容直接沿用「聯繫資訊」
+   目前顯示的資料，之後在後台改地址/電話，這裡會一起更新，不會跟
+   網站上實際顯示的資訊兜不起來。 */
+function injectStructuredData(c){
+  const data={
+    "@context":"https://schema.org",
+    "@type":"FurnitureStore",
+    "name":"信通家俱行",
+    "alternateName":"Xin Tong Furniture",
+    "url":"https://hsintong.cc/",
+    // 首頁大圖現在是 base64 內嵌，不是真正的網址，塞給 Google 的結構化資料
+    // 沒有意義（不是可以抓取的圖片網址），所以只有真的是網址時才放進去。
+    "image":/^https?:\/\//i.test(state.layout?.heroImage||"")?state.layout.heroImage:undefined,
+    "telephone":c.phone||undefined,
+    "email":c.email||undefined,
+    "address":c.addr?{"@type":"PostalAddress","streetAddress":c.addr,"addressCountry":"TW"}:undefined,
+    "openingHours":c.hours||undefined,
+    "sameAs":[c.fbUrl,c.lineUrl].filter(Boolean)
+  };
+  // 拿掉沒有值的欄位，避免送一堆 undefined 給 Google
+  Object.keys(data).forEach(key=>{if(data[key]===undefined)delete data[key]});
+  let script=document.getElementById("structuredData");
+  if(!script){
+    script=document.createElement("script");
+    script.id="structuredData";
+    script.type="application/ld+json";
+    document.head.appendChild(script);
+  }
+  script.textContent=JSON.stringify(data);
 }
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});

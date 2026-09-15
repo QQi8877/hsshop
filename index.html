@@ -1558,8 +1558,17 @@ function convertGdriveUrl(url,width=1600){
   const id=extractGdriveId(url);
   return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${width}`:url;
 }
+// Cloudinary 網址固定長這樣：.../image/upload/（可以插入轉換參數的地方）/v123/xxx.jpg
+// f_auto 讓 Cloudinary 依瀏覽器自動選最省流量的圖片格式（例如 WebP/AVIF），
+// q_auto 自動抓一個「肉眼看不太出差異、但檔案盡量小」的畫質，
+// w_<width> 只送剛好夠用的尺寸，列表縮圖不用每次都下載完整原圖。
+function convertCloudinaryUrl(url,width){
+  return url.replace(/\/image\/upload\//,`/image/upload/f_auto,q_auto,w_${width}/`);
+}
 function normalizePhotoUrl(url,width=1600){
-  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url,width):url;
+  if(/drive\.google\.com/i.test(url))return convertGdriveUrl(url,width);
+  if(/res\.cloudinary\.com/i.test(url))return convertCloudinaryUrl(url,width);
+  return url;
 }
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}

@@ -853,8 +853,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('toolsDropdown')">🛠 商品工具 ▾</button>
         <div class="dropdown-menu"><div class="dropdown-menu-inner">
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
-          <button onclick="closeHeaderDropdowns();batchNormalizePhotos()">🎯 統一商品照片比例</button>
-          <button onclick="closeHeaderDropdowns();undoBatchNormalizePhotos()">↩ 復原上次統一比例</button>
+          <button onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
+          <button onclick="closeHeaderDropdowns();undoMigratePhotosToCloudinary()">↩ 復原上次搬遷</button>
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 快速分類</button>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
@@ -1764,6 +1764,7 @@ window.savePageTextManage=savePageTextManage;
 
 /* ── 首頁版面設定：顯示/隱藏區塊、首頁大圖、分類磚縮圖、手動挑選本月選品 ───── */
 let layoutHeroImage="";
+let heroUploading=false;
 let layoutCatImages={};
 let layoutPicksIds=[];
 function openLayoutSettings(){
@@ -1784,23 +1785,39 @@ window.openLayoutSettings=openLayoutSettings;
 function renderHeroImageSlot(){
   const wrap=document.getElementById("heroImageSlotWrap");
   wrap.innerHTML=`
-    <div class="photo-slot${layoutHeroImage?" has-img":""}">
-      ${layoutHeroImage?`<img class="slot-img" src="${layoutHeroImage}">`:""}
+    <div class="photo-slot${layoutHeroImage?" has-img":""}${heroUploading?" is-uploading":""}">
+      ${layoutHeroImage?`<img class="slot-img" src="${normalizePhotoUrl(layoutHeroImage)}">`:""}
       <div class="slot-overlay">${layoutHeroImage?"更換":"上傳照片"}</div>
       <input type="file" class="slot-file-input" accept="image/*" onchange="handleHeroImageFile(event)">
       ${layoutHeroImage?`<button class="slot-del" onclick="event.stopPropagation();clearHeroImage()">×</button>`:""}
+      ${heroUploading?`<div class="slot-uploading-badge">上傳中…</div>`:""}
     </div>
   `;
 }
 function handleHeroImageFile(event){
   const file=event.target.files[0];
   if(!file)return;
+  event.target.value=""; // 清空，方便下次選同一個檔案也會觸發 change
   const reader=new FileReader();
   reader.onload=async e=>{
     layoutHeroImage=await resizeSquareImage(e.target.result,900,0.85);
     renderHeroImageSlot();
   };
   reader.readAsDataURL(file);
+  // 跟商品照片同一套做法：本機先產生預覽版本讓畫面立刻有反應，背景同時
+  // 把原始檔上傳到 Cloudinary，成功就換成網址（存進 Firestore 的網站設定
+  // 才不會被一張大圖塞爆）；失敗就維持本機版本，不影響存檔。
+  heroUploading=true;
+  renderHeroImageSlot();
+  uploadToCloudinary(file).then(url=>{
+    layoutHeroImage=url;
+  }).catch(e=>{
+    console.warn("首頁大圖上傳 Cloudinary 失敗，改用本機暫存",e);
+    toast("圖床上傳失敗，已改用本機暫存，建議稍後重新上傳這張照片",4000);
+  }).finally(()=>{
+    heroUploading=false;
+    renderHeroImageSlot();
+  });
 }
 window.handleHeroImageFile=handleHeroImageFile;
 function clearHeroImage(){layoutHeroImage="";renderHeroImageSlot()}
@@ -2228,7 +2245,7 @@ function galleryPayloadSize(photos,originals,batchBackup){
 async function saveGallery(id,photos,originals,batchBackup=null){
   // batchBackup 預設清空：一般編輯商品照片（不是跑批次工具）本來就該把舊的批次備份
   // 作廢，不然之後按「復原上次批次」會把已經手動改過的照片蓋回更舊的批次備份，
-  // 造成資料倒退。只有 batchNormalizePhotos／undoBatchNormalizePhotos 會明確傳值進來。
+  // 造成資料倒退。只有 migratePhotosToCloudinary／undoMigratePhotosToCloudinary 會明確傳值進來。
   const cleanPhotos=(photos||[]).filter(Boolean);
   const rawOriginals=originals||[];
   // 原圖畫質/尺寸階梯式往下調，直到整包資料在安全範圍內為止：多數情況第一階
@@ -2439,55 +2456,67 @@ window.bulkAutoDesc=async function(){
   renderTable();
 };
 
-window.batchNormalizePhotos=async function(){
+// 把還是 base64 的商品照片（通常是這個 Cloudinary 機制上線前留下的舊資料）
+// 上傳到 Cloudinary、換成網址存起來。已經是網址的（http 開頭，不管是本來就
+// 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
+window.migratePhotosToCloudinary=async function(){
   const targets=products.filter(p=>p.status!=="archived"&&(p.photos||[]).length);
-  if(!targets.length){toast("目前沒有可以處理的商品照片");return}
-  if(!confirm(`將自動偵測每張商品照片的主體，統一縮放比例，重新儲存全部 ${targets.length} 個商品的照片。\n\n執行前會先備份每個商品目前的照片，如果效果不理想，可以用「↩ 復原上次統一比例」整批復原（只保留最近一次的備份，復原後備份就會清空）。確定要執行嗎？`))return;
-  toast(`開始統一照片比例，共 ${targets.length} 個商品…`,4000);
-  let done=0,failed=0;
+  if(!targets.length){toast("目前沒有可以搬遷的商品照片");return}
+  if(!confirm(`將把還沒搬過去的商品照片（base64 格式）上傳到 Cloudinary、換成網址儲存，最多會檢查 ${targets.length} 個商品（已經是網址的會自動跳過）。\n\n執行前會先備份每個商品目前的照片，如果有問題可以用「↩ 復原上次搬遷」整批復原（只保留最近一次的備份，復原後備份就會清空）。確定要執行嗎？`))return;
+  toast(`開始搬遷照片到圖床，共檢查 ${targets.length} 個商品…`,4000);
+  let done=0,skipped=0,failed=0;
+  const isUrl=src=>/^https?:\/\//i.test(src||"");
+  const migrateOne=async src=>{
+    if(isUrl(src))return src;
+    const blob=await(await fetch(src)).blob();
+    return await uploadToCloudinary(blob);
+  };
   for(const p of targets){
     try{
-      // 優先用當初上傳的原始檔重新處理（畫質最好、不會累積劣化），
-      // 舊商品沒有留原始檔紀錄的話，退回用目前的照片處理。
       const gallery=await loadGallery(p.id);
       const sourcePhotos=gallery.photos.length?gallery.photos:(p.photos||[]);
       const sourceOriginals=gallery.originals.length?gallery.originals:sourcePhotos;
+      if(sourcePhotos.every(isUrl)&&sourceOriginals.every(isUrl)){skipped++;continue}
       const newFullPhotos=[];
+      const newOriginals=[];
       for(let i=0;i<sourcePhotos.length;i++){
-        newFullPhotos.push(await autoNormalizePhotoDataUrl(sourceOriginals[i]||sourcePhotos[i]));
+        newFullPhotos.push(await migrateOne(sourcePhotos[i]));
+        newOriginals.push(await migrateOne(sourceOriginals[i]||sourcePhotos[i]));
       }
       if(!newFullPhotos.length)continue;
-      // 蓋掉之前的照片以前，先把「這次批次執行前」的狀態存成備份，
-      // 讓 undoBatchNormalizePhotos 之後可以整批復原回去。
-      const backup={thumb:p.photos[0]||"",fullPhotos:sourcePhotos};
-      p.photos=[await resizeToThumb(newFullPhotos[0])];
+      // 蓋掉之前的照片以前，先把「這次搬遷前」的狀態存成備份，
+      // 讓 undoMigratePhotosToCloudinary 之後可以整批復原回去。這裡連原圖
+      // （sourceOriginals）也要一起備份——跟原本的「統一比例」工具不同，
+      // 這個工具連原圖也會被搬去 Cloudinary、一起換成網址，復原時兩邊都要還原。
+      const backup={thumb:p.photos[0]||"",fullPhotos:sourcePhotos,originals:sourceOriginals};
+      p.photos=[isUrl(newFullPhotos[0])?newFullPhotos[0]:await resizeToThumb(newFullPhotos[0])];
       await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
-      await saveGallery(p.id,newFullPhotos,sourceOriginals,backup);
+      await saveGallery(p.id,newFullPhotos,newOriginals,backup);
       done++;
     }catch(e){
-      console.warn("統一照片比例失敗："+p.name,e);
+      console.warn("搬遷照片失敗："+p.name,e);
       failed++;
     }
   }
-  toast(failed?`完成 ${done} 個，${failed} 個失敗（可能是跨網域圖片無法讀取）`:`已統一 ${done} 個商品的照片比例 ☁️`,4500);
+  toast(failed?`完成 ${done} 個，跳過 ${skipped} 個，${failed} 個失敗`:`已搬遷 ${done} 個商品的照片，跳過 ${skipped} 個（本來就是網址）☁️`,4500);
   renderTable();
 };
 
-window.undoBatchNormalizePhotos=async function(){
+window.undoMigratePhotosToCloudinary=async function(){
   toast("檢查備份中…",2000);
   const withBackup=[];
   for(const p of products){
     const gallery=await loadGallery(p.id);
     if(gallery.backup)withBackup.push({p,gallery});
   }
-  if(!withBackup.length){toast("沒有可以復原的批次調整紀錄");return}
-  if(!confirm(`找到 ${withBackup.length} 個商品有上次「統一照片比例」的備份，確定要整批復原嗎？復原後這份備份就會清空，無法再復原第二次。`))return;
+  if(!withBackup.length){toast("沒有可以復原的搬遷紀錄");return}
+  if(!confirm(`找到 ${withBackup.length} 個商品有上次「搬遷照片到圖床」的備份，確定要整批復原嗎？復原後這份備份就會清空，無法再復原第二次。`))return;
   let done=0,failed=0;
   for(const {p,gallery} of withBackup){
     try{
       p.photos=[gallery.backup.thumb||""];
       await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
-      await saveGallery(p.id,gallery.backup.fullPhotos,gallery.originals,null);
+      await saveGallery(p.id,gallery.backup.fullPhotos,gallery.backup.originals||gallery.originals,null);
       done++;
     }catch(e){
       console.warn("復原失敗："+p.name,e);
@@ -2545,35 +2574,6 @@ function detectSubjectBBox(img){
   if(maxX<minX||maxY<minY)return null; // 整張都接近背景色，偵測不到主體
   const inv=1/scale;
   return {x:minX*inv,y:minY*inv,w:(maxX-minX+1)*inv,h:(maxY-minY+1)*inv};
-}
-// 直接輸出成 PHOTO_TARGET_W x PHOTO_TARGET_H 的最終照片（不經過互動式裁切視窗），
-// 給批次工具用；偵測不到主體時退回原本「完整置中、不裁切」的邏輯，不會裁壞照片。
-async function autoNormalizePhotoDataUrl(src){
-  const img=await loadImage(normalizePhotoUrl(src));
-  const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
-  const bbox=detectSubjectBBox(img);
-  const canvas=document.createElement("canvas");
-  canvas.width=PHOTO_TARGET_W;
-  canvas.height=PHOTO_TARGET_H;
-  const ctx=canvas.getContext("2d");
-  ctx.fillStyle="#fffaf3";
-  ctx.fillRect(0,0,PHOTO_TARGET_W,PHOTO_TARGET_H);
-  let scale,centerX,centerY;
-  if(bbox){
-    const minScale=Math.max(PHOTO_TARGET_W/iw,PHOTO_TARGET_H/ih);
-    scale=Math.max(minScale,(PHOTO_TARGET_W*SUBJECT_TARGET_FRACTION)/Math.max(bbox.w,bbox.h));
-    const dx=(bbox.x+bbox.w/2)-iw/2,dy=(bbox.y+bbox.h/2)-ih/2;
-    centerX=PHOTO_TARGET_W/2-dx*scale;
-    centerY=PHOTO_TARGET_H/2-dy*scale;
-  }else{
-    scale=Math.min(PHOTO_TARGET_W/iw,PHOTO_TARGET_H/ih);
-    centerX=PHOTO_TARGET_W/2;
-    centerY=PHOTO_TARGET_H/2;
-  }
-  ctx.translate(centerX,centerY);
-  ctx.scale(scale,scale);
-  ctx.drawImage(img,-iw/2,-ih/2,iw,ih);
-  return canvas.toDataURL("image/jpeg",0.86);
 }
 
 /* ── 照片裁切／縮放編輯器 ─────────────────────────────────────────
@@ -2840,8 +2840,13 @@ function convertGdriveUrl(url){
   const id=extractGdriveId(url);
   return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`:url;
 }
+function convertCloudinaryUrl(url){
+  return url.replace(/\/image\/upload\//,"/image/upload/f_auto,q_auto/");
+}
 function normalizePhotoUrl(url){
-  return /drive\.google\.com/i.test(url)?convertGdriveUrl(url):url;
+  if(/drive\.google\.com/i.test(url))return convertGdriveUrl(url);
+  if(/res\.cloudinary\.com/i.test(url))return convertCloudinaryUrl(url);
+  return url;
 }
 
 window.renderCatSelect=function(){

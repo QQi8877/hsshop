@@ -1999,7 +1999,7 @@ async function handleBulkFiles(event){
           fullOriginals.push(rawOriginals[idx]);
         });
       }
-      existing.photos=[await resizeToThumb(fullPhotos[0])];
+      existing.photos=[await thumbFor(fullPhotos[0])];
       existing.photoCount=fullPhotos.length;
       product=existing;
       matchedCount++;
@@ -2011,7 +2011,7 @@ async function handleBulkFiles(event){
       product={
         id:targetId,status:"active",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
         dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
-        photos:[await resizeToThumb(fullPhotos[0])],photoCount:fullPhotos.length
+        photos:[await thumbFor(fullPhotos[0])],photoCount:fullPhotos.length
       };
       products.push(product);
       createdCount++;
@@ -2787,6 +2787,14 @@ function resizeToThumb(src){
     }
   }).catch(()=>src);
 }
+const isUrl=src=>/^https?:\/\//i.test(src||"");
+// 商品封面縮圖：如果這張照片已經是網址（Cloudinary 上傳成功，或本來就是外部連結），
+// 直接原樣使用就好，不用再跑一次 canvas 轉成 base64——不然每次存檔都會把好不容易
+// 搬去 Cloudinary 的照片，重新烤回一份 base64 縮圖存進商品文件，白費搬遷的意義。
+// 顯示大小交給 normalizePhotoUrl 用 Cloudinary 的 w_ 參數處理即可。
+function thumbFor(photo){
+  return isUrl(photo)?Promise.resolve(photo):resizeToThumb(photo);
+}
 // workingPhotosOriginal 存的是使用者上傳當下「未經任何縮放」的原始檔案，
 // 手機相機隨便一張都可能是 3000x4000px、好幾 MB，5 張疊在同一份 gallery/full
 // 文件裡很容易超過 Firestore 單一文件 1MB 的上限而存檔失敗。這裡把原圖限制在
@@ -3325,11 +3333,17 @@ window.saveProduct=async function(){
     })),
     desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
-  const fullPhotos=workingPhotos.filter(Boolean).map(normalizePhotoUrl);
+  // 這裡故意不用 normalizePhotoUrl：那個函式現在會幫 Cloudinary 網址加上
+  // f_auto,q_auto 之類的顯示用轉換參數，只適合在「畫面上要顯示」的當下呼叫，
+  // 不能存進資料庫——不然轉換參數會永久烤進存起來的網址，之後想依照顯示位置
+  // 動態加不同尺寸（例如列表縮圖用 w_500）就會疊出一長串重複的轉換參數。
+  // Google Drive 連結例外：分享連結本身不是圖片網址，一定要轉成真正的縮圖
+  // 網址格式才能當 <img src> 使用，所以還是要轉，只是只轉 Drive、不轉 Cloudinary。
+  const fullPhotos=workingPhotos.filter(Boolean).map(url=>/drive\.google\.com/i.test(url)?convertGdriveUrl(url):url);
   // 原圖陣列要跟 fullPhotos 用同一套「哪些欄位有值」規則過濾，位置才會對得上
   const fullOriginals=workingPhotos.map((p,i)=>p?(workingPhotosOriginal[i]||""):null).filter(v=>v!==null);
   // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
-  data.photos=fullPhotos.length?[await resizeToThumb(fullPhotos[0])]:[];
+  data.photos=fullPhotos.length?[await thumbFor(fullPhotos[0])]:[];
   data.photoCount=fullPhotos.length;
   let product;
   if(editingProductId){

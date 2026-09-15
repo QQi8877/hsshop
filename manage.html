@@ -634,6 +634,13 @@ body.quickcat-mode .quickcat-bar{display:flex}
   background:var(--cream);
 }
 .photo-slot.has-img{border-style:solid}
+.slot-uploading-badge{
+  position:absolute;inset:0;z-index:7;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(20,19,18,.68);color:#fff;font-size:11px;font-weight:600;
+  letter-spacing:.03em;border-radius:inherit;
+}
+.photo-slot.is-uploading{pointer-events:none}
 .photo-slot:hover{border-color:var(--tan)}
 .slot-img{width:100%;height:100%;object-fit:cover;display:block}
 .slot-num{
@@ -2155,6 +2162,32 @@ let workingPhotos=[];
 let workingPhotosOriginal=[];
 let workingSpecs=[];
 let uploadMethod="file";
+// 正在背景上傳到 Cloudinary 的照片格編號，畫面上疊「上傳中…」用
+let slotsUploading=new Set();
+
+/* ── Cloudinary 圖床 ───────────────────────────────────────────
+   file 可以是本機選的檔案（File 物件），也可以是一個網址字串
+   （Cloudinary 的上傳 API 兩種都吃，貼網址時會由 Cloudinary 自己
+   去抓那個網址的圖片，不用我們自己先下載一次再轉傳）。
+   失敗時丟出例外，呼叫端要自己接住、決定要不要退回本機暫存方式。 */
+const CLOUDINARY_CLOUD_NAME="oqcmekau";
+const CLOUDINARY_UPLOAD_PRESET="hsintong_products";
+async function uploadToCloudinary(fileOrUrl){
+  const formData=new FormData();
+  formData.append("file",fileOrUrl);
+  formData.append("upload_preset",CLOUDINARY_UPLOAD_PRESET);
+  const res=await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,{
+    method:"POST",
+    body:formData
+  });
+  if(!res.ok){
+    const errText=await res.text().catch(()=>"");
+    throw new Error(`Cloudinary 上傳失敗（狀態碼 ${res.status}）${errText.slice(0,120)}`);
+  }
+  const data=await res.json();
+  if(!data.secure_url)throw new Error("Cloudinary 回應裡沒有圖片網址");
+  return data.secure_url;
+}
 
 function productsCol(){return collection(db,"sitedata",SITE_DOC,"products")}
 function galleryDocRef(id){return doc(db,"sitedata",SITE_DOC,"products",id,"gallery","full")}
@@ -2571,6 +2604,10 @@ window.openCropEditor=async function(slotIdx){
     // 用「圖片中心點目前落在視窗座標的哪裡」來描述位置，比左上角座標更直覺，
     // 旋轉時的邊界計算也比較單純。
     cropState={slotIdx,iw,ih,vw,vh,minScale,scale:minScale,rotation:0,centerX:vw/2,centerY:vh/2};
+    // 這裡設定的 #cropImg 是畫面上實際顯示、之後套用裁切時真正拿去畫進 Canvas 的那個元素，
+    // 一定要在指定 src 之前就先設好 crossOrigin，不然即使上面 loadImage() 那次讀取有做跨網域
+    // 授權，這個元素本身沒有設定，畫進 Canvas 時還是會被瀏覽器視為「受污染」而擋下來。
+    cropImg.crossOrigin="anonymous";
     cropImg.src=img.src;
     document.getElementById("cropZoomSlider").value=0;
     document.getElementById("cropRotateSlider").value=0;
@@ -2670,26 +2707,45 @@ window.autoCenterCrop=function(){
   const maxScale=minScale*3;
   document.getElementById("cropZoomSlider").value=Math.round(100*Math.min(1,Math.max(0,(cropState.scale-minScale)/(maxScale-minScale||1))));
 };
-window.applyCrop=function(){
+window.applyCrop=async function(){
   if(!cropState)return;
+  const slotIdx=cropState.slotIdx;
   const img=document.getElementById("cropImg");
   const canvas=document.createElement("canvas");
   canvas.width=PHOTO_TARGET_W;
   canvas.height=PHOTO_TARGET_H;
   const ctx=canvas.getContext("2d");
   const outScale=PHOTO_TARGET_W/cropState.vw; // 視窗像素 → 輸出像素 的比例（視窗跟輸出圖是同一個 1:1 正方形長寬比，可以直接套用同一個比例）
+  let dataUrl;
   try{
     ctx.translate(cropState.centerX*outScale,cropState.centerY*outScale);
     ctx.rotate(cropState.rotation*Math.PI/180);
     ctx.scale(cropState.scale*outScale,cropState.scale*outScale);
     ctx.drawImage(img,-cropState.iw/2,-cropState.ih/2,cropState.iw,cropState.ih);
-    workingPhotos[cropState.slotIdx]=canvas.toDataURL("image/jpeg",0.86);
-    renderPhotoSlots();
-    toast("照片已調整");
+    dataUrl=canvas.toDataURL("image/jpeg",0.86);
   }catch(e){
     toast("套用失敗，這張圖片可能不支援線上裁切（跨網域圖片限制），請改用「新增/更換」重新上傳",4000);
+    closeCropModal();
+    return;
   }
+  // 先用剛裁好的結果讓畫面立刻有反應，背景再把這張圖傳到 Cloudinary，
+  // 傳完會把 workingPhotos 換成 Cloudinary 網址（比較不佔資料庫空間），
+  // 如果上傳失敗，這張剛裁好的結果還是留著能用，不會整個操作都白費。
+  workingPhotos[slotIdx]=dataUrl;
   closeCropModal();
+  slotsUploading.add(slotIdx);
+  renderPhotoSlots();
+  try{
+    const blob=await(await fetch(dataUrl)).blob();
+    const url=await uploadToCloudinary(blob);
+    if(workingPhotos[slotIdx]===dataUrl)workingPhotos[slotIdx]=url; // 這段等待期間使用者沒有再做別的變動才覆蓋
+    toast("照片已調整");
+  }catch(e){
+    console.warn("裁切結果上傳 Cloudinary 失敗，先留在本機",e);
+    toast("照片已調整，但圖床上傳失敗，暫時先存在本機（建議稍後重新裁切一次）",4000);
+  }
+  slotsUploading.delete(slotIdx);
+  renderPhotoSlots();
 };
 
 function resizeImageToUniform(src){
@@ -2859,7 +2915,7 @@ function renderPhotoSlots(){
   for(let i=0;i<MAX_PHOTOS;i++){
     const src=workingPhotos[i];
     const slot=document.createElement("div");
-    slot.className="photo-slot"+(src?" has-img":"");
+    slot.className="photo-slot"+(src?" has-img":"")+(slotsUploading.has(i)?" is-uploading":"");
     slot.dataset.idx=i;
     if(src){
       const img=document.createElement("img");
@@ -2907,6 +2963,12 @@ function renderPhotoSlots(){
     num.className="slot-num";
     num.textContent=i+1;
     slot.appendChild(num);
+    if(slotsUploading.has(i)){
+      const spinner=document.createElement("div");
+      spinner.className="slot-uploading-badge";
+      spinner.textContent="上傳中…";
+      slot.appendChild(spinner);
+    }
     const overlay=document.createElement("div");
     overlay.className="slot-overlay";
     overlay.innerHTML=src?"更換":"新增";
@@ -2953,41 +3015,87 @@ function renderPhotoSlots(){
 function handleSlotFile(slotIdx,event){
   const file=event.target.files[0];
   if(!file)return;
-  const reader=new FileReader();
-  reader.onload=async e=>{
-    workingPhotosOriginal[slotIdx]=e.target.result;
-    workingPhotos[slotIdx]=await resizeImageToUniform(e.target.result);
+  event.target.value=""; // 清空，方便下次選同一個檔案也會觸發 change
+  slotsUploading.add(slotIdx);
+  renderPhotoSlots();
+  uploadToCloudinary(file).then(url=>{
+    // 原圖跟顯示用的圖先設成同一個網址（都是剛上傳的原始畫質），
+    // 之後如果用裁切編輯器調整過，只有顯示用那份會換成裁切後的新網址，
+    // 原圖這份維持不動，才能隨時回去重新調整。
+    workingPhotosOriginal[slotIdx]=url;
+    workingPhotos[slotIdx]=url;
+  }).catch(async e=>{
+    console.warn("Cloudinary 上傳失敗，改用本機暫存",e);
+    toast("圖床上傳失敗，已改用本機暫存，建議稍後重新上傳這張照片",4000);
+    try{
+      const dataUrl=await new Promise((resolve,reject)=>{
+        const reader=new FileReader();
+        reader.onload=ev=>resolve(ev.target.result);
+        reader.onerror=reject;
+        reader.readAsDataURL(file);
+      });
+      workingPhotosOriginal[slotIdx]=dataUrl;
+      workingPhotos[slotIdx]=await resizeImageToUniform(dataUrl);
+    }catch(e2){
+      toast("圖片讀取失敗，請重試");
+    }
+  }).finally(()=>{
+    slotsUploading.delete(slotIdx);
     renderPhotoSlots();
-  };
-  reader.readAsDataURL(file);
+  });
 }
 async function promptUrlForSlot(slotIdx){
   const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
   const raw=document.getElementById(inputId).value.trim();
   if(!raw){toast("請先在上方輸入連結");return}
-  const normalized=normalizePhotoUrl(raw);
-  workingPhotosOriginal[slotIdx]=normalized;
-  workingPhotos[slotIdx]=await resizeImageToUniform(normalized);
+  // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到
+  const fetchable=uploadMethod==="gdrive"?convertGdriveUrl(raw):raw;
+  slotsUploading.add(slotIdx);
   renderPhotoSlots();
-  toast("圖片已設定");
+  try{
+    const url=await uploadToCloudinary(fetchable);
+    workingPhotosOriginal[slotIdx]=url;
+    workingPhotos[slotIdx]=url;
+    toast("圖片已設定");
+  }catch(e){
+    console.warn("Cloudinary 上傳失敗，改用原始連結",e);
+    toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
+    const normalized=normalizePhotoUrl(fetchable);
+    workingPhotosOriginal[slotIdx]=normalized;
+    workingPhotos[slotIdx]=await resizeImageToUniform(normalized);
+  }
+  slotsUploading.delete(slotIdx);
+  renderPhotoSlots();
 }
 window.addPhotoByUrl=async function(){
   const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請輸入圖片網址");return}
-  await addWorkingPhoto(normalizePhotoUrl(raw));
+  await addWorkingPhoto(raw);
 };
 window.addPhotoByGdrive=async function(){
   const raw=document.getElementById("gdriveInput").value.trim();
   if(!raw){toast("請輸入 Google Drive 連結");return}
   await addWorkingPhoto(convertGdriveUrl(raw));
 };
-async function addWorkingPhoto(url){
+async function addWorkingPhoto(raw){
   const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
   if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
-  workingPhotosOriginal[empty]=url;
-  workingPhotos[empty]=await resizeImageToUniform(url);
+  slotsUploading.add(empty);
   renderPhotoSlots();
-  toast("圖片已新增");
+  try{
+    const url=await uploadToCloudinary(raw);
+    workingPhotosOriginal[empty]=url;
+    workingPhotos[empty]=url;
+    toast("圖片已新增");
+  }catch(e){
+    console.warn("Cloudinary 上傳失敗，改用原始連結",e);
+    toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
+    const normalized=normalizePhotoUrl(raw);
+    workingPhotosOriginal[empty]=normalized;
+    workingPhotos[empty]=await resizeImageToUniform(normalized);
+  }
+  slotsUploading.delete(empty);
+  renderPhotoSlots();
 }
 
 /* ── 商品標籤（可在後台新增／改名／刪除，順序＝優先順序，存進 Firestore 的 tagDefs）── */

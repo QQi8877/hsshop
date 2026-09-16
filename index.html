@@ -97,6 +97,14 @@ nav{
   background:rgba(243,238,230,.94);
   border-bottom:1px solid var(--line);
   backdrop-filter:blur(12px);
+  transition:height .25s ease,box-shadow .25s ease,background .25s ease;
+}
+/* 往下捲超過一點距離就縮小、加深陰影，回到頂部時恢復原狀（見下面
+   initNavScrollEffect） */
+nav.nav--scrolled{
+  height:52px;
+  background:rgba(243,238,230,.98);
+  box-shadow:0 8px 20px rgba(46,38,30,.09);
 }
 .nav-logo{
   font-family:var(--font-heading);
@@ -107,7 +115,9 @@ nav{
   justify-self:start;
   color:inherit;
   text-decoration:none;
+  transition:font-size .25s ease;
 }
+nav.nav--scrolled .nav-logo{font-size:16px}
 .nav-logo span{color:var(--tan)}
 #navSearchBar{width:min(340px,32vw);min-width:0;margin:0;padding:7px 12px;justify-self:center}
 .nav-links{display:flex;gap:20px;list-style:none;flex:none}
@@ -260,6 +270,11 @@ nav{
   position:relative;display:flex;flex-direction:column;gap:11px;
   padding:14px;background:var(--paper);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);
   text-decoration:none;color:inherit;cursor:pointer;
+  transition:transform .22s ease,box-shadow .22s ease;
+}
+.p-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 16px 32px rgba(46,38,30,.14);
 }
 .p-card__media{aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden;display:grid;place-items:center}
 .p-card__media img{width:88%;height:88%;object-fit:contain}
@@ -385,6 +400,11 @@ nav{
   border-top:1px solid var(--line);
   border-left:1px solid var(--line);
 }
+@keyframes gridFadeIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.products-grid.grid-transition-in{animation:gridFadeIn .32s ease}
 /* 改用 Flexbox（不用 Grid）是刻意的：分類數量常常不是欄數的倍數，最後一列
    缺角的話，Grid 還是會保留空的格線位置（沒有商品卡的地方缺了邊框，看起來
    像斷掉），Flexbox 換行後多出來的空間單純留白，不會有缺邊框的視覺問題。 */
@@ -448,6 +468,10 @@ nav{
 .cat-sidebar-skel span:nth-child(5){width:75%;animation-delay:.48s}
 @media(prefers-reduced-motion:reduce){
   .loading-breathe-text,.loading-breathe-line,.cat-sidebar-skel span{animation:none;opacity:.8}
+  .p-card,.product-card{transition:box-shadow .22s ease,border-color .22s ease}
+  .p-card:hover,.product-card:hover{transform:none}
+  nav,.nav-logo{transition:none}
+  .products-grid.grid-transition-in{animation:none}
 }
 @media(min-width:761px){
   :root{--cat-sidebar-w:165px;--cat-gap:34px}
@@ -523,9 +547,10 @@ nav{
   cursor:pointer;
   display:flex;
   flex-direction:column;
-  transition:box-shadow .22s ease,border-color .22s ease;
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
 }
 .product-card:hover{
+  transform:translateY(-4px);
   box-shadow:var(--shadow);
   border-color:#d0bda4;
   z-index:2;
@@ -591,23 +616,27 @@ nav{
   font-weight:500;
   margin-bottom:3px;
 }
-/* 手機版欄位窄，尺寸跟金額各自獨立一行，彼此不會互相影響（金額字變大不會
-   擠壓尺寸的寬度，尺寸文字再長也不會被截斷或被迫換行）。桌面版欄位夠寬，
-   兩者共用一列、金額貼齊尺寸下緣往上長，卡片才不會多一行浪費的空間
+/* 手機版：名稱 → 尺寸 → 標籤（如果有）→ 金額，金額固定放在標籤下一行，
+   不會因為有沒有標籤而跑到不同位置。桌面版欄位夠寬，尺寸跟金額改回同一列
+   （用 Grid 讓兩者共用一列，不佔額外高度），標籤還是維持在最下面一行
    （見下面 761px 那個 media query）。 */
 .product-meta-row{margin-bottom:1px}
 .product-size{display:block;font-size:11px;line-height:1.35;color:var(--tan-dark)}
-.product-price{display:block;text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:700}
-.product-badges-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:auto;padding-top:3px}
+.product-price{display:block;text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:700;margin-top:2px}
+.product-badges-row{display:flex;flex-wrap:wrap;gap:4px;padding-top:3px}
 .product-badges-row .tag-badge{font-size:9px;padding:2px 7px;box-shadow:none}
 /* 標籤最多顯示 3 個（JS 已經先限制），手機版欄位窄，超過 2 個容易跟金額擠在一起
    或換行讓卡片變太高，這裡在窄螢幕只留前 2 個，寬螢幕（桌面 5 欄）才顯示第 3 個。 */
 .product-badges-row .tag-badge:nth-child(3){display:none}
+/* 標籤／金額誰排在卡片最後面，就由誰把剩餘高度往下撐，讓不同商品的卡片
+   （不管有沒有標籤、有沒有金額）底部還是能對齊。 */
+.product-badges-row:last-child,.product-price:last-child{margin-top:auto}
 @media(min-width:761px){
-  .product-meta-row{position:relative}
-  .product-meta-row:has(.product-price) .product-size{padding-right:64px}
-  .product-price{position:absolute;right:0;bottom:0;line-height:1}
-  .product-badges-row{padding-top:5px}
+  .product-info{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr auto;column-gap:10px}
+  .product-name{grid-column:1/-1}
+  .product-meta-row{grid-column:1;grid-row:2;margin-bottom:0}
+  .product-price{grid-column:2;grid-row:2;align-self:end;margin-top:0}
+  .product-badges-row{grid-column:1/-1;grid-row:4;padding-top:5px}
   .product-badges-row .tag-badge:nth-child(3){display:inline-block}
 }
 .favorite-btn{
@@ -1730,6 +1759,22 @@ function toggleMobileNav(force){
   menu.classList.toggle("open",open);
   btn.setAttribute("aria-expanded",String(open));
 }
+// 導覽列捲動效果：往下捲超過一點距離就縮小、加深陰影，回到頂部時恢復原狀。
+// 用 requestAnimationFrame 節流，避免每個 scroll 事件都直接操作 DOM 造成掉幀。
+(function initNavScrollEffect(){
+  const navEl=document.querySelector("nav");
+  if(!navEl)return;
+  let ticking=false;
+  const update=()=>{
+    navEl.classList.toggle("nav--scrolled",window.scrollY>40);
+    ticking=false;
+  };
+  window.addEventListener("scroll",()=>{
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(update);
+  },{passive:true});
+})();
 function renderProducts(){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
@@ -1850,14 +1895,20 @@ function renderProducts(){
       <div class="product-name">${escapeHTML(product.name)}</div>
       <div class="product-meta-row">
         <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
-        ${product.price?`<span class="product-price">${escapeHTML(formatPrice(product.price))}</span>`:""}
       </div>
       ${badgesHtml?`<div class="product-badges-row">${badgesHtml}</div>`:""}
+      ${product.price?`<span class="product-price">${escapeHTML(formatPrice(product.price))}</span>`:""}
     `;
     card.appendChild(info);
     card.addEventListener("click",()=>openProductDetail(product.id));
     grid.appendChild(card);
   });
+  // 切換分類／搜尋時，整個商品區塊淡入＋輕微上移一下，讓「內容換了」這件事
+  // 更明顯，比整頁瞬間換掉生硬。強制重排（offsetWidth）是刻意的，用來讓瀏覽器
+  // 重新套用動畫，不然拿掉又馬上加回同一個 class，瀏覽器會當作沒變化而不重播。
+  grid.classList.remove("grid-transition-in");
+  void grid.offsetWidth;
+  grid.classList.add("grid-transition-in");
 }
 function renderListingTitle(){
   const el=document.getElementById("listingTitle");

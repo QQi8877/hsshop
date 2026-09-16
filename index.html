@@ -1055,9 +1055,12 @@ footer a:hover{color:var(--color-on-dark)}
   object-fit:contain;
   border-radius:8px;
   transform-origin:center center;
-  transition:transform .12s ease, transform-origin .08s ease;
+  transition:transform .12s ease, transform-origin .08s ease, opacity .15s ease;
   user-select:none;
 }
+/* 切換到別的商品時，新照片還沒下載完之前先蓋住舊照片（背景跟照片一樣是
+   --paper 底色，不會看起來像壞掉），避免使用者誤以為畫面卡在上一個商品 */
+.lb-stage img.lb-img-loading{opacity:0}
 .lb-thumbs{
   display:flex;
   gap:8px;
@@ -2126,8 +2129,11 @@ let lbTouchStartX=0,lbTouchStartY=0;
 function openProductDetail(id){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
+  const isProductSwitch=lbProduct!==product;
   lbProduct=product;
-  const cover=(product.photos||[]).filter(Boolean).map(url=>normalizePhotoUrl(url));
+  // 跟商品列表卡片用同一個寬度（600），瀏覽器多半已經有快取，一開燈箱就能立刻
+  // 顯示正確的照片，不用等網路重新抓一張沒快取過的大圖（原本預設 1600 寬）。
+  const cover=(product.photos||[]).filter(Boolean).map(url=>normalizePhotoUrl(url,600));
   lbImages=cover.length?cover:[sampleSvg(product.name||"商品圖片","#8a7b68","#5b5448")];
   lbCurrent=0;
   lastFocusedElement=document.activeElement;
@@ -2135,7 +2141,9 @@ function openProductDetail(id){
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
   document.body.classList.add("lightbox-open");
-  lbRender();
+  // 換了商品才需要先蓋住畫面：不然新照片還沒下載完之前，畫面會繼續顯示
+  // 上一個商品的照片，容易讓人誤以為切換失敗或卡住。
+  lbRender(isProductSwitch);
   document.querySelector(".lb-close").focus();
   history.replaceState(null,"",`#product-${id}`);
   // 商品文件的封面只是縮圖，燈箱一律要換成 gallery 子文件裡的原始畫質照片
@@ -2220,12 +2228,29 @@ function getProductDisplayParts(product){
   }
   return {d,cat,desc,specsHtml};
 }
-function lbRender(){
+let lbImgToken=0;
+function lbRender(resetImage){
   const img=document.getElementById("lbImg");
   const thumbs=document.getElementById("lbThumbs");
   const counter=document.getElementById("lbCounter");
   const info=document.getElementById("lbInfo");
-  img.src=lbImages[lbCurrent]||"";
+  const nextSrc=lbImages[lbCurrent]||"";
+  const token=++lbImgToken;
+  // 只有「換到別的商品」才需要先蓋住舊照片；同一個商品內切換照片、或稍後
+  // 換成原始畫質照片，本來就是同一張圖片的內容，維持顯示舊版本不會有誤導。
+  if(resetImage)img.classList.add("lb-img-loading");
+  if(nextSrc){
+    const preload=new Image();
+    preload.onload=preload.onerror=()=>{
+      if(token!==lbImgToken)return; // 使用者已經切到別張照片／別的商品了，這次載入結果不算數
+      img.src=nextSrc;
+      img.classList.remove("lb-img-loading");
+    };
+    preload.src=nextSrc;
+  }else{
+    img.src="";
+    img.classList.remove("lb-img-loading");
+  }
   img.alt=lbProduct?.name?`${lbProduct.name} 商品照片 ${lbCurrent+1}`:"商品照片";
   resetZoom();
   document.getElementById("lbPrev").style.display=lbImages.length>1?"grid":"none";

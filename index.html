@@ -19,6 +19,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://www.gstatic.com">
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"></noscript>
@@ -1167,7 +1170,7 @@ footer a:hover{color:var(--color-on-dark)}
       </div>
     </div>
     <figure class="hero-photo" id="heroPhoto">
-      <img id="heroPhotoImg" src="" alt="">
+      <img id="heroPhotoImg" src="" alt="" fetchpriority="high" decoding="async">
     </figure>
   </div>
 </section>
@@ -1570,6 +1573,14 @@ function normalizePhotoUrl(url,width=1600){
   if(/res\.cloudinary\.com/i.test(url))return convertCloudinaryUrl(url,width);
   return url;
 }
+// 依實際版面大小提供多種寬度，讓瀏覽器依裝置螢幕寬度/DPR自己挑最合適的檔案，
+// 避免手機版小卡片還是抓桌面版用的大尺寸圖（PageSpeed「圖片解析度過大」建議）。
+function buildSrcset(url,widths){
+  // 只有 http(s) 連結（Cloudinary／Drive）才需要多尺寸版本；base64 舊資料本來就
+  // 是同一份資料，硬產生 4 份一樣的字串只會浪費記憶體，直接跳過。
+  if(!/^https?:\/\//i.test(url||""))return "";
+  return widths.map(w=>`${normalizePhotoUrl(url,w)} ${w}w`).join(", ");
+}
 
 function getMainCat(id){return state.catalog.find(c=>c.id===id)}
 function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
@@ -1782,6 +1793,8 @@ function renderProducts(){
     if(photos.length){
       const cover=document.createElement("img");
       cover.src=normalizePhotoUrl(photos[0],600);
+      cover.srcset=buildSrcset(photos[0],[280,400,600,800]);
+      cover.sizes="(max-width:760px) 50vw, 20vw";
       cover.alt=product.name;
       cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
@@ -1792,6 +1805,8 @@ function renderProducts(){
         const showHover=src=>{
           hoverImg=document.createElement("img");
           hoverImg.src=normalizePhotoUrl(src,600);
+          hoverImg.srcset=buildSrcset(src,[280,400,600,800]);
+          hoverImg.sizes="(max-width:760px) 50vw, 20vw";
           hoverImg.alt=product.name+" hover";
           hoverImg.loading="lazy";
           hoverImg.className="img-secondary";
@@ -1883,7 +1898,7 @@ function renderPicks(){
     const card=document.createElement("article");
     card.className="p-card";
     card.innerHTML=`
-      <div class="p-card__media">${photos.length?`<img src="${escapeHTML(normalizePhotoUrl(photos[0],500))}" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
+      <div class="p-card__media">${photos.length?`<img src="${escapeHTML(normalizePhotoUrl(photos[0],500))}" srcset="${escapeHTML(buildSrcset(photos[0],[300,450,600,800]))}" sizes="(max-width:760px) 50vw, 25vw" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
       <div class="p-card__title">${escapeHTML(product.name)}</div>
       <div class="p-card__foot">
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
@@ -1941,13 +1956,17 @@ function renderHeroPhoto(){
   // 後台「首頁版面設定」上傳的圖優先；沒有上傳的話才自動抓第一件有照片的商品
   const customImage=state.layout?.heroImage;
   if(customImage){
-    img.src=customImage;
+    img.src=normalizePhotoUrl(customImage,900);
+    img.srcset=buildSrcset(customImage,[300,500,700,900]);
+    img.sizes="(max-width:760px) 45vw, 360px";
     img.alt="";
     return;
   }
   const withPhoto=activeProducts().find(p=>(p.photos||[]).length);
   if(!withPhoto)return;
   img.src=normalizePhotoUrl(withPhoto.photos[0],900);
+  img.srcset=buildSrcset(withPhoto.photos[0],[300,500,700,900]);
+  img.sizes="(max-width:760px) 45vw, 360px";
   img.alt=withPhoto.name;
 }
 const FAVORITES_KEY="xintong_favorites_v1";
@@ -2108,7 +2127,7 @@ function openProductDetail(id){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
   lbProduct=product;
-  const cover=(product.photos||[]).filter(Boolean).map(normalizePhotoUrl);
+  const cover=(product.photos||[]).filter(Boolean).map(url=>normalizePhotoUrl(url));
   lbImages=cover.length?cover:[sampleSvg(product.name||"商品圖片","#8a7b68","#5b5448")];
   lbCurrent=0;
   lastFocusedElement=document.activeElement;
@@ -2124,7 +2143,7 @@ function openProductDetail(id){
   if(totalCount>0){
     Storage.getGallery(id).then(full=>{
       if(!full.length||lbProduct!==product)return;
-      const photos=full.map(normalizePhotoUrl);
+      const photos=full.map(url=>normalizePhotoUrl(url));
       lbImages=photos;
       lbRender();
     });

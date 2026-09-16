@@ -1794,13 +1794,20 @@ function renderHeroImageSlot(){
     </div>
   `;
 }
+let heroUploadToken=0;
 function handleHeroImageFile(event){
   const file=event.target.files[0];
   if(!file)return;
   event.target.value=""; // 清空，方便下次選同一個檔案也會觸發 change
+  // 每次選檔都換一個新代號，兩條非同步流程（本機縮圖／Cloudinary 上傳）
+  // 寫回 layoutHeroImage 前都要確認代號沒變，避免其中一個用比較舊的結果
+  // 蓋掉另一個已經算好的新結果。
+  const token=++heroUploadToken;
   const reader=new FileReader();
   reader.onload=async e=>{
-    layoutHeroImage=await resizeSquareImage(e.target.result,900,0.85);
+    const preview=await resizeSquareImage(e.target.result,900,0.85);
+    if(heroUploadToken!==token)return;
+    layoutHeroImage=preview;
     renderHeroImageSlot();
   };
   reader.readAsDataURL(file);
@@ -1810,11 +1817,13 @@ function handleHeroImageFile(event){
   heroUploading=true;
   renderHeroImageSlot();
   uploadToCloudinary(file).then(url=>{
+    if(heroUploadToken!==token)return;
     layoutHeroImage=url;
   }).catch(e=>{
     console.warn("首頁大圖上傳 Cloudinary 失敗，改用本機暫存",e);
-    toast("圖床上傳失敗，已改用本機暫存，建議稍後重新上傳這張照片",4000);
+    if(heroUploadToken===token)toast("圖床上傳失敗，已改用本機暫存，建議稍後重新上傳這張照片",4000);
   }).finally(()=>{
+    if(heroUploadToken!==token)return;
     heroUploading=false;
     renderHeroImageSlot();
   });
@@ -1908,6 +1917,7 @@ function renderPicksCandidates(){
 }
 window.renderPicksCandidates=renderPicksCandidates;
 async function saveLayoutSettings(){
+  if(heroUploading){toast("首頁大圖還在上傳中，請稍候幾秒再儲存");return}
   const next={
     showPicks:document.getElementById("layoutShowPicks").checked,
     showCatTiles:document.getElementById("layoutShowCatTiles").checked,
@@ -2461,13 +2471,19 @@ window.bulkAutoDesc=async function(){
 // 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
 window.migratePhotosToCloudinary=async function(){
   const targets=products.filter(p=>p.status!=="archived"&&(p.photos||[]).length);
-  if(!targets.length){toast("目前沒有可以搬遷的商品照片");return}
-  if(!confirm(`將把還沒搬過去的商品照片（base64 格式）上傳到 Cloudinary、換成網址儲存，最多會檢查 ${targets.length} 個商品（已經是網址的會自動跳過）。\n\n執行前會先備份每個商品目前的照片，如果有問題可以用「↩ 復原上次搬遷」整批復原（只保留最近一次的備份，復原後備份就會清空）。確定要執行嗎？`))return;
+  const heroIsBase64=/^data:/i.test(layout.heroImage||"");
+  const catImagesBase64=catalog.filter(c=>/^data:/i.test(c.image||"")).length;
+  if(!targets.length&&!heroIsBase64&&!catImagesBase64){toast("目前沒有可以搬遷的照片");return}
+  if(!confirm(`將把還沒搬過去的照片（base64 格式：商品照片、首頁大圖、分類磚圖）上傳到 Cloudinary、換成網址儲存，最多會檢查 ${targets.length} 個商品（已經是網址的會自動跳過）。\n\n執行前會先備份每個商品目前的照片，如果有問題可以用「↩ 復原上次搬遷」整批復原（只保留最近一次的備份，復原後備份就會清空；首頁大圖／分類磚圖不在這個備份範圍內）。確定要執行嗎？`))return;
   toast(`開始搬遷照片到圖床，共檢查 ${targets.length} 個商品…`,4000);
   let done=0,skipped=0,failed=0;
   const isUrl=src=>/^https?:\/\//i.test(src||"");
+  // 只有 Cloudinary（已經搬過）跟 Google Drive（本來就選擇留在 Drive、不搬）
+  // 才算「不用再處理」；其他 http(s) 網址通常是之前 Cloudinary 上傳失敗、
+  // 退回直接存原始連結的情況，這次還是要再嘗試搬到 Cloudinary。
+  const isMigrated=src=>/res\.cloudinary\.com/i.test(src||"")||/drive\.google\.com/i.test(src||"");
   const migrateOne=async src=>{
-    if(isUrl(src))return src;
+    if(isMigrated(src))return src;
     const blob=await(await fetch(src)).blob();
     return await uploadToCloudinary(blob);
   };
@@ -2476,12 +2492,16 @@ window.migratePhotosToCloudinary=async function(){
       const gallery=await loadGallery(p.id);
       const sourcePhotos=gallery.photos.length?gallery.photos:(p.photos||[]);
       const sourceOriginals=gallery.originals.length?gallery.originals:sourcePhotos;
-      if(sourcePhotos.every(isUrl)&&sourceOriginals.every(isUrl)){skipped++;continue}
+      if(sourcePhotos.every(isMigrated)&&sourceOriginals.every(isMigrated)){skipped++;continue}
       const newFullPhotos=[];
       const newOriginals=[];
       for(let i=0;i<sourcePhotos.length;i++){
-        newFullPhotos.push(await migrateOne(sourcePhotos[i]));
-        newOriginals.push(await migrateOne(sourceOriginals[i]||sourcePhotos[i]));
+        // 沒有另外存原圖時，原圖等於照片本身（同一個字串）——這種情況只上傳一次、
+        // 兩邊共用同一個結果，避免對同一張圖重複打兩次 Cloudinary 上傳。
+        const uploaded=await migrateOne(sourcePhotos[i]);
+        newFullPhotos.push(uploaded);
+        const origSrc=sourceOriginals[i]||sourcePhotos[i];
+        newOriginals.push(origSrc===sourcePhotos[i]?uploaded:await migrateOne(origSrc));
       }
       if(!newFullPhotos.length)continue;
       // 蓋掉之前的照片以前，先把「這次搬遷前」的狀態存成備份，
@@ -2489,15 +2509,42 @@ window.migratePhotosToCloudinary=async function(){
       // （sourceOriginals）也要一起備份——跟原本的「統一比例」工具不同，
       // 這個工具連原圖也會被搬去 Cloudinary、一起換成網址，復原時兩邊都要還原。
       const backup={thumb:p.photos[0]||"",fullPhotos:sourcePhotos,originals:sourceOriginals};
+      // 先寫圖庫子文件（含備份），確定成功以後才更新商品文件的縮圖——
+      // 這樣萬一圖庫寫入失敗，商品文件完全沒被動到，不會留下「縮圖已換新、
+      // 但備份沒存到」這種復原工具找不到、卻已經半搬遷的狀態。
+      await saveGallery(p.id,newFullPhotos,newOriginals,backup);
       p.photos=[isUrl(newFullPhotos[0])?newFullPhotos[0]:await resizeToThumb(newFullPhotos[0])];
       await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
-      await saveGallery(p.id,newFullPhotos,newOriginals,backup);
       done++;
     }catch(e){
       console.warn("搬遷照片失敗："+p.name,e);
       failed++;
     }
   }
+  // 首頁大圖／分類磚圖如果也還是舊的 base64（這個機制上線前設定的），一併搬到
+  // Cloudinary——這兩個是使用者打開首頁最先看到的內容，base64 直接塞在網站設定
+  // 文件裡，會拖慢抓取設定的速度，也是首頁 LCP（最大內容繪製時間）變慢的常見原因。
+  let metaChanged=false;
+  if(/^data:/i.test(layout.heroImage||"")){
+    try{
+      const blob=await(await fetch(layout.heroImage)).blob();
+      layout.heroImage=await uploadToCloudinary(blob);
+      metaChanged=true;
+    }catch(e){
+      console.warn("首頁大圖搬遷失敗",e);
+    }
+  }
+  for(const c of catalog){
+    if(!/^data:/i.test(c.image||""))continue;
+    try{
+      const blob=await(await fetch(c.image)).blob();
+      c.image=await uploadToCloudinary(blob);
+      metaChanged=true;
+    }catch(e){
+      console.warn("分類磚圖搬遷失敗："+c.name,e);
+    }
+  }
+  if(metaChanged)await saveMeta();
   toast(failed?`完成 ${done} 個，跳過 ${skipped} 個，${failed} 個失敗`:`已搬遷 ${done} 個商品的照片，跳過 ${skipped} 個（本來就是網址）☁️`,4500);
   renderTable();
 };
@@ -3029,9 +3076,11 @@ function handleSlotFile(slotIdx,event){
   const file=event.target.files[0];
   if(!file)return;
   event.target.value=""; // 清空，方便下次選同一個檔案也會觸發 change
+  const openedFor=editingProductId;
   slotsUploading.add(slotIdx);
   renderPhotoSlots();
   uploadToCloudinary(file).then(url=>{
+    if(editingProductId!==openedFor)return; // 上傳期間切換到別的商品了，不要寫進現在畫面
     // 原圖跟顯示用的圖先設成同一個網址（都是剛上傳的原始畫質），
     // 之後如果用裁切編輯器調整過，只有顯示用那份會換成裁切後的新網址，
     // 原圖這份維持不動，才能隨時回去重新調整。
@@ -3039,6 +3088,7 @@ function handleSlotFile(slotIdx,event){
     workingPhotos[slotIdx]=url;
   }).catch(async e=>{
     console.warn("Cloudinary 上傳失敗，改用本機暫存",e);
+    if(editingProductId!==openedFor)return;
     toast("圖床上傳失敗，已改用本機暫存，建議稍後重新上傳這張照片",4000);
     try{
       const dataUrl=await new Promise((resolve,reject)=>{
@@ -3047,6 +3097,7 @@ function handleSlotFile(slotIdx,event){
         reader.onerror=reject;
         reader.readAsDataURL(file);
       });
+      if(editingProductId!==openedFor)return;
       workingPhotosOriginal[slotIdx]=dataUrl;
       workingPhotos[slotIdx]=await resizeImageToUniform(dataUrl);
     }catch(e2){
@@ -3063,19 +3114,24 @@ async function promptUrlForSlot(slotIdx){
   if(!raw){toast("請先在上方輸入連結");return}
   // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到
   const fetchable=uploadMethod==="gdrive"?convertGdriveUrl(raw):raw;
+  const openedFor=editingProductId;
   slotsUploading.add(slotIdx);
   renderPhotoSlots();
   try{
     const url=await uploadToCloudinary(fetchable);
-    workingPhotosOriginal[slotIdx]=url;
-    workingPhotos[slotIdx]=url;
-    toast("圖片已設定");
+    if(editingProductId===openedFor){
+      workingPhotosOriginal[slotIdx]=url;
+      workingPhotos[slotIdx]=url;
+      toast("圖片已設定");
+    }
   }catch(e){
     console.warn("Cloudinary 上傳失敗，改用原始連結",e);
-    toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
-    const normalized=normalizePhotoUrl(fetchable);
-    workingPhotosOriginal[slotIdx]=normalized;
-    workingPhotos[slotIdx]=await resizeImageToUniform(normalized);
+    if(editingProductId===openedFor){
+      toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
+      const normalized=normalizePhotoUrl(fetchable);
+      workingPhotosOriginal[slotIdx]=normalized;
+      workingPhotos[slotIdx]=await resizeImageToUniform(normalized);
+    }
   }
   slotsUploading.delete(slotIdx);
   renderPhotoSlots();
@@ -3091,21 +3147,31 @@ window.addPhotoByGdrive=async function(){
   await addWorkingPhoto(convertGdriveUrl(raw));
 };
 async function addWorkingPhoto(raw){
-  const empty=workingPhotos.findIndex(Boolean)===-1?0:workingPhotos.findIndex(photo=>!photo);
+  // 排除 slotsUploading 裡「正在上傳、畫面上還沒填值」的格子，避免兩個上傳
+  // 幾乎同時開始時算出同一個「空格」，導致其中一張照片被另一張蓋掉遺失。
+  let empty=-1;
+  for(let i=0;i<MAX_PHOTOS;i++){
+    if(!workingPhotos[i]&&!slotsUploading.has(i)){empty=i;break}
+  }
   if(empty===-1){toast(`已達 ${MAX_PHOTOS} 張上限`);return}
+  const openedFor=editingProductId;
   slotsUploading.add(empty);
   renderPhotoSlots();
   try{
     const url=await uploadToCloudinary(raw);
-    workingPhotosOriginal[empty]=url;
-    workingPhotos[empty]=url;
-    toast("圖片已新增");
+    if(editingProductId===openedFor){
+      workingPhotosOriginal[empty]=url;
+      workingPhotos[empty]=url;
+      toast("圖片已新增");
+    }
   }catch(e){
     console.warn("Cloudinary 上傳失敗，改用原始連結",e);
-    toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
-    const normalized=normalizePhotoUrl(raw);
-    workingPhotosOriginal[empty]=normalized;
-    workingPhotos[empty]=await resizeImageToUniform(normalized);
+    if(editingProductId===openedFor){
+      toast("圖床上傳失敗，改直接使用你貼的連結（畫質/穩定度可能較差）",4000);
+      const normalized=normalizePhotoUrl(raw);
+      workingPhotosOriginal[empty]=normalized;
+      workingPhotos[empty]=await resizeImageToUniform(normalized);
+    }
   }
   slotsUploading.delete(empty);
   renderPhotoSlots();
@@ -3309,6 +3375,7 @@ function getSizeSummary(dimensions,size){
 }
 
 window.saveProduct=async function(){
+  if(slotsUploading.size){toast("還有照片正在上傳中，請稍候幾秒再儲存");return}
   const name=document.getElementById("pName").value.trim();
   if(!name){toast("請填寫商品名稱");return}
   const dimensions={

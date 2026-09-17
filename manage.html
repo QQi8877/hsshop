@@ -3374,6 +3374,11 @@ function getSizeSummary(dimensions,size){
   return parts.length?`${parts.join(" x ")} cm`:(size||"");
 }
 
+// 提醒：前台 index.html 的 Google Fonts 網址有做「字型子集」優化，只包含當初產生時
+// 網站文字＋商品資料裡出現過的中文字（約 831 個），藉此縮小字型檔案大小。這裡新增/修改的
+// 商品名稱、說明如果用到全新的字，前台不會壞掉，只是那個字會自動改用瀏覽器內建字型顯示，
+// 字體會跟其他文字不太一樣。商品種類變多、或想確保新字都涵蓋到的話，可以請 Claude
+// 「重新產生字型子集」，掃一次目前的商品資料重新產生 index.html 那三個字型網址。
 window.saveProduct=async function(){
   if(slotsUploading.size){toast("還有照片正在上傳中，請稍候幾秒再儲存");return}
   const name=document.getElementById("pName").value.trim();

@@ -1798,7 +1798,7 @@ function toggleMobileNav(force){
     requestAnimationFrame(update);
   },{passive:true});
 })();
-function renderProducts(){
+function renderProducts(animate=true){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
   let list=state.products.filter(p=>p.status!=="archived");
@@ -1929,9 +1929,14 @@ function renderProducts(){
   // 切換分類／搜尋時，整個商品區塊淡入＋輕微上移一下，讓「內容換了」這件事
   // 更明顯，比整頁瞬間換掉生硬。強制重排（offsetWidth）是刻意的，用來讓瀏覽器
   // 重新套用動畫，不然拿掉又馬上加回同一個 class，瀏覽器會當作沒變化而不重播。
-  grid.classList.remove("grid-transition-in");
-  void grid.offsetWidth;
-  grid.classList.add("grid-transition-in");
+  // animate=false 只給開頁自動執行的那兩次呼叫用（先畫本機快取、Firebase資料
+  // 回來後再畫一次真正的資料）——這兩次都不是使用者主動切換，不需要、也不該
+  // 播放淡入動畫，不然這兩次自動重繪會讓整個商品區塊在開頁的一兩秒內閃兩次。
+  if(animate){
+    grid.classList.remove("grid-transition-in");
+    void grid.offsetWidth;
+    grid.classList.add("grid-transition-in");
+  }
 }
 function renderListingTitle(){
   const el=document.getElementById("listingTitle");
@@ -2608,14 +2613,15 @@ Object.assign(window,{
         applyPageText();
         applyLayoutVisibility();
         renderContact();
-        renderHeroPhoto();
         state.products=cached.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)})).map(normalizeProduct);
         state.products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
         state.favorites=loadFavoritesLocal();
         renderCategories();
-        renderProducts();
+        renderProducts(false);
         renderPicks();
         renderCategoryTiles();
+        // 快取一次就把 meta／products 都讀完了（不像下面 Firebase 那段中間隔了一次
+        // await，商品資料要晚一步才到），這裡只需要呼叫一次，不用像下面分兩次呼叫。
         renderHeroPhoto();
         renderFavorites();
       }
@@ -2667,7 +2673,7 @@ Object.assign(window,{
   state.favorites=loadFavoritesLocal();
 
   renderCategories();
-  renderProducts();
+  renderProducts(false);
   renderPicks();
   renderCategoryTiles();
   renderHeroPhoto(); // 沒設定自訂大圖的話，要等商品資料到齊才找得到可用照片，這裡再跑一次

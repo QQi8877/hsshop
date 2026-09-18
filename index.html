@@ -1672,7 +1672,12 @@ function closeModal(id){document.getElementById(id).classList.remove("open")}
 function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
     const key=el.dataset.pageField;
-    if(state.pageText?.[key])el.textContent=state.pageText[key];
+    const val=state.pageText?.[key];
+    // 值跟畫面上現有的文字一樣就不要動：textContent= 就算寫入相同的字串，
+    // 也會整個文字節點砍掉重建，逼瀏覽器重新畫一次——如果這時候自架字型
+    // 剛好已經下載完成，就會從「開頁瞬間的備援字體」變成「Noto 字型」，
+    // 造成沒有實際內容變化、卻看起來像字體中途切換的閃爍。
+    if(val&&el.textContent!==val)el.textContent=val;
   });
 }
 function applyLayoutVisibility(){

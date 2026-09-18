@@ -25,18 +25,33 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
 <!-- 字型改為自行內嵌（見下方 @font-face），不再透過 Google Fonts CDN 載入。原本用 &text=
      子集化雖然縮小了檔案，但 Google 會把散布在整個中文字範圍的字元拆成上百個小檔案分批
-     載入，造成冷快取時字體閃爍、CSS 清單本身也膨脹到 233KB；改成自行內嵌單一檔案後兩個
-     問題都解決，也不再需要 fonts.googleapis.com / fonts.gstatic.com 的 preconnect。
-     只用 500、600 兩個字重（其他字重用得很少，瀏覽器會自動用最接近的字重頂替，肉眼看不
-     太出差異），字型檔位於 fonts/ 資料夾，來源是 @fontsource/noto-serif-tc 和
+     載入，造成 CSS 清單膨脹到 233KB；改成自行內嵌單一檔案後解決了「上百個檔案分批載入」
+     跟 CSS 過大這兩個問題，也不再需要 fonts.googleapis.com / fonts.gstatic.com 的
+     preconnect。400/500/600 三個字重都內嵌（實際 CSS 裡三個字重都真的有用到，內嵌
+     所有用到的字重、不硬是省成兩個，才不會有「CSS 要的字重跟內嵌檔案對不上，瀏覽器自動
+     頂替」的落差），字型檔位於 fonts/ 資料夾，來源是 @fontsource/noto-serif-tc 和
      @fontsource/noto-sans-tc（官方已做好「繁體中文常用字範圍」子集化的 woff2 檔案）。
      用到子集沒收錄的罕見字時會自動改用瀏覽器內建字型顯示（不會壞掉，只是那一兩個字字體
-     不太一樣）；如果要擴大涵蓋範圍，可以請 Claude 換一個更大的子集或自行客製化子集。 -->
+     不太一樣）；如果要擴大涵蓋範圍，可以請 Claude 換一個更大的子集或自行客製化子集。
+     字體切換閃爍：實測證實瀏覽器第一次下載這個字型檔案時（還沒被快取過），不管
+     font-display 設 swap 還是 optional，只要字型下載完成，畫面上已經顯示的文字都
+     會被換成新字型（規格文件講的「optional 不會換」在這個瀏覽器沒有照做）。改用
+     font-display:block 後實測行為不同：下載完成前文字直接不上色（版面照樣保留空間，
+     不會跳動），下載完成才第一次真正畫出來——不會有「先顯示備援字體、幾秒後又變成
+     Noto」這種畫面上真的變過一次的情形，只有「字打出來的時間點稍微晚一點」，這是
+     一般網站常見、可接受的取捨。只有瀏覽器真的從沒快取過這個檔案時才看得到這一兩秒的
+     延遲，快取過一次之後的每次重訪都不會再有任何延遲或閃爍。 -->
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-500.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-400.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <style>
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:optional;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:optional;src:url('./fonts/noto-serif-tc-600.woff2') format('woff2')}
-@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:500;font-display:optional;src:url('./fonts/noto-sans-tc-500.woff2') format('woff2')}
-@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:600;font-display:optional;src:url('./fonts/noto-sans-tc-600.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-serif-tc-400.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-serif-tc-600.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-sans-tc-400.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-sans-tc-500.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-sans-tc-600.woff2') format('woff2')}
 :root{
   /* Organic redesign tokens — palette/type swap only (Phase 1).
      Old variable names kept so the rest of the stylesheet doesn't need touching;
@@ -1058,7 +1073,7 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-detail-list{display:grid;gap:8px}
 .lb-detail-row{display:flex;justify-content:space-between;gap:16px;border-bottom:1px solid var(--line);padding-bottom:7px;font-size:13px}
 .lb-detail-row span:first-child{color:var(--soft)}
-.lb-detail-row strong{color:var(--charcoal)}
+.lb-detail-row strong{color:var(--charcoal);font-weight:600}
 .lb-spec-table-wrap{overflow-x:auto;margin-bottom:4px}
 .lb-spec-table{width:100%;border-collapse:collapse;font-size:13px}
 .lb-spec-table th{

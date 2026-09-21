@@ -5,15 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>商品管理後台 | 信通家俱行</title>
 <meta name="robots" content="noindex,nofollow">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 後台 CSS 有用到 600 字重（例如 .catmgr-hint、卡片標籤），但這裡原本只跟 Google 要
-     400/500/700，缺 600 的話瀏覽器會自動頂替成最接近的字重，字型下載完成前後粗細
-     會不一樣（跟 index.html 之前修過的同一種問題）；後台是內部工具、流量不大，
-     這裡先用最小改動補上 600，不跟著做完整的自架字型遷移。 -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- 字型改跟 index.html 一樣自架（直接沿用同一套 fonts/ 檔案，不用再另外處理一次）。
+     原本用 Google Fonts CDN + font-display:swap，補上 600 字重那個「最小改動」只解決
+     了字重數字對不上的問題，沒解決根本原因：swap 不管字重對不對得上，字型第一次下載
+     完成時一定會把畫面上已顯示的文字換一次，這就是切換分頁到後台又看到粗細跳動的
+     真正原因（跟 index.html 那次除錯完全同一個機制）。改成 font-display:block 後，
+     字型還沒下載完前文字直接不上色、下載完才第一次畫出來，不會有中途切換的過程。
+     字重限制（改 CSS 前務必看)：只內嵌了 400/500/600，這個檔案裡任何用到
+     "Noto Serif TC"／"Noto Sans TC" 的地方（包括沒寫 font-weight、靠瀏覽器預設值
+     700 的 <h1>／<b>／<strong>），font-weight 都只能是 400、500 或 600。 -->
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <style>
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-serif-tc-400.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-serif-tc-600.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-sans-tc-400.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-sans-tc-500.woff2') format('woff2')}
+@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-sans-tc-600.woff2') format('woff2')}
 :root{
   --charcoal:#343331;
   --ink:#262523;
@@ -37,6 +47,9 @@ body{
   font-size:14px;
   line-height:1.6;
 }
+/* <b>／<strong> 瀏覽器預設會用比繼承字重更粗一階的字重（通常等於 700），但這裡
+   只內嵌了 400/500/600，全部統一成 600，不用一個一個地方去改。 */
+b,strong{font-weight:600}
 button,input,select{font:inherit}
 button{cursor:pointer}
 a{color:inherit}
@@ -60,6 +73,7 @@ a{color:inherit}
 .gate-card h1{
   font-family:"Noto Serif TC",serif;
   font-size:20px;
+  font-weight:600;
   color:var(--charcoal);
   margin-bottom:6px;
 }
@@ -103,7 +117,7 @@ header{
   backdrop-filter:blur(10px);
 }
 .header-title{display:flex;align-items:baseline;gap:10px}
-.header-title h1{font-family:"Noto Serif TC",serif;font-size:19px;color:var(--charcoal)}
+.header-title h1{font-family:"Noto Serif TC",serif;font-size:19px;font-weight:600;color:var(--charcoal)}
 .header-title span{font-size:12px;color:var(--soft)}
 .header-links{display:flex;gap:14px;align-items:center;font-size:13px}
 .header-links a{color:var(--muted);text-decoration:none}
@@ -530,7 +544,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .rte-editor ol{margin:4px 0;padding-left:22px;list-style:decimal}
 .rte-editor li{margin:2px 0}
 .photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
-.photos-section-title{font-weight:700;color:var(--charcoal);font-size:14px}
+.photos-section-title{font-weight:600;color:var(--charcoal);font-size:14px}
 .photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
 .upload-method-row{display:flex;gap:5px;margin-bottom:10px}
 .upload-method-btn{

@@ -39,12 +39,26 @@
      font-display:block 後實測行為不同：下載完成前文字直接不上色（版面照樣保留空間，
      不會跳動），下載完成才第一次真正畫出來——不會有「先顯示備援字體、幾秒後又變成
      Noto」這種畫面上真的變過一次的情形，只有「字打出來的時間點稍微晚一點」，這是
-     一般網站常見、可接受的取捨。只有瀏覽器真的從沒快取過這個檔案時才看得到這一兩秒的
-     延遲，快取過一次之後的每次重訪都不會再有任何延遲或閃爍。 -->
+     一般網站常見、可接受的取捨。注意 block 的「不上色」有時間上限（瀏覽器內部的
+     block period，常見約 3 秒）：如果字型檔案在這段時間內下載完成（一般網速下都是
+     這樣，尤其現在都有 preload），就完全不會閃爍；但真的遇到極慢的連線、3 秒內還
+     沒下載完，還是會退回顯示備援字體、之後再切換——block 只是大幅縮小會閃爍的情況，
+     不是保證任何網速下都絕對不會閃。快取過一次之後的每次重訪則完全不會有這個問題。
+
+     字重限制（很重要，改 CSS 前務必看這裡）：上面只內嵌了 400/500/600 三個字重，
+     這個檔案裡任何用到 var(--font-heading)／var(--font-body)／var(--font-mono)
+     的地方，font-weight 都只能是 400、500 或 600 其中之一（包括沒寫 font-weight、
+     靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong> 預設是 700）。用到
+     700（或任何不在這三個字重內的數字）就會讓瀏覽器找不到對應的內嵌檔案，只好
+     自動頂替成最接近的字重——而那個「頂替」的動作發生在字型下載完成的那一刻，
+     跟上面講的閃爍是一模一樣的機制，等於重新把這個問題生出來一次。這是這次
+     debug 花了好幾輪才抓出來的地雷，之後改動這份 CSS 時務必留意。 -->
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-500.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-400.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-500.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-600.woff2" crossorigin>
 <style>
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-serif-tc-400.woff2') format('woff2')}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
@@ -1432,7 +1446,11 @@ const Storage={
       return null;
     }
   },
-  async getProducts(){
+  // 注意：只回傳 status=="active" 的商品，不是完整商品清單（跟下面 set() 內部
+  // 用的 productsCol() 不一樣，那裡刻意讀全部、包含已下架商品，用來比對哪些
+  // 文件該刪除）。以後如果要加別的呼叫者需要完整清單，直接用 productsCol()，
+  // 不要誤用這個名字聽起來像「全部商品」的函式。
+  async getActiveProducts(){
     try{
       // 前台只顯示上架中的商品，已下架（status:"archived"）的一律不需要，直接在
       // 伺服器端濾掉，不用把它們的資料（含縮圖）也下載下來、進了瀏覽器才丟棄。
@@ -1688,11 +1706,15 @@ function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
     const key=el.dataset.pageField;
     const val=state.pageText?.[key];
+    // val!=null（用寬鬆比較，一次排除 undefined 跟 null）才處理：後台這個欄位
+    // 從來沒設定過時是 undefined，這時候保留 HTML 裡寫死的預設文字；後台如果
+    // 把欄位清空成空字串 ""，這裡要能真的把畫面清空，不能因為 "" 是 falsy
+    // 就被跳過、變成永遠清不掉、卡在舊文字或預設文字。
     // 值跟畫面上現有的文字一樣就不要動：textContent= 就算寫入相同的字串，
     // 也會整個文字節點砍掉重建，逼瀏覽器重新畫一次——如果這時候自架字型
     // 剛好已經下載完成，就會從「開頁瞬間的備援字體」變成「Noto 字型」，
     // 造成沒有實際內容變化、卻看起來像字體中途切換的閃爍。
-    if(val&&el.textContent!==val)el.textContent=val;
+    if(val!=null&&el.textContent!==val)el.textContent=val;
   });
 }
 function applyLayoutVisibility(){
@@ -2552,11 +2574,16 @@ function renderContact(){
     {label:"營業時間",val:c.hours},
     {label:"信箱",val:c.email}
   ].filter(item=>item.val);
-  document.getElementById("contactItems").innerHTML=items.map(item=>{
+  const contactHtml=items.map(item=>{
     const isTel=item.href?.startsWith("tel:");
     const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
     return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
   }).join('<span class="dot">·</span>');
+  // 跟 applyPageText 同一個理由：內容沒變就不要重寫 innerHTML，避免砍掉重建
+  // 文字節點造成不必要的重繪（開頁時 SWR 快取跟 Firebase 資料各跑一次 renderContact，
+  // 兩次資料通常相同）。
+  const contactItemsEl=document.getElementById("contactItems");
+  if(contactItemsEl.innerHTML!==contactHtml)contactItemsEl.innerHTML=contactHtml;
   injectStructuredData(c);
 }
 /* ── 結構化資料（JSON-LD）─────────────────────────────────────
@@ -2653,7 +2680,7 @@ Object.assign(window,{
   // 不用被商品那個大集合拖住——meta 一到就先把首頁大圖／聯繫資訊等畫面渲染出來，
   // 不用整頁乾等商品資料才有東西可以畫，直接改善使用者第一眼看到內容的速度。
   const metaPromise=Storage.getMeta();
-  const productsPromise=Storage.getProducts();
+  const productsPromise=Storage.getActiveProducts();
 
   const meta=await metaPromise;
   if(meta)Object.assign(state,meta);
@@ -2700,7 +2727,10 @@ Object.assign(window,{
   const wishlistMatch=location.hash.match(/^#wishlist=(.+)$/);
   if(hashMatch){
     const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
+    // 商品已下架或 id 打錯時 find 會找不到，跟收藏清單分享連結一樣要提示一下，
+    // 不然使用者會覺得連結是不是壞了（實際上只是靜靜跳回首頁，看起來像連結失效）。
     if(sharedProduct)openProductDetail(sharedProduct.id);
+    else toast("這件商品已下架或不存在了");
   }else if(wishlistCodeMatch){
     renderSharedWishlist(await wishlistPromise);
   }else if(wishlistMatch){

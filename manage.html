@@ -7,7 +7,11 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- 後台 CSS 有用到 600 字重（例如 .catmgr-hint、卡片標籤），但這裡原本只跟 Google 要
+     400/500/700，缺 600 的話瀏覽器會自動頂替成最接近的字重，字型下載完成前後粗細
+     會不一樣（跟 index.html 之前修過的同一種問題）；後台是內部工具、流量不大，
+     這裡先用最小改動補上 600，不跟著做完整的自架字型遷移。 -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <style>
 :root{
@@ -3502,13 +3506,33 @@ async function boot(){
     tagDefs=Array.isArray(metaRaw.tagDefs)&&metaRaw.tagDefs.length?metaRaw.tagDefs:DEFAULT_TAG_DEFS.map(d=>({...d}));
     const productsSnap=await getDocs(collection(db,"sitedata",SITE_DOC,"products"));
     products=productsSnap.docs.map(d=>d.data());
+    const needsStatusBackfill=[];
     products.forEach((p,i)=>{
       if(typeof p.sortOrder!=="number")p.sortOrder=i;
       // 早期建立的商品文件可能沒有 status 欄位（undefined），Firestore 的批次寫入
       // 不接受 undefined 欄位值——排序/同步功能一次寫回多筆商品時會直接報錯，
       // 在這裡統一補成 "active"，從源頭避免這個問題再冒出來。
-      if(typeof p.status!=="string")p.status="active";
+      if(typeof p.status!=="string"){
+        p.status="active";
+        needsStatusBackfill.push(p);
+      }
     });
+    // 光是補在記憶體裡不夠：前台 index.html 是用 status=="active" 的伺服器端查詢
+    // 篩選商品，Firestore 的查詢對「完全沒有這個欄位」的文件一律不會比對到（不像
+    // 這裡的 typeof 檢查，undefined 會被當成「不是 archived」）。如果只補在這裡、
+    // 沒寫回 Firestore，這個商品在前台會一直維持「查不到、消失」的狀態，直到剛好
+    // 又被其他操作（重新排序、改分類等）連帶存檔才會修好——保險起見，一發現缺欄位
+    // 就直接補寫回去，不用等下一次剛好觸發別的存檔動作。
+    if(needsStatusBackfill.length){
+      try{
+        const productsColRef=collection(db,"sitedata",SITE_DOC,"products");
+        const backfillBatch=writeBatch(db);
+        needsStatusBackfill.forEach(p=>backfillBatch.set(doc(productsColRef,p.id),{status:"active"},{merge:true}));
+        await backfillBatch.commit();
+      }catch(e){
+        console.warn("補寫 status 欄位失敗，暫時只在畫面上生效",e);
+      }
+    }
   }catch(e){
     document.getElementById("tbody").innerHTML=`<tr><td colspan="11" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;

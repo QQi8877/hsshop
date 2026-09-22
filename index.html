@@ -301,6 +301,19 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .hero-line-cta:hover{background:var(--tan-dark)}
 #categories{padding-bottom:64px;scroll-margin-top:62px}
 
+/* ── 捲動進場動畫：只加在區塊標題／卡片，不碰 #productsGrid 既有的
+   grid-transition-in（篩選/搜尋切換動畫），兩者觸發時機不同、互不影響。
+   預設就是可見（.reveal），JS 確認元素一開始就在畫面外才會加 will-reveal
+   讓它變透明，避免 JS 失效或還沒執行完時整塊內容變成空白。 */
+.reveal{opacity:1;transform:none}
+@media(prefers-reduced-motion:no-preference){
+  .reveal.will-reveal{opacity:0;transform:translateY(26px)}
+  .reveal.will-reveal.is-visible{
+    opacity:1;transform:translateY(0);
+    transition:opacity .6s cubic-bezier(.16,.84,.44,1),transform .6s cubic-bezier(.16,.84,.44,1);
+  }
+}
+
 /* ── 本月選品／分類磚（Phase 2）───────────────────────────── */
 .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
 .sec-head h2{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--charcoal)}
@@ -317,8 +330,13 @@ nav.nav--scrolled .nav-logo{font-size:16px}
   transform:translateY(-4px);
   box-shadow:0 16px 32px rgba(46,38,30,.14);
 }
-.p-card__media{aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden;display:grid;place-items:center}
-.p-card__media img{width:88%;height:88%;object-fit:contain}
+.p-card__media{position:relative;aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden}
+.p-card__media img{position:absolute;top:50%;left:50%;width:88%;height:88%;object-fit:contain;transform:translate(-50%,-50%);transition:opacity .34s ease,transform .34s ease}
+.p-card__media .img-primary{opacity:1;z-index:1}
+.p-card__media .img-secondary{opacity:0;z-index:2}
+.p-card:hover .p-card__media .img-primary.has-secondary{opacity:0}
+.p-card:hover .p-card__media .img-secondary{opacity:1;transform:translate(-50%,-50%) scale(1.03)}
+.p-card:hover .p-card__media .img-primary:not(.has-secondary){transform:translate(-50%,-50%) scale(1.04)}
 .p-card__title{font-size:15px;color:var(--charcoal);line-height:1.4}
 .p-card__foot{display:flex;justify-content:space-between;align-items:baseline;padding-top:9px;border-top:1px solid var(--line);margin-top:auto}
 .p-card__foot .mono{font-size:11.5px;color:var(--muted)}
@@ -511,6 +529,8 @@ nav.nav--scrolled .nav-logo{font-size:16px}
   .loading-breathe-text,.loading-breathe-line,.cat-sidebar-skel span{animation:none;opacity:.8}
   .p-card,.product-card{transition:box-shadow .22s ease,border-color .22s ease}
   .p-card:hover,.product-card:hover{transform:none}
+  .p-card__media img{transition:opacity .22s ease}
+  .p-card:hover .p-card__media img{transform:translate(-50%,-50%)}
   nav,.nav-logo{transition:none}
   .products-grid.grid-transition-in{animation:none}
 }
@@ -1249,7 +1269,7 @@ footer a:hover{color:var(--color-on-dark)}
 </section>
 
 <section id="picks" style="padding:34px 40px 0">
-  <div class="sec-head">
+  <div class="sec-head reveal">
     <h2>本月選品</h2>
     <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
   </div>
@@ -1294,7 +1314,7 @@ footer a:hover{color:var(--color-on-dark)}
 </section>
 
 <section id="contact">
-  <div class="contact-inner">
+  <div class="contact-inner reveal">
     <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
     <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
     <p class="contact-line" id="contactItems"></p>
@@ -2004,6 +2024,28 @@ function renderAppliedChips(){
     renderCategories();renderProducts();
   };
 }
+/* ── 捲動進場動畫：見上方 .reveal CSS ─────────────────────────── */
+const revealObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(entry.isIntersecting){
+      entry.target.classList.add("is-visible");
+      revealObserver.unobserve(entry.target);
+    }
+  });
+},{threshold:.2,rootMargin:"0px 0px -40px 0px"}):null;
+function initRevealOnScroll(){
+  const els=document.querySelectorAll(".reveal:not(.reveal-bound)");
+  els.forEach(el=>{
+    el.classList.add("reveal-bound");
+    if(!revealObserver){el.classList.add("is-visible");return}
+    if(el.getBoundingClientRect().top<innerHeight*.9){
+      el.classList.add("is-visible");
+    }else{
+      el.classList.add("will-reveal");
+      revealObserver.observe(el);
+    }
+  });
+}
 function renderPicks(){
   const grid=document.getElementById("picksGrid");
   const countEl=document.getElementById("picksTotalCount");
@@ -2014,12 +2056,13 @@ function renderPicks(){
   const pickedIds=(state.layout?.picksProductIds||[]).filter(id=>activeProducts().some(p=>p.id===id));
   const picks=pickedIds.length?pickedIds.map(id=>state.products.find(p=>p.id===id)).filter(Boolean):all.slice(0,4);
   grid.innerHTML="";
-  picks.forEach(product=>{
+  picks.forEach((product,idx)=>{
     const photos=(product.photos||[]).filter(Boolean);
     const card=document.createElement("article");
-    card.className="p-card";
+    card.className="p-card reveal";
+    card.style.transitionDelay=(idx*70)+"ms";
     card.innerHTML=`
-      <div class="p-card__media">${photos.length?`<img src="${escapeHTML(normalizePhotoUrl(photos[0],500))}" srcset="${escapeHTML(buildSrcset(photos[0],[200,300,450,600,800]))}" sizes="(max-width:760px) 50vw, 25vw" alt="${escapeHTML(product.name)}" loading="lazy">`:""}</div>
+      <div class="p-card__media"></div>
       <div class="p-card__title">${escapeHTML(product.name)}</div>
       <div class="p-card__foot">
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
@@ -2030,6 +2073,45 @@ function renderPicks(){
       </button>
       ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
     `;
+    // 首張照片先放，第二張照片存在才補上 img-secondary，滑鼠移過去用 CSS
+    // 淡入切換（跟 #productsGrid 的 .product-card 是同一套做法，見 renderProducts）。
+    const media=card.querySelector(".p-card__media");
+    const totalCount=product.photoCount??photos.length;
+    if(photos.length){
+      const cover=document.createElement("img");
+      cover.src=normalizePhotoUrl(photos[0],500);
+      cover.srcset=buildSrcset(photos[0],[200,300,450,600,800]);
+      cover.sizes="(max-width:760px) 50vw, 25vw";
+      cover.alt=product.name;
+      cover.loading="lazy";
+      cover.className="img-primary"+(totalCount>1?" has-secondary":"");
+      media.appendChild(cover);
+      if(totalCount>1){
+        const showHover=src=>{
+          const hoverImg=document.createElement("img");
+          hoverImg.src=normalizePhotoUrl(src,500);
+          hoverImg.srcset=buildSrcset(src,[200,300,450,600,800]);
+          hoverImg.sizes="(max-width:760px) 50vw, 25vw";
+          hoverImg.alt=product.name+" hover";
+          hoverImg.loading="lazy";
+          hoverImg.className="img-secondary";
+          hoverImg.onerror=()=>hoverImg.style.display="none";
+          media.appendChild(hoverImg);
+        };
+        if(photos.length>1){
+          showHover(photos[1]);
+        }else{
+          let galleryLoading=false,loaded=false;
+          media.addEventListener("mouseenter",async()=>{
+            if(loaded||galleryLoading)return;
+            galleryLoading=true;
+            const full=await Storage.getGallery(product.id);
+            galleryLoading=false;loaded=true;
+            if(full.length>1)showHover(full[1]);
+          });
+        }
+      }
+    }
     card.querySelector(".p-card__fav").addEventListener("click",event=>{
       event.stopPropagation();
       toggleFavorite(product.id);
@@ -2037,23 +2119,24 @@ function renderPicks(){
     card.addEventListener("click",()=>openProductDetail(product.id));
     grid.appendChild(card);
   });
+  initRevealOnScroll();
 }
 function renderCategoryTiles(){
   const grid=document.getElementById("catTilesGrid");
   if(!grid)return;
   const cats=state.catalog.slice(0,4);
-  grid.innerHTML=cats.map(cat=>{
+  grid.innerHTML=cats.map((cat,i)=>{
     // 後台「首頁版面設定」為這個分類上傳的縮圖優先；沒有的話自動抓分類底下第一件商品的照片
     const thumbSrc=cat.image||normalizePhotoUrl(activeProducts().find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"",200);
     return `
-      <button class="cat-tile" type="button" data-cat="${escapeHTML(cat.id)}">
+      <button class="cat-tile reveal" type="button" data-cat="${escapeHTML(cat.id)}" style="transition-delay:${i*60}ms">
         <span class="cat-tile__thumb">${thumbSrc?`<img src="${escapeHTML(thumbSrc)}" alt="">`:""}</span>
         <span class="cat-tile__name">${escapeHTML(cat.name)}</span>
         <span class="cat-tile__count">${mainCount(cat.id)} 件</span>
       </button>
     `;
   }).join("")+`
-    <a class="cat-tile cat-tile--cta" id="catCta" href="#" target="_blank" rel="noopener">
+    <a class="cat-tile cat-tile--cta reveal" id="catCta" href="#" target="_blank" rel="noopener" style="transition-delay:${cats.length*60}ms">
       <span class="cat-tile__name">不確定<br>就問</span>
       <span class="cta-link">LINE 問老闆 →</span>
     </a>
@@ -2069,6 +2152,7 @@ function renderCategoryTiles(){
   });
   const cta=document.getElementById("catCta");
   if(cta)cta.href=state.contact?.lineUrl||"#";
+  initRevealOnScroll();
 }
 function renderHeroPhoto(){
   const fig=document.getElementById("heroPhoto");

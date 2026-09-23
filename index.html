@@ -330,7 +330,7 @@ nav.nav--scrolled .nav-logo{font-size:16px}
   transform:translateY(-4px);
   box-shadow:0 16px 32px rgba(46,38,30,.14);
 }
-.p-card__media{position:relative;aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden}
+.p-card__media{position:relative;isolation:isolate;aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden}
 .p-card__media img{position:absolute;top:50%;left:50%;width:88%;height:88%;object-fit:contain;transform:translate(-50%,-50%);transition:opacity .34s ease,transform .34s ease}
 .p-card__media .img-primary{opacity:1;z-index:1}
 .p-card__media .img-secondary{opacity:0;z-index:2}
@@ -970,8 +970,8 @@ footer a:hover{color:var(--color-on-dark)}
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
 .toast{
   position:fixed;
-  right:24px;
-  bottom:84px;
+  right:16px;
+  bottom:16px;
   z-index:500;
   border-radius:8px;
   background:var(--charcoal);

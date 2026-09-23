@@ -1912,6 +1912,7 @@ function renderProducts(animate=true){
     wrap.className="product-img-wrap";
     const fav=document.createElement("button");
     fav.className="favorite-btn"+(isFavorite(product.id)?" active":"");
+    fav.dataset.favId=product.id;
     fav.title="加入喜愛清單";
     fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
@@ -2068,7 +2069,7 @@ function renderPicks(){
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
         ${product.price?`<span class="price">${escapeHTML(formatPrice(product.price))}</span>`:""}
       </div>
-      <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" aria-label="加入收藏">
+      <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
         <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
       ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
@@ -2199,6 +2200,16 @@ function saveFavoritesLocal(){
 }
 function isFavorite(id){return state.favorites.some(f=>f.id===id)}
 function getFavorite(id){return state.favorites.find(f=>f.id===id)}
+// 只切換該商品在畫面上（主清單＋本月選品）對應的愛心按鈕樣式，不整個重繪
+// 商品區塊——原本呼叫 renderProducts()/renderPicks() 會讓整個網格重新排版、
+// 重播一次進場動畫，使用者只是點一顆愛心，畫面卻整塊閃一下、跳一下。
+// 跟燈箱裡 updateLbFavoriteBtn() 是同一種「只改該改的按鈕」做法。
+function updateFavoriteButtons(id){
+  const active=isFavorite(id);
+  document.querySelectorAll(`[data-fav-id="${CSS.escape(id)}"]`).forEach(btn=>{
+    btn.classList.toggle("active",active);
+  });
+}
 function toggleFavorite(id){
   if(isFavorite(id)){
     state.favorites=state.favorites.filter(f=>f.id!==id);
@@ -2208,8 +2219,7 @@ function toggleFavorite(id){
     toast("已加入喜愛清單");
   }
   saveFavoritesLocal();
-  renderProducts();
-  renderPicks();
+  updateFavoriteButtons(id);
   renderFavorites();
 }
 function setFavoriteQty(id,qty){
@@ -2220,8 +2230,7 @@ function setFavoriteQty(id,qty){
     if(fav)fav.qty=qty;
   }
   saveFavoritesLocal();
-  renderProducts();
-  renderPicks();
+  updateFavoriteButtons(id);
   renderFavorites();
 }
 function setFavoriteNote(id,note){

@@ -1124,12 +1124,13 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-product-note ol{margin:4px 0;padding-left:22px;list-style:decimal}
 .lb-product-note li{margin:2px 0}
 .lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
-/* 詳情頁的尺寸區塊（見 productSizeHtml）：左邊線稿標出寬／深／高的方向，右邊逐列寫數字，
-   桌子、櫃架、板凳多一行「約幾尺」；椅子的座高那一列用品牌色標出來 */
-.lb-dim{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center}
-.lb-dim-fig svg{display:block;width:112px;height:auto}
+/* 詳情頁的尺寸區塊（見 productSizeHtml）：左邊線稿（dim-figures.js）標出寬／深／高的方向，
+   右邊逐列寫數字，桌子、櫃架、板凳多一行「約幾尺」；椅子的座高那一列用品牌色標出來 */
+.lb-dim{display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center}
+.lb-dim.no-fig{grid-template-columns:minmax(0,1fr)}
+.lb-dim-fig svg{display:block;width:118px;height:auto}
 .lb-dim-rows{display:grid}
-.lb-dim-row{display:grid;grid-template-columns:2.4em minmax(0,1fr);column-gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
+.lb-dim-row{display:grid;grid-template-columns:2.2em minmax(0,1fr);column-gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
 .lb-dim-row:last-child{border-bottom:0}
 .lb-dim-k{font-size:12.5px;color:var(--soft)}
 .lb-dim-v{font-size:17px;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;line-height:1.35}
@@ -1147,17 +1148,10 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-dim-line{display:inline-flex;align-items:center;gap:7px;margin-top:10px;border-radius:999px;background:#06c755;color:#fff;font-size:13.5px;font-weight:600;padding:8px 16px;text-decoration:none;transition:background .18s ease}
 .lb-dim-line:hover{background:#05a648}
 .lb-dim-line svg{width:15px;height:15px;flex:none}
-.lb-fig-face{fill:var(--paper);stroke:var(--ink);stroke-width:1.3;stroke-linejoin:round}
-.lb-fig-top{fill:#efe3cf;stroke:var(--ink);stroke-width:1.3;stroke-linejoin:round}
-.lb-fig-line{fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round}
-.lb-fig-hidden{fill:none;stroke:var(--soft);stroke-width:1.1;stroke-dasharray:2.5 2.5}
-.lb-fig-dim{stroke:var(--tan);stroke-width:1.2;stroke-linecap:round}
-.lb-fig-seat .lb-fig-dim{stroke:var(--tan-dark);stroke-width:1.6}
-.lb-fig-lbl{fill:var(--tan-dark);font-family:var(--font-body);font-size:11px;font-weight:600}
-/* 360px 寬的手機（很多 Android）示意圖縮小一點，右邊的數字跟「可升降」才排得下同一行 */
+/* 360px 寬的手機（很多 Android）示意圖縮小一點，右邊的數字才不會太擠 */
 @media(max-width:360px){
-  .lb-dim{grid-template-columns:96px minmax(0,1fr);gap:12px}
-  .lb-dim-fig svg{width:96px}
+  .lb-dim{grid-template-columns:108px minmax(0,1fr);gap:12px}
+  .lb-dim-fig svg{width:108px}
   .lb-dim-row{grid-template-columns:30px minmax(0,1fr)}
   .lb-dim-adj{margin-left:4px;padding:1px 6px}
 }
@@ -1448,6 +1442,8 @@ footer a:hover{color:var(--color-on-dark)}
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
+// 尺寸示意圖跟尺寸文字的解析規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
+import{dimFigureSvg,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=1";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2644,19 +2640,9 @@ function toggleLbFavorite(){
    後台的寬深高、規格列（椅面、層板…）都是自由輸入的文字，這裡整理成「線稿示意圖＋
    逐列的寬／深／高」：桌子、櫃架、板凳的品名習慣用「尺」，多換算約幾台尺；椅子的
    「椅面」列拿出來變成座高；高度是範圍（例如 81~93）就標「可升降」；完全沒有尺寸
-   就改成請洽詢，不再出現三格「—」；有「可客製化」標籤的提醒可以訂做。 */
+   就改成請洽詢，不再出現三格「—」；有「可客製化」標籤的提醒可以訂做。
+   示意圖本身在 dim-figures.js（後台也用同一份），每件商品用哪張圖可以在後台指定。 */
 const CM_PER_CHI=30.303; // 1 台尺 = 30.303 公分
-// 讀得懂的格式：「60」「33.5」「81~93」「60cm」「60 公分」→ {min,max}；
-// 讀不懂的（例如「依需求訂做」）→ {text}，原字顯示；空白或「洽詢」→ null
-function parseDim(value){
-  const text=String(value??"").trim();
-  if(!text||/洽詢/.test(text))return null;
-  const m=/^(\d+(?:\.\d+)?)\s*(?:[~～\-–—]\s*(\d+(?:\.\d+)?))?\s*(?:cm|公分)?$/i.exec(text);
-  if(!m)return {text};
-  const nums=[m[1],m[2]].filter(n=>n!==undefined).map(Number).filter(n=>n>0);
-  if(!nums.length)return null;
-  return {min:Math.min(...nums),max:Math.max(...nums)};
-}
 function dimCmText(dim){
   const n=v=>String(Math.round(v*10)/10);
   return dim.min===dim.max?n(dim.min):`${n(dim.min)}–${n(dim.max)}`;
@@ -2665,17 +2651,6 @@ function dimChiText(dim){
   const chi=cm=>String(Math.round(cm/CM_PER_CHI*10)/10);
   const a=chi(dim.min),b=chi(dim.max);
   return a===b?`約 ${a} 尺`:`約 ${a}–${b} 尺`;
-}
-// 依子分類（對不上再看主分類）的名稱決定示意圖；床架的「架」不能當成櫃架，所以「床」排在「櫃／架」前面
-function productKind(product){
-  for(const name of [getSubName(product.mainCat,product.subCat),getMainName(product.mainCat)]){
-    if(/凳/.test(name))return "stool";
-    if(/椅/.test(name))return "chair";
-    if(/桌|几|台/.test(name))return "table";
-    if(/床/.test(name))return "box";
-    if(/櫃|架/.test(name))return "rack";
-  }
-  return "box";
 }
 function dimRowHtml(label,dim,{chi=false,key=false,adj=""}={}){
   if(!dim)return "";
@@ -2694,77 +2669,6 @@ function dimExtraHtml(label,spec,axes){
   else body=bits.map(bit=>`${bit.axis} ${bit.dim.text!==undefined?escapeHTML(bit.dim.text):`${dimCmText(bit.dim)} cm`}`).join(" × ");
   return `<div class="lb-dim-extra"><span>${escapeHTML(label)}</span>${body}</div>`;
 }
-// 尺寸示意圖（線稿）：桌子、櫃架、其他用等角投影畫方塊並標出寬／深／高；
-// 椅子、板凳畫側面只標高，椅子有座高時多標一段座高
-function isoFigureSvg(build){
-  const P=(x,y,z)=>[26+x+.55*z,98-y-.32*z];
-  const f=n=>n.toFixed(1);
-  const g={
-    poly:(pts,cls)=>`<polygon class="${cls}" points="${pts.map(p=>P(...p).map(f).join(",")).join(" ")}"/>`,
-    line:(a,b,cls)=>{const [x1,y1]=P(...a),[x2,y2]=P(...b);return `<line class="${cls}" x1="${f(x1)}" y1="${f(y1)}" x2="${f(x2)}" y2="${f(y2)}"/>`},
-    text:(at,dx,dy,s,anchor)=>{const [x,y]=P(...at);return `<text class="lb-fig-lbl" x="${f(x+dx)}" y="${f(y+dy)}" text-anchor="${anchor}">${s}</text>`}
-  };
-  return `<svg viewBox="0 0 130 120" aria-hidden="true" focusable="false">${build(g)}</svg>`;
-}
-function isoDimLines(g,W,D,H){
-  return [
-    g.line([0,0,-9],[W,0,-9],"lb-fig-dim"),g.line([0,0,-12],[0,0,-6],"lb-fig-dim"),g.line([W,0,-12],[W,0,-6],"lb-fig-dim"),
-    g.text([W/2,0,-9],0,14,"寬","middle"),
-    g.line([W+9,0,0],[W+9,0,D],"lb-fig-dim"),g.line([W+6,0,0],[W+12,0,0],"lb-fig-dim"),g.line([W+6,0,D],[W+12,0,D],"lb-fig-dim"),
-    g.text([W+9,0,D/2],7,5,"深","start"),
-    g.line([-9,0,0],[-9,H,0],"lb-fig-dim"),g.line([-12,0,0],[-6,0,0],"lb-fig-dim"),g.line([-12,H,0],[-6,H,0],"lb-fig-dim"),
-    g.text([-9,H/2,0],-5,4,"高","end")
-  ].join("");
-}
-function isoBoxFigure(shelves){
-  return isoFigureSvg(g=>{
-    const W=44,D=28,H=66;
-    return [
-      g.poly([[0,0,0],[W,0,0],[W,H,0],[0,H,0]],"lb-fig-face"),
-      g.poly([[W,0,0],[W,0,D],[W,H,D],[W,H,0]],"lb-fig-face"),
-      g.poly([[0,H,0],[W,H,0],[W,H,D],[0,H,D]],"lb-fig-top"),
-      ...shelves.map(y=>g.line([0,y,0],[W,y,0],"lb-fig-line")+g.line([W,y,0],[W,y,D],"lb-fig-line")),
-      isoDimLines(g,W,D,H)
-    ].join("");
-  });
-}
-function productFigureSvg(kind,withSeat){
-  if(kind==="table")return isoFigureSvg(g=>{
-    const W=62,D=34,H=46,t=4;
-    return [
-      g.line([3,0,D-3],[3,H-t,D-3],"lb-fig-hidden"),
-      g.line([W-3,0,D-3],[W-3,H-t,D-3],"lb-fig-line"),
-      g.line([3,0,3],[3,H-t,3],"lb-fig-line"),
-      g.line([W-3,0,3],[W-3,H-t,3],"lb-fig-line"),
-      g.poly([[0,H-t,0],[W,H-t,0],[W,H,0],[0,H,0]],"lb-fig-face"),
-      g.poly([[W,H-t,0],[W,H-t,D],[W,H,D],[W,H,0]],"lb-fig-face"),
-      g.poly([[0,H,0],[W,H,0],[W,H,D],[0,H,D]],"lb-fig-top"),
-      isoDimLines(g,W,D,H)
-    ].join("");
-  });
-  if(kind==="rack")return isoBoxFigure([22,44]);
-  if(kind==="chair")return `<svg viewBox="0 0 130 120" aria-hidden="true" focusable="false">
-    <line class="lb-fig-line" x1="18" y1="14" x2="18" y2="106"/>
-    <rect class="lb-fig-top" x="14" y="16" width="9" height="34" rx="3"/>
-    <rect class="lb-fig-face" x="14" y="62" width="50" height="6" rx="2"/>
-    <line class="lb-fig-line" x1="60" y1="68" x2="60" y2="106"/>
-    <line class="lb-fig-line" x1="18" y1="92" x2="60" y2="92"/>
-    <line class="lb-fig-hidden" x1="8" y1="106" x2="70" y2="106"/>
-    ${withSeat?`<g class="lb-fig-seat"><line class="lb-fig-dim" x1="80" y1="62" x2="80" y2="106"/><line class="lb-fig-dim" x1="76" y1="62" x2="84" y2="62"/><line class="lb-fig-dim" x1="76" y1="106" x2="84" y2="106"/><text class="lb-fig-lbl" x="85" y="88">座高</text></g>`:""}
-    <line class="lb-fig-dim" x1="114" y1="14" x2="114" y2="106"/><line class="lb-fig-dim" x1="110" y1="14" x2="118" y2="14"/><line class="lb-fig-dim" x1="110" y1="106" x2="118" y2="106"/>
-    <text class="lb-fig-lbl" x="119" y="64">高</text>
-  </svg>`;
-  if(kind==="stool")return `<svg viewBox="0 0 130 120" aria-hidden="true" focusable="false">
-    <rect class="lb-fig-top" x="16" y="56" width="50" height="7" rx="2"/>
-    <line class="lb-fig-line" x1="22" y1="63" x2="15" y2="106"/>
-    <line class="lb-fig-line" x1="60" y1="63" x2="67" y2="106"/>
-    <line class="lb-fig-line" x1="19" y1="88" x2="63" y2="88"/>
-    <line class="lb-fig-hidden" x1="6" y1="106" x2="76" y2="106"/>
-    <line class="lb-fig-dim" x1="90" y1="56" x2="90" y2="106"/><line class="lb-fig-dim" x1="86" y1="56" x2="94" y2="56"/><line class="lb-fig-dim" x1="86" y1="106" x2="94" y2="106"/>
-    <text class="lb-fig-lbl" x="96" y="85">高</text>
-  </svg>`;
-  return isoBoxFigure([]);
-}
 const LINE_CHAT_ICON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 function customNoteHtml(product,lineUrl){
   if(!(product.badges||[]).includes("custom"))return "";
@@ -2775,10 +2679,14 @@ function customNoteHtml(product,lineUrl){
 }
 function productSizeHtml(product){
   const d=product.dimensions||{};
-  const kind=productKind(product);
+  const subName=getSubName(product.mainCat,product.subCat),mainName=getMainName(product.mainCat);
+  // 後台可以指定這件商品用哪張示意圖、或不顯示（dimFigure 欄位，空白＝依分類自動）；
+  // 「約幾尺」跟著示意圖的種類走，選不顯示時改看依分類自動判斷的種類
+  const figureKey=resolveDimFigureKey(product.dimFigure,subName,mainName);
+  const kind=figureKey||autoDimFigureKey(subName,mainName);
   const W=parseDim(d.width),D=parseDim(d.depth),H=parseDim(d.height);
   const specs=(product.specs||[]).filter(spec=>spec&&typeof spec==="object");
-  const seatIndex=specs.findIndex(spec=>"part" in spec&&/椅面|座面|座高|坐高/.test(spec.part||""));
+  const seatIndex=findSeatSpecIndex(specs);
   const seatH=seatIndex>=0?parseDim(specs[seatIndex].h):null;
   const hasSeatH=!!seatH&&seatH.text===undefined;
   // 其他規格列變成補充說明；「尺寸洽詢」這種列不是尺寸，parseDim 會略過
@@ -2791,12 +2699,14 @@ function productSizeHtml(product){
     return value&&!/洽詢/.test(value)?`<div class="lb-dim-extra"><span>${escapeHTML(spec.label||"尺寸備註")}</span>${escapeHTML(withCm(value))}</div>`:"";
   }).join("");
   const lineUrl=buildLineInquireUrl(product,"您好，我想詢問這件商品的尺寸：");
-  const chi=kind!=="chair";
+  const chi=kind!=="chair"&&kind!=="armchair";
   const rows=dimRowHtml("寬",W,{chi,adj:"可調整"})+dimRowHtml("深",D,{chi,adj:"可調整"})+dimRowHtml("高",H,{chi,adj:"可升降"})
     +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
   let body;
-  if(rows)body=`<div class="lb-dim"><div class="lb-dim-fig">${productFigureSvg(kind,hasSeatH)}</div><div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
-  else if(extraHtml)body=extraHtml;
+  if(rows){
+    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH})}</div>`:"";
+    body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
+  }else if(extraHtml)body=extraHtml;
   else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${lineUrl?"這款的實際尺寸，傳 LINE 問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p>${lineUrl?`<a class="lb-dim-line" href="${escapeHTML(lineUrl)}" target="_blank" rel="noopener">${LINE_CHAT_ICON}LINE 詢問尺寸</a>`:""}</div>`;
   return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,lineUrl)}`;
 }

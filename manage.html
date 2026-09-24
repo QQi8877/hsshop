@@ -628,6 +628,24 @@ body.quickcat-mode .quickcat-bar{display:flex}
   margin:auto;
 }
 .spec-table .spec-del-btn:hover{background:#fce8e8;color:var(--danger)}
+/* 尺寸示意圖選擇（見 renderFigurePicker） */
+.figure-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.figure-tile{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 6px 7px;border:1px solid var(--line);border-radius:9px;
+  background:var(--white);color:var(--ink);font-size:12.5px;line-height:1.3;
+}
+.figure-tile:hover{border-color:var(--tan)}
+.figure-tile.selected{border-color:var(--tan-dark);background:#fbf5ec;box-shadow:0 0 0 2px rgba(138,100,53,.22)}
+.figure-thumb{display:flex;align-items:center;justify-content:center;width:100%;height:62px}
+.figure-thumb svg{width:100%;max-width:84px;height:auto;max-height:62px}
+.figure-name small{display:block;font-size:11px;color:var(--soft)}
+.figure-none{width:52px;height:40px;border:1.5px dashed var(--line);border-radius:6px}
+.figure-preview{display:flex;align-items:center;gap:14px;margin-top:10px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:var(--white)}
+.figure-preview svg{flex:none;width:118px;height:auto}
+.figure-preview-text{font-size:12.5px;color:var(--muted);line-height:1.6}
+.figure-preview-text strong{display:block;color:var(--ink);font-size:13.5px}
+.figure-preview-text span{display:block;text-wrap:pretty}
 .add-spec-btn{
   border:1px dashed var(--tan);
   border-radius:7px;
@@ -960,9 +978,9 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-scroll">
     <div class="modal-title" id="productModalTitle">新增商品</div>
     <label>主分類</label>
-    <select id="pMainCat" onchange="updateSubSelect()"></select>
+    <select id="pMainCat" onchange="updateSubSelect();renderFigurePicker()"></select>
     <label>子分類</label>
-    <div id="pSubCatWrap"><select id="pSubCat"></select></div>
+    <div id="pSubCatWrap"><select id="pSubCat" onchange="renderFigurePicker()"></select></div>
     <label>商品名稱 *</label>
     <input type="text" id="pName" placeholder="例：北歐實木餐桌">
     <label>參考售價（選填，格式自由，例如 3,200 或 洽詢）</label>
@@ -987,6 +1005,9 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
     <div class="spec-editor" id="specEditor"></div>
     <button class="add-spec-btn" type="button" onclick="addSpecRow()">＋ 新增部位列</button>
+    <label>尺寸示意圖（前台商品頁「尺寸」旁邊的線稿，會標出寬、深、高）</label>
+    <div class="figure-picker" id="pFigurePicker" role="group" aria-label="尺寸示意圖"></div>
+    <div class="figure-preview" id="pFigurePreview"></div>
     <label>商品說明（選填）</label>
     <div class="rte-toolbar">
       <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
@@ -1252,6 +1273,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+// 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
+import{DIM_FIGURES,dimFigureSvg,autoDimFigureKey,hasSeatHeight}from"./dim-figures.js?v=1";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2967,15 +2990,59 @@ function renderSpecEditor(){
     `;
     const [partInput,wInput,dInput,hInput]=tr.querySelectorAll("input");
     partInput.style.textAlign="left";
-    partInput.addEventListener("input",()=>workingSpecs[index].part=partInput.value);
+    partInput.addEventListener("input",()=>{workingSpecs[index].part=partInput.value;scheduleFigureRefresh()});
     wInput.addEventListener("input",()=>workingSpecs[index].w=wInput.value);
     dInput.addEventListener("input",()=>workingSpecs[index].d=dInput.value);
-    hInput.addEventListener("input",()=>workingSpecs[index].h=hInput.value);
+    hInput.addEventListener("input",()=>{workingSpecs[index].h=hInput.value;scheduleFigureRefresh()});
     tr.querySelector(".spec-del-btn").addEventListener("click",()=>{workingSpecs.splice(index,1);renderSpecEditor()});
     tbody.appendChild(tr);
   });
   table.appendChild(tbody);
   editor.appendChild(table);
+  renderFigurePicker();
+}
+
+/* ── 尺寸示意圖選擇 ─────────────────────────────────────────────
+   商品的 dimFigure 欄位：空白＝依分類自動、"none"＝不顯示、其他＝指定哪一張（清單見
+   dim-figures.js，那邊加新的示意圖這裡會自動多一個選項）。縮圖跟下面的預覽都是用前台
+   同一份程式畫的，看到的就是客人看到的樣子；規格列有填「椅面」高度時會多標座高。 */
+let workingDimFigure="";
+function validDimFigure(value){return value==="none"||DIM_FIGURES.some(f=>f.key===value)?value:""}
+window.renderFigurePicker=function(){
+  const picker=document.getElementById("pFigurePicker");
+  const preview=document.getElementById("pFigurePreview");
+  if(!picker||!preview)return;
+  const mainId=document.getElementById("pMainCat").value;
+  const autoKey=autoDimFigureKey(getSubName(mainId,document.getElementById("pSubCat").value),getMainName(mainId));
+  const seat=hasSeatHeight(workingSpecs);
+  const selected=validDimFigure(workingDimFigure); // 不認得的值（例如之後拿掉的示意圖）當成自動
+  const figureOf=key=>DIM_FIGURES.find(f=>f.key===key);
+  const tile=(value,thumb,name,note="")=>`<button type="button" class="figure-tile${selected===value?" selected":""}" data-value="${value}" aria-pressed="${selected===value}">
+    <span class="figure-thumb">${thumb}</span><span class="figure-name">${name}${note?`<small>${note}</small>`:""}</span>
+  </button>`;
+  picker.innerHTML=tile("",dimFigureSvg(autoKey,{seat}),"自動",`依分類：${figureOf(autoKey).label}`)
+    +DIM_FIGURES.map(f=>tile(f.key,dimFigureSvg(f.key,{seat}),f.label)).join("")
+    +tile("none",`<span class="figure-none"></span>`,"不顯示");
+  picker.querySelectorAll(".figure-tile").forEach(btn=>btn.addEventListener("click",()=>{
+    workingDimFigure=btn.dataset.value;
+    renderFigurePicker();
+  }));
+  const shownKey=selected==="none"?"":(selected||autoKey);
+  if(!shownKey){
+    preview.innerHTML=`<div class="figure-preview-text"><strong>前台不顯示示意圖</strong><span>尺寸數字照常顯示。</span></div>`;
+    return;
+  }
+  const notes=[];
+  if(!selected)notes.push("目前是「自動」，依分類選的；想換別張就點上面的圖。");
+  if(seat)notes.push(figureOf(shownKey).seat?"有填「椅面」的高度，圖上會多標座高。":"這張圖沒有座面，座高只會出現在旁邊的數字。");
+  preview.innerHTML=`${dimFigureSvg(shownKey,{seat})}<div class="figure-preview-text"><strong>前台會顯示：${figureOf(shownKey).label}</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>`;
+};
+// 打字時很多次 input 事件併成一次重畫
+let figureRefreshQueued=false;
+function scheduleFigureRefresh(){
+  if(figureRefreshQueued)return;
+  figureRefreshQueued=true;
+  requestAnimationFrame(()=>{figureRefreshQueued=false;renderFigurePicker()});
 }
 
 window.setUploadMethod=function(method,el){
@@ -3353,6 +3420,8 @@ window.openProductModal=async function(id){
       if("part" in spec)return {...spec};
       return {part:spec.label||"",w:spec.value||"",d:"",h:""};
     });
+    workingDimFigure=product.dimFigure||"";
+    renderFigurePicker();
     // 商品說明是直接從資料庫讀出來的 HTML，理論上只有存檔時經過這個編輯器
     // 自己的過濾，但資料庫本身不會強制套用這層過濾——用同一個 sanitizeRichText
     // 保險起見再過濾一次，才不會有已經寫進資料庫的內容一打開編輯就直接執行。
@@ -3378,6 +3447,7 @@ window.openProductModal=async function(id){
     document.getElementById("pPrice").value="";
     renderBadgeCheckboxes([]);
     document.getElementById("pDesc").innerHTML="";
+    workingDimFigure="";
   }
   renderSpecEditor();
   renderPhotoSlots();
@@ -3421,6 +3491,7 @@ window.saveProduct=async function(){
       d:(spec.d||"").trim(),
       h:(spec.h||"").trim()
     })),
+    dimFigure:validDimFigure(workingDimFigure),
     desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
   // 這裡故意不用 normalizePhotoUrl：那個函式現在會幫 Cloudinary 網址加上

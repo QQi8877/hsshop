@@ -230,13 +230,23 @@ nav.nav--scrolled .nav-logo{font-size:16px}
   background:var(--paper);
   animation:none;
 }
+/* 圖片出現時從 90% 慢慢放大到原尺寸（淡入 .4 秒、放大 1.6 秒） */
 .hero-photo img{
   width:70%;height:70%;object-fit:contain;
   filter:saturate(.94) contrast(.97) brightness(1.02);
   opacity:0;
-  transition:opacity .4s ease;
+  transform:scale(.9);
+  transition:opacity .4s ease,transform 1.6s cubic-bezier(.22,.8,.3,1);
 }
-.hero-photo img[src]:not([src=""]){opacity:1}
+.hero-photo img[src]:not([src=""]){opacity:1;transform:none}
+/* 首頁大圖文字依序浮現：class 由 head 最後那段小 script 控制，字型載入完才播 */
+@keyframes heroRise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.hero-pending .hero-content>*{opacity:0}
+.hero-enter .hero-content>*{animation:heroRise .72s cubic-bezier(.16,.84,.44,1) both}
+.hero-enter .hero-content>:nth-child(2){animation-delay:.11s}
+.hero-enter .hero-content>:nth-child(3){animation-delay:.22s}
+.hero-enter .hero-content>:nth-child(4){animation-delay:.33s}
+.hero-enter .hero-content>:nth-child(5){animation-delay:.44s}
 .hero-tag{
   display:block;
   color:var(--tan-dark);
@@ -364,7 +374,9 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 }
 .cat-tile:hover{background:#e1d3b9}
 .cat-tile__thumb{width:74px;height:74px;border-radius:var(--radius-pill);background:var(--paper);overflow:hidden;display:grid;place-items:center}
-.cat-tile__thumb img{width:76%;height:76%;object-fit:contain}
+.cat-tile__thumb img{width:76%;height:76%;object-fit:contain;transition:opacity .34s ease}
+/* 商品照片載入完成才淡入（見 fadeInOnLoad）；用 img 提高權重，蓋過 .img-primary 的 opacity:1 */
+img.img-fade:not(.is-loaded){opacity:0}
 .cat-tile__name{font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--charcoal)}
 .cat-tile__count{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .cat-tile--cta{justify-content:center;background:var(--sage);color:#fff}
@@ -724,6 +736,12 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .favorite-btn:hover{transform:scale(1.1)}
 .favorite-btn.active{color:var(--danger)}
 .favorite-btn.active svg path{fill:currentColor}
+/* 按愛心回饋：按鈕彈一下＋外圈擴散，小愛心飛到導覽列收藏按鈕（見 flyHeartToFab） */
+.fav-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--tan);pointer-events:none}
+.favorite-btn .fav-ring,.lb-favorite .fav-ring{border-color:var(--danger)}
+.fav-fly{position:fixed;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;z-index:550;pointer-events:none;color:var(--tan)}
+.fav-fly svg{display:block;width:20px;height:20px}
+.fav-fly svg path{fill:currentColor}
 .tag-badge{
   display:inline-block;font-size:10.5px;font-weight:600;color:#fff;
   padding:3px 9px;border-radius:999px;letter-spacing:.03em;
@@ -1036,6 +1054,7 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-cat-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .lb-cat-row .lb-product-cat{margin-bottom:0}
 .lb-favorite{
+  position:relative;
   border:1px solid var(--line);
   border-radius:50%;
   width:34px;height:34px;
@@ -1219,6 +1238,28 @@ footer a:hover{color:var(--color-on-dark)}
   .lb-arrow{display:none!important}
 }
 </style>
+<script>
+/* 首頁大圖文字進場。字型是 font-display:block，載入前文字本來就看不到，所以等字型
+   到了才播；2.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
+   寫在這裡（不放下面的 module script），Firebase 載入失敗也不會讓標題一直藏著。 */
+(function(){
+  var root=document.documentElement;
+  if(!window.matchMedia||matchMedia("(prefers-reduced-motion: reduce)").matches||!document.fonts||!document.fonts.load)return;
+  root.classList.add("hero-pending");
+  var done=false;
+  function reveal(animate){
+    if(done)return;
+    done=true;
+    root.classList.remove("hero-pending");
+    if(!animate)return;
+    root.classList.add("hero-enter");
+    setTimeout(function(){root.classList.remove("hero-enter")},1600);
+  }
+  setTimeout(function(){reveal(false)},2500);
+  Promise.all(['400 1em "Noto Sans TC"','600 1em "Noto Sans TC"','400 1em "Noto Serif TC"','600 1em "Noto Serif TC"'].map(function(f){return document.fonts.load(f)}))
+    .then(function(){reveal(true)},function(){reveal(false)});
+})();
+</script>
 </head>
 <body>
 <nav>
@@ -1922,7 +1963,7 @@ function renderProducts(animate=true){
     fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
       event.stopPropagation();
-      toggleFavorite(product.id);
+      toggleFavorite(product.id,fav);
     });
     card.appendChild(fav);
     const totalCount=product.photoCount??photos.length;
@@ -1934,6 +1975,7 @@ function renderProducts(animate=true){
       cover.alt=product.name;
       cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
+      fadeInOnLoad(cover);
       cover.onerror=()=>showBrokenImage(wrap,cover);
       wrap.appendChild(cover);
       if(totalCount>1){
@@ -2030,6 +2072,16 @@ function renderAppliedChips(){
     renderCategories();renderProducts();
   };
 }
+// 商品照片載入完成才淡入。這一輪已經載入過的網址（切換分類、Firebase 資料回來後
+// 重畫列表）直接顯示、不重播淡入，不然每次重畫整排照片都會閃一下。
+const loadedPhotoSrcs=new Set();
+function fadeInOnLoad(img){
+  const key=img.src;
+  img.classList.add("img-fade");
+  if(loadedPhotoSrcs.has(key)){img.classList.add("is-loaded");return}
+  img.addEventListener("load",()=>{loadedPhotoSrcs.add(key);img.classList.add("is-loaded")},{once:true});
+  img.addEventListener("error",()=>img.classList.add("is-loaded"),{once:true});
+}
 /* ── 捲動進場動畫：見上方 .reveal CSS ─────────────────────────── */
 const revealObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
   entries.forEach(entry=>{
@@ -2091,6 +2143,7 @@ function renderPicks(){
       cover.alt=product.name;
       cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
+      fadeInOnLoad(cover);
       media.appendChild(cover);
       if(totalCount>1){
         const showHover=src=>{
@@ -2120,7 +2173,7 @@ function renderPicks(){
     }
     card.querySelector(".p-card__fav").addEventListener("click",event=>{
       event.stopPropagation();
-      toggleFavorite(product.id);
+      toggleFavorite(product.id,event.currentTarget);
     });
     card.addEventListener("click",()=>openProductDetail(product.id));
     grid.appendChild(card);
@@ -2156,6 +2209,7 @@ function renderCategoryTiles(){
       document.getElementById("categories").scrollIntoView({behavior:"smooth",block:"start"});
     });
   });
+  grid.querySelectorAll(".cat-tile__thumb img").forEach(fadeInOnLoad);
   const cta=document.getElementById("catCta");
   if(cta)cta.href=state.contact?.lineUrl||"#";
   initRevealOnScroll();
@@ -2215,16 +2269,73 @@ function updateFavoriteButtons(id){
     btn.classList.toggle("active",active);
   });
 }
-function toggleFavorite(id){
-  if(isFavorite(id)){
-    state.favorites=state.favorites.filter(f=>f.id!==id);
-    toast("已從喜愛清單移除");
-  }else{
+const prefersReducedMotion=()=>window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+// 飛行中的愛心數量：大於 0 時 renderFavorites() 先不更新導覽列的收藏數字，
+// 等愛心飛到收藏按鈕才更新，數字跳動的時間點才會跟愛心「落地」對得上。
+let favCountHolds=0;
+function popFavoriteButton(btn,adding){
+  if(prefersReducedMotion())return;
+  if(!adding){
+    btn.animate([{transform:"scale(1)"},{transform:"scale(.8)",offset:.4},{transform:"scale(1)"}],{duration:320,easing:"ease-out"});
+    return;
+  }
+  btn.animate([{transform:"scale(1)"},{transform:"scale(1.32)",offset:.35},{transform:"scale(.9)",offset:.7},{transform:"scale(1)"}],{duration:460,easing:"ease-out"});
+  const ring=document.createElement("span");
+  ring.className="fav-ring";
+  btn.appendChild(ring);
+  ring.animate([{transform:"scale(1)",opacity:.75},{transform:"scale(2)",opacity:0}],{duration:520,easing:"cubic-bezier(.2,.7,.3,1)"})
+    .finished.catch(()=>{}).then(()=>ring.remove());
+}
+function bumpFavoritesFab(){
+  if(prefersReducedMotion())return;
+  document.querySelector(".favorites-fab")?.animate([{transform:"scale(1)"},{transform:"scale(1.1)",offset:.35},{transform:"scale(1)"}],{duration:380,easing:"ease-out"});
+  document.getElementById("favoritesCount")?.animate([{transform:"scale(1)"},{transform:"scale(1.55)",offset:.35},{transform:"scale(1)"}],{duration:420,easing:"ease-out"});
+}
+function flyHeartToFab(btn){
+  if(prefersReducedMotion())return;
+  const target=document.querySelector(".favorites-fab svg");
+  if(!target)return;
+  const a=btn.getBoundingClientRect(),b=target.getBoundingClientRect();
+  if(!a.width||!b.width)return;
+  const x0=a.left+a.width/2,y0=a.top+a.height/2;
+  const dx=b.left+b.width/2-x0,dy=b.top+b.height/2-y0;
+  const fly=document.createElement("div");
+  fly.className="fav-fly";
+  if(btn.classList.contains("favorite-btn"))fly.style.color="var(--danger)";
+  fly.style.left=x0+"px";
+  fly.style.top=y0+"px";
+  fly.innerHTML='<div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z"/></svg></div></div>';
+  document.body.appendChild(fly);
+  const moveY=fly.firstElementChild,scale=moveY.firstElementChild,dur=680;
+  favCountHolds++;
+  // 水平先慢後快、垂直先快後慢，兩者疊起來就是一條先往上、再轉向收藏按鈕的弧線
+  fly.animate([{transform:"translateX(0)"},{transform:`translateX(${dx}px)`}],{duration:dur,easing:"cubic-bezier(.5,0,.75,.5)",fill:"forwards"});
+  scale.animate([{transform:"scale(1)",opacity:1},{transform:"scale(1.4)",opacity:1,offset:.18},{transform:"scale(.55)",opacity:.95,offset:.9},{transform:"scale(.4)",opacity:0}],{duration:dur,fill:"forwards"});
+  moveY.animate([{transform:"translateY(0)"},{transform:`translateY(${dy}px)`}],{duration:dur,easing:"cubic-bezier(.2,.8,.35,1)",fill:"forwards"})
+    .finished.catch(()=>{}).then(()=>{
+      fly.remove();
+      favCountHolds--;
+      if(!favCountHolds)document.getElementById("favoritesCount").textContent=favoriteProductsWithMeta().length;
+      bumpFavoritesFab();
+    });
+}
+// sourceBtn：使用者實際點的那顆愛心，有傳才播按鈕回饋；加入收藏時再飛一顆小愛心到導覽列
+function toggleFavorite(id,sourceBtn){
+  const adding=!isFavorite(id);
+  if(adding){
     state.favorites.push({id,qty:1,note:"",addedAt:Date.now()});
     toast("已加入喜愛清單");
+  }else{
+    state.favorites=state.favorites.filter(f=>f.id!==id);
+    toast("已從喜愛清單移除");
   }
   saveFavoritesLocal();
   updateFavoriteButtons(id);
+  if(sourceBtn){
+    popFavoriteButton(sourceBtn,adding);
+    if(adding)flyHeartToFab(sourceBtn);
+    else bumpFavoritesFab();
+  }
   renderFavorites();
 }
 function setFavoriteQty(id,qty){
@@ -2289,7 +2400,7 @@ function renderFavorites(){
   list.style.display="";
   const allProducts=favoriteProductsWithMeta();
   const totalQty=allProducts.reduce((sum,p)=>sum+p._qty,0);
-  count.textContent=allProducts.length;
+  if(!favCountHolds)count.textContent=allProducts.length;
   subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 30 天`:"";
   renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
@@ -2393,8 +2504,12 @@ function updateLbFavoriteBtn(){
 }
 function toggleLbFavorite(){
   if(!lbProduct)return;
+  const adding=!isFavorite(lbProduct.id);
+  // 燈箱蓋住了導覽列，不飛愛心，只讓按鈕彈一下
   toggleFavorite(lbProduct.id);
   updateLbFavoriteBtn();
+  const btn=document.getElementById("lbFavoriteBtn");
+  if(btn)popFavoriteButton(btn,adding);
 }
 function getProductDisplayParts(product){
   const d=product.dimensions||{};

@@ -1175,6 +1175,13 @@ footer a:hover{color:var(--color-on-dark)}
 /* 切換到別的商品時，新照片還沒下載完之前先蓋住舊照片（背景跟照片一樣是
    --paper 底色，不會看起來像壞掉），避免使用者誤以為畫面卡在上一個商品 */
 .lb-stage img.lb-img-loading{opacity:0}
+/* 點商品卡片時照片從卡片飛進燈箱、關閉時飛回去（見 startLbFlipOpen／closeLightbox）。
+   飛行中真正的燈箱照片先藏起來，由 .lb-fly 這張複本代替；手機版燈箱本來的
+   97%→100% 縮放也先關掉，照片落點才會跟燈箱照片的位置完全對齊。 */
+.lb-fly{position:fixed;z-index:610;background:var(--paper);overflow:hidden;pointer-events:none}
+.lb-fly img{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:contain}
+#lightbox.lb-flip .lb-stage{visibility:hidden}
+#lightbox.lb-flip .lb-layout{transform:none!important;transition:none!important}
 .lb-thumbs{
   display:flex;
   gap:8px;
@@ -2030,7 +2037,7 @@ function renderProducts(animate=true){
       ${product.price?`<span class="product-price">${escapeHTML(formatPrice(product.price))}</span>`:""}
     `;
     card.appendChild(info);
-    card.addEventListener("click",()=>openProductDetail(product.id));
+    card.addEventListener("click",()=>openProductDetail(product.id,wrap));
     grid.appendChild(card);
   });
   // 切換分類／搜尋時，整個商品區塊淡入＋輕微上移一下，讓「內容換了」這件事
@@ -2175,7 +2182,7 @@ function renderPicks(){
       event.stopPropagation();
       toggleFavorite(product.id,event.currentTarget);
     });
-    card.addEventListener("click",()=>openProductDetail(product.id));
+    card.addEventListener("click",()=>openProductDetail(product.id,media));
     grid.appendChild(card);
   });
   initRevealOnScroll();
@@ -2453,9 +2460,110 @@ function renderFavorites(){
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
 let lbTouchStartX=0,lbTouchStartY=0;
-function openProductDetail(id){
+// ── 點商品卡片時照片從卡片飛進燈箱 ─────────────────────────────
+// 只有動畫期間會用一張照片複本（.lb-fly）代替燈箱照片；照片落定之後就是原本的
+// 燈箱，滑鼠移上去放大、滾輪、手機左右滑換照片都照舊。
+let lbFlip=null;        // 進行中的「飛進去」動畫
+let lbFlipSource=null;  // 這次燈箱是從哪張卡片的圖框開的，關閉時飛回那裡
+const LB_STAGE_SHADOW="0 24px 70px rgba(0,0,0,.18)",LB_NO_SHADOW="0 0 0 rgba(0,0,0,0)";
+function canFlipLightbox(){
+  // 使用者雙指放大整個網頁時座標會偏掉，這種情況直接用原本的開關方式
+  return !prefersReducedMotion()&&(!window.visualViewport||Math.abs(visualViewport.scale-1)<.01);
+}
+function lbSourceShape(wrap){
+  // 本月選品的照片佔圖框 88%（四周各留 6%）、圓角 16px；主清單的照片四周留 5px、直角
+  const rect=wrap.getBoundingClientRect();
+  const isPick=wrap.classList.contains("p-card__media");
+  return {rect,radius:isPick?16:0,pad:isPick?rect.width*.06:5};
+}
+function lbFlyFrame(rect,radius,shadow){
+  return {left:rect.left+"px",top:rect.top+"px",width:rect.width+"px",height:rect.height+"px",borderRadius:radius+"px",boxShadow:shadow};
+}
+function makeLbFly(rect,radius,pad,srcs){
+  const box=document.createElement("div");
+  box.className="lb-fly";
+  Object.assign(box.style,{left:rect.left+"px",top:rect.top+"px",width:rect.width+"px",height:rect.height+"px",borderRadius:radius+"px"});
+  srcs.forEach(src=>{
+    const img=new Image();
+    img.alt="";
+    img.src=src;
+    img.style.padding=pad+"px";
+    box.appendChild(img);
+  });
+  document.body.appendChild(box);
+  return box;
+}
+function setWrapImagesHidden(wrap,hidden){
+  wrap.querySelectorAll("img").forEach(img=>{img.style.visibility=hidden?"hidden":""});
+}
+// 燈箱打開前先量卡片圖框的位置（打開後桌面版捲軸消失，版面會左右位移）
+function prepareLbFlip(wrap){
+  if(!wrap||!canFlipLightbox())return null;
+  const primary=wrap.querySelector("img.img-primary");
+  if(!primary||!primary.complete||!primary.naturalWidth)return null;
+  const shape=lbSourceShape(wrap);
+  const srcs=[primary.currentSrc||primary.src];
+  // 桌面版滑鼠移在卡片上時顯示的是第二張照片，飛行時先疊著它再淡出成封面照
+  const secondary=wrap.querySelector("img.img-secondary");
+  if(secondary&&secondary.complete&&secondary.naturalWidth&&parseFloat(getComputedStyle(secondary).opacity)>.5){
+    srcs.push(secondary.currentSrc||secondary.src);
+  }
+  return {wrap,shape,srcs};
+}
+function finishLbFlipOpen(){
+  if(!lbFlip)return;
+  const {box,wrap}=lbFlip;
+  lbFlip=null;
+  box.remove();
+  setWrapImagesHidden(wrap,false);
+  document.getElementById("lightbox").classList.remove("lb-flip");
+}
+function startLbFlipOpen(prep){
+  const lightbox=document.getElementById("lightbox");
+  lightbox.classList.add("lb-flip");
+  const to=document.getElementById("lbStage").getBoundingClientRect();
+  const {shape,srcs,wrap}=prep;
+  const box=makeLbFly(shape.rect,shape.radius,shape.pad,srcs);
+  setWrapImagesHidden(wrap,true);
+  lbFlip={box,wrap};
+  const dur=460,easing="cubic-bezier(.2,.8,.2,1)";
+  const move=box.animate([lbFlyFrame(shape.rect,shape.radius,LB_NO_SHADOW),lbFlyFrame(to,8,LB_STAGE_SHADOW)],{duration:dur,easing,fill:"forwards"});
+  box.querySelectorAll("img").forEach(img=>img.animate([{padding:shape.pad+"px"},{padding:"0px"}],{duration:dur,easing,fill:"forwards"}));
+  if(srcs.length>1)box.lastElementChild.animate([{opacity:1},{opacity:0}],{duration:dur*.55,easing:"ease",fill:"forwards"});
+  document.getElementById("lbInfo").animate([{transform:"translateY(24px)"},{transform:"none"}],{duration:480,delay:120,easing:"cubic-bezier(.16,.84,.44,1)",fill:"backwards"});
+  const mine=lbFlip;
+  move.finished.catch(()=>{}).then(()=>{
+    if(lbFlip!==mine)return;
+    mine.landed=true;
+    // 燈箱照片還沒載入完就先讓複本留在原位，等照片到了再換，避免中間空白一下
+    const img=document.getElementById("lbImg");
+    const ready=()=>!img.classList.contains("lb-img-loading")&&img.complete&&img.naturalWidth>0;
+    if(ready()){finishLbFlipOpen();return}
+    const giveUp=setTimeout(finishLbFlipOpen,2500);
+    img.addEventListener("load",()=>{clearTimeout(giveUp);if(lbFlip===mine)finishLbFlipOpen()},{once:true});
+  });
+}
+function flyBackToCard(wrap,from,src){
+  const lightbox=document.getElementById("lightbox");
+  const shape=lbSourceShape(wrap);
+  const box=makeLbFly(from,8,0,[src]);
+  setWrapImagesHidden(wrap,true);
+  const dur=400,easing="cubic-bezier(.4,0,.2,1)";
+  box.querySelector("img").animate([{padding:"0px"},{padding:shape.pad+"px"}],{duration:dur,easing,fill:"forwards"});
+  box.animate([lbFlyFrame(from,8,LB_STAGE_SHADOW),lbFlyFrame(shape.rect,shape.radius,LB_NO_SHADOW)],{duration:dur,easing,fill:"forwards"})
+    .finished.catch(()=>{}).then(()=>{
+      setWrapImagesHidden(wrap,false);
+      box.remove();
+      // 這段時間內又打開了燈箱（例如又點了一張卡片）就不要把新的狀態拿掉
+      if(!lightbox.classList.contains("open"))lightbox.classList.remove("lb-flip");
+    });
+}
+function openProductDetail(id,sourceWrap){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
+  finishLbFlipOpen();
+  const flipPrep=prepareLbFlip(sourceWrap);
+  lbFlipSource=flipPrep?sourceWrap:null;
   const isProductSwitch=lbProduct!==product;
   lbProduct=product;
   // 跟商品列表卡片用同一個寬度（600），瀏覽器多半已經有快取，一開燈箱就能立刻
@@ -2472,6 +2580,7 @@ function openProductDetail(id){
   // 上一個商品的照片，容易讓人誤以為切換失敗或卡住。
   lbRender(isProductSwitch);
   document.querySelector(".lb-close").focus();
+  if(flipPrep)startLbFlipOpen(flipPrep);
   history.replaceState(null,"",`#product-${id}`);
   // 商品文件的封面只是縮圖，燈箱一律要換成 gallery 子文件裡的原始畫質照片
   const totalCount=product.photoCount??cover.length;
@@ -2486,6 +2595,24 @@ function openProductDetail(id){
 }
 function closeLightbox(){
   const lightbox=document.getElementById("lightbox");
+  // 照片飛回卡片的條件：從卡片打開、還停在第一張照片（卡片上顯示的就是這張）、
+  // 沒有放大中、卡片還在畫面上。其他情況（例如放大中按 ESC、已經換到第 2 張照片）
+  // 維持原本的淡出，照片才不會在落回卡片時突然換成另一張或跳一下。
+  const wrap=lbFlipSource;
+  lbFlipSource=null;
+  // 飛進來的途中就關掉：直接淡出。已經落定、只是在等燈箱照片載入：用那張複本飛回去
+  const midFlight=!!lbFlip&&!lbFlip.landed;
+  const lbImgEl=document.getElementById("lbImg");
+  const backSrc=lbFlip?lbFlip.box.querySelector("img").src:(lbImgEl.naturalWidth?lbImgEl.currentSrc||lbImgEl.src:"");
+  finishLbFlipOpen();
+  let from=null;
+  if(wrap&&!midFlight&&backSrc&&lbCurrent===0&&lbScale===1&&document.contains(wrap)&&lightbox.classList.contains("open")&&canFlipLightbox()){
+    const r=wrap.getBoundingClientRect();
+    if(r.bottom>0&&r.top<innerHeight&&r.right>0&&r.left<innerWidth){
+      from=document.getElementById("lbStage").getBoundingClientRect();
+      lightbox.classList.add("lb-flip");
+    }
+  }
   lightbox.classList.remove("open");
   lightbox.setAttribute("aria-hidden","true");
   document.body.classList.remove("lightbox-open");
@@ -2493,6 +2620,8 @@ function closeLightbox(){
   if(lastFocusedElement instanceof HTMLElement)lastFocusedElement.focus();
   lastFocusedElement=null;
   if(location.hash.startsWith("#product-"))history.replaceState(null,"",location.pathname+location.search);
+  // 捲軸回來之後才量卡片的落點
+  if(from)flyBackToCard(wrap,from,backSrc);
 }
 function updateLbFavoriteBtn(){
   const btn=document.getElementById("lbFavoriteBtn");

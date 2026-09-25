@@ -1443,7 +1443,7 @@ footer a:hover{color:var(--color-on-dark)}
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
 // 尺寸示意圖跟尺寸文字的解析規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
-import{dimFigureSvg,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=2";
+import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=3";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2704,7 +2704,8 @@ function productSizeHtml(product){
     +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
   let body;
   if(rows){
-    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH})}</div>`:"";
+    // 示意圖照這件商品自己的寬深高比例畫（例如寬 60、深 90 的桌子會畫成比較深）
+    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDimsOf(d,specs)})}</div>`:"";
     body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
   }else if(extraHtml)body=extraHtml;
   else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${lineUrl?"這款的實際尺寸，傳 LINE 問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p>${lineUrl?`<a class="lb-dim-line" href="${escapeHTML(lineUrl)}" target="_blank" rel="noopener">${LINE_CHAT_ICON}LINE 詢問尺寸</a>`:""}</div>`;

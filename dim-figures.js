@@ -3,15 +3,22 @@
    線稿，自動標出「寬／深／高」；椅子、扶手椅、板凳這類有座面的圖，商品有填座高
    時再多標一段「座高」。
 
+   每張圖的家具都會自動縮放到剛好塞進同樣大小的正方形（寬的碰到左右、高的碰到上下），
+   放在一樣大的圖框正中間，所以不管哪一張，大小跟位置都一致。
+
    新增一種示意圖：在下面 FIGURES 加一筆 {key,label,seat,draw}，draw 裡用 s.box()／
-   s.line() 把家具畫出來（x＝寬、y＝高、z＝深，單位是示意圖上的長度，先畫後面、
-   後畫前面），最後回傳整體的 {W,D,H}（有座面再加 seatY）。標尺寸的線跟文字會
-   自動加上，後台的選單也會自動多出這個選項。
+   s.line() 把家具畫出來（x＝寬、y＝高、z＝深，只要比例對就好，大小會自動縮放；
+   先畫後面、後畫前面），最後回傳整體的 {W,D,H}（有座面再加 seatY）。標尺寸的線
+   跟文字會自動加上，後台的選單也會自動多出這個選項。
    ⚠ 改了這個檔案，記得把 index.html、manage.html 裡 import 網址的 ?v= 數字加一，
    不然瀏覽器可能還在用快取裡的舊版。 */
 
 const KX=.55,KY=.32;      // 深度方向往右上斜的比例
 const FONT=13;
+const G=8,T=3;            // 尺寸線離家具的距離、兩端短線的一半長度（圖上的長度，不跟著家具縮放）
+const BOX=82;             // 家具縮放到剛好塞進 82×82 的正方形
+const SIDE=29,EDGE=22;    // 左右各留 29 給「高」「座高」、上下各留 22 給「寬」；兩邊一樣寬，家具才會在正中間
+const VIEW_W=BOX+SIDE*2,VIEW_H=BOX+EDGE*2; // 每張圖的圖框都是 140×126
 const C={ink:"#201e1d",front:"#fffaf3",side:"#ece1ce",top:"#f5ecdd",dim:"#905229",label:"#8c491a"};
 const FACE=`stroke="${C.ink}" stroke-width="1.2" stroke-linejoin="round"`;
 const S={
@@ -26,11 +33,12 @@ const S={
 };
 const r1=n=>Math.round(n*10)/10;
 
-function createScene(){
+// k：家具的縮放比例（見 buildFigure）；只縮放座標，線的粗細、字的大小不變
+function createScene(k=1){
   const parts=[];
   let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
   const grow=(x,y)=>{minX=Math.min(minX,x);maxX=Math.max(maxX,x);minY=Math.min(minY,y);maxY=Math.max(maxY,y)};
-  const P=([x,y,z])=>{const p=[x+KX*z,-y-KY*z];grow(...p);return p};
+  const P=([x,y,z])=>{const p=[k*(x+KX*z),-k*(y+KY*z)];grow(...p);return p};
   const s={
     poly(points,style){parts.push(`<polygon points="${points.map(p=>P(p).map(r1).join(",")).join(" ")}" ${style}/>`)},
     line(a,b,style){const [x1,y1]=P(a),[x2,y2]=P(b);parts.push(`<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" ${style}/>`)},
@@ -46,29 +54,37 @@ function createScene(){
       grow(left,y-FONT*.9);grow(left+w,y+FONT*.2);
       parts.push(`<text x="${r1(x)}" y="${r1(y)}" text-anchor="${anchor}" ${S.label}>${text}</text>`);
     },
-    width(){return maxX-minX+4},
-    // viewW：所有示意圖共用的寬度（見 viewWidth），圖放在正中間
-    svg(viewW,key){
-      const w=Math.max(viewW,s.width()),h=maxY-minY+4;
-      const x0=(minX+maxX)/2-w/2,y0=minY-2;
-      return `<svg data-figure="${key}" viewBox="${r1(x0)} ${r1(y0)} ${r1(w)} ${r1(h)}" width="${r1(w)}" height="${r1(h)}" aria-hidden="true" focusable="false">${parts.join("")}</svg>`;
+    // 直書（一字一行）：座高寫在直的尺寸線旁邊，比橫寫省下左右的寬度，左右留白才能跟另一邊一樣
+    stackLabel(at,dx,text){
+      const [px,py]=P(at),x=px+dx,chars=[...text],step=FONT*1.1;
+      const top=py-(step*(chars.length-1)+FONT)/2;
+      grow(x-FONT/2,top);grow(x+FONT/2,top+step*(chars.length-1)+FONT);
+      parts.push(`<text text-anchor="middle" ${S.label}>${chars.map((c,i)=>`<tspan x="${r1(x)}" y="${r1(top+FONT*.88+step*i)}">${c}</tspan>`).join("")}</text>`);
+    },
+    bbox(){return {minX,maxX,minY,maxY}},
+    // geo：家具本身（不含尺寸線）的範圍，家具的中心就是圖框的正中間；
+    // 萬一哪天標示超出圖框，上下（或左右）一起放大，家具還是在正中間
+    svg(key,geo){
+      const cx=(geo.minX+geo.maxX)/2,cy=(geo.minY+geo.maxY)/2;
+      const w=Math.max(VIEW_W,2*Math.max(cx-minX,maxX-cx)+4),h=Math.max(VIEW_H,2*Math.max(cy-minY,maxY-cy)+4);
+      return `<svg data-figure="${key}" viewBox="${r1(cx-w/2)} ${r1(cy-h/2)} ${r1(w)} ${r1(h)}" width="${r1(w)}" height="${r1(h)}" aria-hidden="true" focusable="false">${parts.join("")}</svg>`;
     }
   };
   return s;
 }
 
-// 寬標在正面下緣、深標在右側下緣、高標在右後方（跟深接在同一個角），座高標在左前方
-function addDims(s,{W,D,H,seatY}){
-  const G=8,T=3; // 尺寸線離家具的距離、兩端短線的一半長度
-  s.line([0,0,-G],[W,0,-G],S.dim);s.line([0,0,-G-T],[0,0,-G+T],S.dim);s.line([W,0,-G-T],[W,0,-G+T],S.dim);
-  s.label([W/2,0,-G],0,FONT+1,"寬","middle");
-  s.line([W+G,0,0],[W+G,0,D],S.dim);s.line([W+G-T,0,0],[W+G+T,0,0],S.dim);s.line([W+G-T,0,D],[W+G+T,0,D],S.dim);
-  s.label([W+G,0,D/2],6,FONT/2+3,"深","start");
-  s.line([W+G,0,D],[W+G,H,D],S.dim);s.line([W+G-T,H,D],[W+G+T,H,D],S.dim);
-  s.label([W+G,H/2,D],6,FONT/2-1,"高","start");
+// 寬標在正面下緣、深標在右側下緣、高標在右後方（跟深接在同一個角），座高標在左前方（直書）
+function addDims(s,{W,D,H,seatY},k){
+  const g=G/k,t=T/k; // 換回家具的座標單位，縮放之後畫面上的距離才一樣
+  s.line([0,0,-g],[W,0,-g],S.dim);s.line([0,0,-g-t],[0,0,-g+t],S.dim);s.line([W,0,-g-t],[W,0,-g+t],S.dim);
+  s.label([W/2,0,-g],0,FONT+1,"寬","middle");
+  s.line([W+g,0,0],[W+g,0,D],S.dim);s.line([W+g-t,0,0],[W+g+t,0,0],S.dim);s.line([W+g-t,0,D],[W+g+t,0,D],S.dim);
+  s.label([W+g,0,D/2],6,FONT/2+3,"深","start");
+  s.line([W+g,0,D],[W+g,H,D],S.dim);s.line([W+g-t,H,D],[W+g+t,H,D],S.dim);
+  s.label([W+g,H/2,D],6,FONT/2-1,"高","start");
   if(seatY!=null){
-    s.line([-G,0,0],[-G,seatY,0],S.seatDim);s.line([-G-T,0,0],[-G+T,0,0],S.seatDim);s.line([-G-T,seatY,0],[-G+T,seatY,0],S.seatDim);
-    s.label([-G,seatY/2,0],-6,FONT/2-1,"座高","end");
+    s.line([-g,0,0],[-g,seatY,0],S.seatDim);s.line([-g-t,0,0],[-g+t,0,0],S.seatDim);s.line([-g-t,seatY,0],[-g+t,seatY,0],S.seatDim);
+    s.stackLabel([-g,seatY/2,0],-6-FONT/2,"座高");
   }
 }
 
@@ -143,22 +159,22 @@ const FIGURES=[
 export const DIM_FIGURES=FIGURES.map(({key,label,seat})=>({key,label,seat:!!seat}));
 
 function buildFigure(fig,seat){
-  const s=createScene();
+  // 先照原本的大小畫一次量出家具的範圍，算出縮放比例，讓家具剛好塞進 BOX×BOX
+  const probe=createScene();
+  fig.draw(probe);
+  const b=probe.bbox();
+  const k=BOX/Math.max(b.maxX-b.minX,b.maxY-b.minY);
+  const s=createScene(k);
   const size=fig.draw(s);
-  addDims(s,{...size,seatY:seat&&fig.seat?size.seatY:null});
-  return s;
-}
-// 所有示意圖（含座高）裡最寬的那張的寬度，每張圖都用這個寬度，縮放比例才一樣、字才一樣大
-let sharedWidth=0;
-function viewWidth(){
-  if(!sharedWidth)sharedWidth=Math.max(...FIGURES.map(fig=>buildFigure(fig,true).width()));
-  return sharedWidth;
+  const geo=s.bbox();
+  addDims(s,{...size,seatY:seat&&fig.seat?size.seatY:null},k);
+  return s.svg(fig.key,geo);
 }
 
 // seat：商品有座高時傳 true，有座面的圖（椅子、扶手椅、板凳）會多標一段座高
 export function dimFigureSvg(key,{seat=false}={}){
   const fig=FIGURES.find(f=>f.key===key);
-  return fig?buildFigure(fig,seat).svg(viewWidth(),fig.key):"";
+  return fig?buildFigure(fig,seat):"";
 }
 
 // 「自動」：依子分類（對不上再看主分類）的名稱決定。床邊桌要算桌子，所以「桌」排在「床」前面；

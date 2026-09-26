@@ -1275,7 +1275,7 @@ import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
-import{DIM_FIGURES,dimFigureSvg,autoDimFigureKey,hasSeatHeight}from"./dim-figures.js?v=2";
+import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"./dim-figures.js?v=3";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -3036,10 +3036,14 @@ window.renderFigurePicker=function(){
   const notes=[];
   if(!selected)notes.push("目前是「自動」，依分類選的；想換別張就點上面的圖。");
   if(seat)notes.push(figureOf(shownKey).seat?"有填「椅面」的高度，圖上會多標座高。":"這張圖沒有座面，座高只會出現在旁邊的數字。");
-  preview.innerHTML=`${dimFigureSvg(shownKey,{seat})}<div class="figure-preview-text"><strong>前台會顯示這張圖</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>`;
+  // 預覽照這件商品填的寬深高比例畫，跟前台一樣；上面的格子用一般比例，方便認出是哪一種
+  const dims=figureDimsOf({width:document.getElementById("pWidth").value,depth:document.getElementById("pDepth").value,height:document.getElementById("pHeight").value},workingSpecs);
+  preview.innerHTML=`${dimFigureSvg(shownKey,{seat,dims})}<div class="figure-preview-text"><strong>前台會顯示這張圖</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>`;
 };
 // 打字時很多次 input 事件併成一次重畫
 let figureRefreshQueued=false;
+// 改寬深高時預覽跟著變
+for(const id of ["pWidth","pDepth","pHeight"])document.getElementById(id).addEventListener("input",()=>scheduleFigureRefresh());
 function scheduleFigureRefresh(){
   if(figureRefreshQueued)return;
   figureRefreshQueued=true;

@@ -3,22 +3,24 @@
    線稿，自動標出「寬／深／高」；椅子、扶手椅、板凳這類有座面的圖，商品有填座高
    時再多標一段「座高」。
 
-   每張圖的家具都會自動縮放到剛好塞進同樣大小的正方形（寬的碰到左右、高的碰到上下），
-   放在一樣大的圖框正中間，所以不管哪一張，大小跟位置都一致。
+   家具照商品自己的寬深高比例畫（例如寬 60、深 90 的桌子就畫成比較深），沒填的邊用
+   這種家具常見的比例補上；畫好之後自動縮放到剛好塞進同樣大小的正方形（寬的碰到
+   左右、高的碰到上下），放在一樣大的圖框正中間，所以不管哪一張，大小跟位置都一致。
 
-   新增一種示意圖：在下面 FIGURES 加一筆 {key,label,seat,draw}，draw 裡用 s.box()／
-   s.line() 把家具畫出來（x＝寬、y＝高、z＝深，只要比例對就好，大小會自動縮放；
-   先畫後面、後畫前面），最後回傳整體的 {W,D,H}（有座面再加 seatY）。標尺寸的線
-   跟文字會自動加上，後台的選單也會自動多出這個選項。
+   新增一種示意圖：在下面 FIGURES 加一筆 {key,label,seat,size,draw}。size 是這種家具
+   常見的寬深高（公分，有座面再加座高 SH），商品沒填尺寸時照這個比例畫；draw(s,p)
+   用 s.box()／s.line() 把家具畫出來（x＝寬、y＝高、z＝深，單位是公分，先畫後面、
+   後畫前面），p 是這件商品的 {W,D,H,SH}，最後回傳 {W,D,H}（有座面再加 seatY）。
+   標尺寸的線跟文字會自動加上，後台的選單也會自動多出這個選項。
    ⚠ 改了這個檔案，記得把 index.html、manage.html 裡 import 網址的 ?v= 數字加一，
    不然瀏覽器可能還在用快取裡的舊版。 */
 
-const KX=.55,KY=.32;      // 深度方向往右上斜的比例
+const KX=.69,KY=.4;       // 深度方向往右上 30 度斜、畫成實際長度的 0.8 倍：深比寬長的家具看得出來比較深
 const FONT=13;
 const G=8,T=3;            // 尺寸線離家具的距離、兩端短線的一半長度（圖上的長度，不跟著家具縮放）
 const BOX=82;             // 家具縮放到剛好塞進 82×82 的正方形
-const SIDE=29,EDGE=22;    // 左右各留 29 給「高」「座高」、上下各留 22 給「寬」；兩邊一樣寬，家具才會在正中間
-const VIEW_W=BOX+SIDE*2,VIEW_H=BOX+EDGE*2; // 每張圖的圖框都是 140×126
+const SIDE=29,EDGE=24;    // 左右各留 29 給「高」「座高」、上下各留 24 給「寬」；兩邊一樣寬，家具才會在正中間
+const VIEW_W=BOX+SIDE*2,VIEW_H=BOX+EDGE*2; // 每張圖的圖框都是 140×130
 const C={ink:"#201e1d",front:"#fffaf3",side:"#ece1ce",top:"#f5ecdd",dim:"#905229",label:"#8c491a"};
 const FACE=`stroke="${C.ink}" stroke-width="1.2" stroke-linejoin="round"`;
 const S={
@@ -26,6 +28,7 @@ const S={
   side:`fill="${C.side}" ${FACE}`,
   top:`fill="${C.top}" ${FACE}`,
   leg:`stroke="${C.ink}" stroke-width="1.8" stroke-linecap="round"`,
+  farLeg:`stroke="#9a9086" stroke-width="1.5" stroke-linecap="round"`, // 後面那組腳畫淡一點，前後才分得清楚
   thin:`stroke="${C.ink}" stroke-width="1" stroke-linecap="round"`,
   dim:`stroke="${C.dim}" stroke-width="1.1" stroke-linecap="round"`,
   seatDim:`stroke="${C.label}" stroke-width="1.5" stroke-linecap="round"`,
@@ -89,34 +92,43 @@ function addDims(s,{W,D,H,seatY},k){
 }
 
 const FIGURES=[
-  {key:"table",label:"桌子",draw(s){
-    const W=64,D=36,H=42,t=4,i=3;
+  {key:"table",label:"桌子",size:{W:120,D:60,H:75},draw(s,{W,D,H}){
+    const t=Math.max(H*.045,1.5),i=Math.min(W,D)*.05;
     for(const [x,z] of [[i,D-i],[W-i,D-i],[i,i],[W-i,i]])s.line([x,0,z],[x,H-t,z],S.leg);
     s.box(0,H-t,0,W,t,D);
     return {W,D,H};
   }},
-  {key:"chair",label:"椅子",seat:true,draw(s){
-    const W=44,D=38,SH=38,t=4,H=80;
-    for(const x of [2,W-2])s.line([x,0,D-2],[x,H-2,D-2],S.leg); // 後腳往上延伸成椅背立柱
-    for(const x of [2,W-2])s.line([x,0,2],[x,SH-t,2],S.leg);
+  {key:"folding",label:"摺疊桌",size:{W:90,D:60,H:75},draw(s,{W,D,H}){
+    // 剪刀腳：前後各一組交叉（畫在正面最容易看出是交叉腳），中間一根橫桿連起來；後面那組畫淡一點
+    const t=Math.max(H*.045,1.5),i=Math.min(W,D)*.06,y=H-t;
+    s.line([i,0,D-i],[W-i,y,D-i],S.farLeg);s.line([W-i,0,D-i],[i,y,D-i],S.farLeg);
+    s.line([W/2,y/2,D-i],[W/2,y/2,i],S.thin);
+    s.line([i,0,i],[W-i,y,i],S.leg);s.line([W-i,0,i],[i,y,i],S.leg);
+    s.box(0,y,0,W,t,D);
+    return {W,D,H};
+  }},
+  {key:"chair",label:"椅子",seat:true,size:{W:44,D:46,H:85,SH:45},draw(s,{W,D,H,SH}){
+    const t=Math.max(H*.045,1.5),i=W*.05,bt=Math.max(D*.07,1.5),b0=SH+(H-SH)*.38;
+    for(const x of [i,W-i])s.line([x,0,D-i],[x,H-t,D-i],S.leg); // 後腳往上延伸成椅背立柱
+    for(const x of [i,W-i])s.line([x,0,i],[x,SH-t,i],S.leg);
     s.box(0,SH-t,0,W,t,D);
-    s.box(0,SH+16,D-4,W,H-SH-16,3);
+    s.box(0,b0,D-bt,W,H-b0,bt);
     return {W,D,H,seatY:SH};
   }},
-  {key:"armchair",label:"扶手椅",seat:true,draw(s){
-    const W=46,D=42,SH=34,t=5,H=74,A=SH+17;
-    for(const x of [2,W-2])s.line([x,0,D-2],[x,H-2,D-2],S.leg);
-    for(const x of [2,W-2])s.line([x,0,2],[x,SH-t,2],S.leg);
+  {key:"armchair",label:"扶手椅",seat:true,size:{W:60,D:62,H:100,SH:42},draw(s,{W,D,H,SH}){
+    const t=Math.max(H*.05,1.5),i=W*.045,bt=Math.max(D*.08,2),A=SH+(H-SH)*.4,aw=Math.max(W*.08,2),ah=Math.max(H*.035,1.5);
+    for(const x of [i,W-i])s.line([x,0,D-i],[x,H-t,D-i],S.leg);
+    for(const x of [i,W-i])s.line([x,0,i],[x,SH-t,i],S.leg);
     s.box(0,SH-t,0,W,t,D);
-    s.box(0,SH+4,D-5,W,H-SH-4,4);
-    for(const x of [0,W-4]){
-      s.line([x+2,SH,5],[x+2,A-3,5],S.leg);
-      s.box(x,A-3,2,4,3,D-7);
+    s.box(0,SH+(H-SH)*.08,D-bt,W,(H-SH)*.92,bt);
+    for(const x of [0,W-aw]){
+      s.line([x+aw/2,SH,D*.12],[x+aw/2,A-ah,D*.12],S.leg);
+      s.box(x,A-ah,D*.05,aw,ah,D*.83);
     }
     return {W,D,H,seatY:SH};
   }},
-  {key:"stool",label:"板凳",seat:true,draw(s){
-    const W=40,D=30,H=44,t=5,i=3,y=14;
+  {key:"stool",label:"板凳",seat:true,size:{W:36,D:27,H:45},draw(s,{W,D,H}){
+    const t=Math.max(H*.1,2),i=Math.min(W,D)*.08,y=H*.3;
     for(const [x,z] of [[i,D-i],[W-i,D-i]])s.line([x,0,z],[x,H-t,z],S.leg);
     s.line([i,y,D-i],[W-i,y,D-i],S.thin);s.line([i,y,i],[i,y,D-i],S.thin);s.line([W-i,y,i],[W-i,y,D-i],S.thin);
     for(const [x,z] of [[i,i],[W-i,i]])s.line([x,0,z],[x,H-t,z],S.leg);
@@ -124,32 +136,31 @@ const FIGURES=[
     s.box(0,H-t,0,W,t,D);
     return {W,D,H,seatY:H};
   }},
-  {key:"rack",label:"層架",draw(s){
-    const W=46,D=28,H=66,t=2;
-    for(const x of [1,W-1])s.line([x,0,D-1],[x,H,D-1],S.leg);
-    for(const y of [4,26,48,H-t])s.box(0,y,0,W,t,D);
-    for(const x of [1,W-1])s.line([x,0,1],[x,H,1],S.leg);
+  {key:"rack",label:"層架",size:{W:60,D:35,H:120},draw(s,{W,D,H}){
+    const t=Math.max(H*.025,1),e=Math.min(W,D)*.02;
+    for(const x of [e,W-e])s.line([x,0,D-e],[x,H,D-e],S.leg);
+    for(const y of [H*.06,H*.37,H*.68,H-t])s.box(0,y,0,W,t,D);
+    for(const x of [e,W-e])s.line([x,0,e],[x,H,e],S.leg);
     return {W,D,H};
   }},
-  {key:"cabinet",label:"櫃子",draw(s){
-    const W=46,D=30,H=58,top=12,m=W/2;
+  {key:"cabinet",label:"櫃子",size:{W:80,D:40,H:90},draw(s,{W,D,H}){
+    const top=H*.2,m=W/2,hw=Math.min(W*.13,H*.15),hl=(H-top)*.2,hy=H-top-(H-top)*.2;
     s.box(0,0,0,W,H,D);
     s.line([0,H-top,0],[W,H-top,0],S.thin);
     s.line([m,0,0],[m,H-top,0],S.thin);
-    s.line([m-6,H-top/2,0],[m+6,H-top/2,0],S.leg);
-    for(const x of [m-4,m+4])s.line([x,H-top-10,0],[x,H-top-18,0],S.leg);
+    s.line([m-hw,H-top/2,0],[m+hw,H-top/2,0],S.leg);
+    for(const x of [m-W*.08,m+W*.08])s.line([x,hy,0],[x,hy-hl,0],S.leg);
     return {W,D,H};
   }},
-  {key:"bed",label:"床",draw(s){
-    const W=50,D=72,H=34,base=12,m=8;
-    s.box(0,0,D-4,W,H,4);
-    s.box(0,0,0,W,base,D-4);
-    s.box(2,base,2,W-4,m,D-8);
-    s.box(8,base+m,D-18,W-16,4,10);
+  {key:"bed",label:"床",size:{W:150,D:190,H:90},draw(s,{W,D,H}){
+    const hb=Math.max(D*.05,3),base=Math.min(H*.35,D*.2),m=Math.min(H*.2,base*.7);
+    s.box(0,0,D-hb,W,H,hb);                       // 床頭板
+    s.box(0,0,0,W,base,D-hb);                     // 床架
+    s.box(W*.03,base,D*.02,W*.94,m,D-hb-D*.04);    // 床墊
+    s.box(W*.15,base+m,D-hb-D*.2,W*.7,m*.6,D*.15); // 枕頭
     return {W,D,H};
   }},
-  {key:"box",label:"方塊",draw(s){
-    const W=46,D=30,H=46;
+  {key:"box",label:"方塊",size:{W:60,D:40,H:60},draw(s,{W,D,H}){
     s.box(0,0,0,W,H,D);
     return {W,D,H};
   }}
@@ -158,26 +169,49 @@ const FIGURES=[
 // 後台選單用的清單（順序就是選單上的順序）
 export const DIM_FIGURES=FIGURES.map(({key,label,seat})=>({key,label,seat:!!seat}));
 
-function buildFigure(fig,seat){
+// 這件商品的比例：有填的寬深高照填的，沒填的照這種家具常見的比例補（依已填的邊等比例放大縮小）；
+// 太扁、太細的邊畫不出來，每邊至少是最長邊的 1/5；座高沒填就照常見的比例
+function figureParams(fig,dims={}){
+  const def=fig.size,keys=["W","D","H"],given={W:dims.w,D:dims.d,H:dims.h};
+  const known=keys.filter(k=>given[k]>0);
+  const scale=known.length?known.reduce((sum,k)=>sum+given[k]/def[k],0)/known.length:1;
+  const p={};
+  for(const k of keys)p[k]=given[k]>0?given[k]:def[k]*scale;
+  const longest=Math.max(p.W,p.D,p.H);
+  for(const k of keys)p[k]=Math.max(p[k],longest*.2);
+  if(def.SH)p.SH=Math.min(Math.max(dims.seat>0?dims.seat:def.SH/def.H*p.H,p.H*.2),p.H*.9);
+  return p;
+}
+
+function buildFigure(fig,seat,dims){
+  const p=figureParams(fig,dims);
   // 先照原本的大小畫一次量出家具的範圍，算出縮放比例，讓家具剛好塞進 BOX×BOX
   const probe=createScene();
-  fig.draw(probe);
+  fig.draw(probe,p);
   const b=probe.bbox();
   const k=BOX/Math.max(b.maxX-b.minX,b.maxY-b.minY);
   const s=createScene(k);
-  const size=fig.draw(s);
+  const size=fig.draw(s,p);
   const geo=s.bbox();
   addDims(s,{...size,seatY:seat&&fig.seat?size.seatY:null},k);
   return s.svg(fig.key,geo);
 }
 
 // seat：商品有座高時傳 true，有座面的圖（椅子、扶手椅、板凳）會多標一段座高
-export function dimFigureSvg(key,{seat=false}={}){
+// dims：這件商品的 {w,d,h,seat}（公分數字，見 figureDimsOf）；不給就用這種家具常見的比例
+export function dimFigureSvg(key,{seat=false,dims}={}){
   const fig=FIGURES.find(f=>f.key===key);
-  return fig?buildFigure(fig,seat):"";
+  return fig?buildFigure(fig,seat,dims):"";
 }
 
-// 「自動」：依子分類（對不上再看主分類）的名稱決定。床邊桌要算桌子，所以「桌」排在「床」前面；
+// 商品的寬深高（後台填的文字）＋規格列 → 示意圖要用的比例；範圍（例如 81~93）用最大值，讀不懂的當作沒填
+export function figureDimsOf(dimensions,specs){
+  const num=v=>{const d=parseDim(v);return d&&d.text===undefined?d.max:0};
+  const i=findSeatSpecIndex(specs);
+  return {w:num(dimensions?.width),d:num(dimensions?.depth),h:num(dimensions?.height),seat:i>=0?num(specs[i].h):0};
+}
+
+// 「自動」：依子分類（對不上再看主分類）的名稱決定。摺疊桌用交叉腳的摺疊桌圖；床邊桌要算桌子，所以「桌」排在「床」前面；
 // 床架的「架」不能當成層架，所以「床」排在「架」前面；「鞋櫃/架」這種兩個字都有的算層架
 export function autoDimFigureKey(subName,mainName){
   for(const name of [subName,mainName]){
@@ -185,6 +219,7 @@ export function autoDimFigureKey(subName,mainName){
     if(/藤椅|沙發/.test(name))return "armchair";
     if(/凳/.test(name))return "stool";
     if(/椅/.test(name))return "chair";
+    if(/桌/.test(name)&&/摺疊|折疊|折合/.test(name))return "folding";
     if(/桌|几|台/.test(name))return "table";
     if(/床|寢具/.test(name))return "bed";
     if(/架/.test(name))return "rack";

@@ -1696,7 +1696,6 @@ function allTagBadgesHtml(product){
 }
 let searchQuery="";
 let favoritesRoomFilter="全部";
-let favoritesSent=false;
 function extractGdriveId(url){
   const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
   for(const pattern of patterns){
@@ -2398,7 +2397,6 @@ function renderFavorites(){
   const count=document.getElementById("favoritesCount");
   const footer=document.getElementById("favoritesFooter");
   const subtitle=document.getElementById("favoritesSubtitle");
-  favoritesSent=false;
   document.getElementById("favoritesPreview").style.display="none";
   list.style.display="";
   const allProducts=favoriteProductsWithMeta();
@@ -2820,7 +2818,6 @@ async function inquireAllFavorites(){
   showFavoritesPreview(msg);
 }
 function showFavoritesPreview(msg){
-  favoritesSent=true;
   document.getElementById("favoritesRoomTabs").style.display="none";
   document.getElementById("favoritesList").style.display="none";
   document.getElementById("favoritesFooter").style.display="none";
@@ -2992,7 +2989,6 @@ Object.assign(window,{
   closeLightbox,
   lbNav,
   closeModal,
-  openModal,
   toggleLbFavorite,
   inquireAllFavorites,
   handleSearchInput,

@@ -714,6 +714,8 @@ img.img-fade:not(.is-loaded){opacity:0}
   .product-name{grid-column:1/-1}
   .product-meta-row{grid-column:1;grid-row:2;margin-bottom:0}
   .product-price{grid-column:2;grid-row:2;align-self:end;margin-top:0}
+  /* 特價時原價疊在特價下面，金額欄才不會太寬、把左邊的尺寸擠成好幾行 */
+  .product-price .price-was{display:block;margin-left:0;font-size:.7em;line-height:1.3}
   .product-badges-row{grid-column:1/-1;grid-row:4;padding-top:5px}
   .product-badges-row .tag-badge:nth-child(3){display:inline-block}
 }
@@ -1110,6 +1112,22 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
 .lb-product-title{font-family:var(--font-heading);font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
 .lb-product-price{font-family:var(--font-heading);font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
+/* 特價期間：特價用紅色、原價劃掉；商品頁多一行特價到哪天 */
+.price-now{color:var(--danger)}
+.price-was{margin-left:6px;font-size:.78em;font-weight:400;color:var(--soft)}
+.price-until{display:block;margin-top:2px;font-family:var(--font-body);font-size:12px;font-weight:400;color:var(--soft)}
+/* 商品頁的交期、顏色／款式（卡片上不顯示） */
+.lb-lead{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-size:14px;color:var(--ink)}
+.lb-product-price+.lb-lead{margin-top:-8px}
+.lb-lead-k,.lb-opts-k{flex:none;font-size:12px;color:var(--tan-dark);letter-spacing:.12em}
+.lb-opts{margin:0 0 16px}
+.lb-opts-k{margin-bottom:8px}
+.lb-opts-k span{color:var(--ink);letter-spacing:0}
+.lb-opts-list{display:flex;flex-wrap:wrap;gap:8px}
+.lb-opt{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 8px;border:1px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font-size:13px;line-height:1.2;cursor:pointer}
+.lb-opt:hover{border-color:var(--tan)}
+.lb-opt.active{border-color:var(--tan-dark);box-shadow:inset 0 0 0 1px var(--tan-dark)}
+.lb-opt-dot{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(32,30,29,.18)}
 .lb-inquire-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:13px 16px;margin-bottom:18px;
@@ -1441,7 +1459,7 @@ footer a:hover{color:var(--color-on-dark)}
 <script type="module">
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-import{getFirestore,doc,getDoc,setDoc,collection,getDocs,writeBatch,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
+import{getFirestore,doc,getDoc,setDoc,collection,getDocs,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
 // 尺寸示意圖跟尺寸文字的解析規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=3";
 
@@ -1515,10 +1533,8 @@ const Storage={
       return null;
     }
   },
-  // 注意：只回傳 status=="active" 的商品，不是完整商品清單（跟下面 set() 內部
-  // 用的 productsCol() 不一樣，那裡刻意讀全部、包含已下架商品，用來比對哪些
-  // 文件該刪除）。以後如果要加別的呼叫者需要完整清單，直接用 productsCol()，
-  // 不要誤用這個名字聽起來像「全部商品」的函式。
+  // 注意：只回傳 status=="active" 的商品，不是完整商品清單（封存、垃圾桶裡的都不會拿到）。
+  // 以後如果有地方需要完整清單，直接用 productsCol()，不要誤用這個函式。
   async getActiveProducts(){
     try{
       // 前台只顯示上架中的商品，已下架（status:"archived"）的一律不需要，直接在
@@ -1529,37 +1545,12 @@ const Storage={
       console.warn("商品清單讀取失敗",e);
       return null;
     }
-  },
-  async set(data){
-    try{
-      const {products,...meta}=data;
-      const batch=writeBatch(db);
-      batch.set(doc(db,"sitedata",SITE_DOC),meta);
-      const existingSnap=await getDocs(productsCol());
-      const staleIds=new Set(existingSnap.docs.map(d=>d.id));
-      (products||[]).forEach(p=>{
-        batch.set(doc(productsCol(),p.id),p);
-        staleIds.delete(p.id);
-      });
-      staleIds.forEach(id=>{
-        batch.delete(doc(productsCol(),id));
-        batch.delete(galleryDocRef(id));
-      });
-      await batch.commit();
-      // 同時備份 localStorage
-      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data))}catch(e){}
-      return true;
-    }catch(e){
-      console.warn("Firestore 寫入失敗，改用 localStorage",e);
-      try{localStorage.setItem(STORAGE_KEY,JSON.stringify(data));return false}catch(e2){return false}
-    }
   }
 };
 /* ─────────────────────────────────────────────────────────────── */
-const STORAGE_KEY="xintong_furniture_site_v1";
 // firestore-lite 刻意不做離線快取（見下方啟動流程註解），這裡自己補一層很輕量的
 // stale-while-revalidate：回訪客人先看到「上次抓到的樣子」，Firebase 資料回來後
-// 再原地換新，不用整頁乾等。跟 STORAGE_KEY 分開存，避免混到既有的備援/還原邏輯。
+// 再原地換新，不用整頁乾等。
 const SWR_CACHE_KEY="xintong_furniture_swr_cache_v1";
 const SWR_CACHE_MAX_AGE_MS=7*24*60*60*1000; // 快取超過 7 天就不用，避免久久沒改版的舊資料被誤當最新
 let strokeCollator;
@@ -1614,23 +1605,19 @@ const DEFAULT_STATE={
   activeMain:"全部",
   activeSub:null,
   favorites:[],
-  products:[
-    {id:uid(),mainCat:"cat-bed",subCat:"sub-bed-frame",name:"日式低床架",size:"Queen 153 x 203 cm",price:"12,800",desc:"低矮設計，原木質感，附床頭收納空間。",photos:[sampleSvg("日式低床架","#8a7b68","#5b5448"),sampleSvg("床架細節","#9b8a70","#6b5f50")]},
-    {id:uid(),mainCat:"cat-table",subCat:"sub-tbl-dining",name:"實木圓形餐桌",dimensions:{width:"120",depth:"120",height:"75"},desc:"橡木實木材質，圓形設計增加圍桌親密感。",photos:[sampleSvg("實木圓形餐桌","#8f8a76","#a78350"),sampleSvg("桌面紋理","#a6967b","#7d6f58")]},
-    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-sofa",name:"北歐亞麻三人沙發",size:"寬 220 x 深 90 x 高 80 cm",price:"18,000",desc:"天然亞麻布面，木腳設計，耐用舒適。",photos:[sampleSvg("北歐亞麻沙發","#87917b","#6f765f"),sampleSvg("沙發布面","#a5aa96","#7f886f")]},
-    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-tv",name:"木質電視矮櫃",size:"寬 160 x 深 40 x 高 50 cm",desc:"附線材收納孔與門片收納空間。",photos:[sampleSvg("木質電視矮櫃","#827765","#7d5f3f")]},
-    {id:uid(),mainCat:"cat-chair",subCat:"sub-chr-dining",name:"鋼管靠背餐椅",dimensions:{width:"45",depth:"52",height:"88"},price:"1,200",desc:"鋼管骨架穩重紮實，久坐不搖晃，皮革椅面好清潔耐髒污。",photos:[sampleSvg("鋼管靠背餐椅","#4a4640","#2f2c28"),sampleSvg("椅面細節","#5b5650","#3a3630"),sampleSvg("椅背角度","#4a4640","#2f2c28")]},
-    {id:uid(),mainCat:"cat-storage",subCat:"sub-sto-bookshelf",name:"五層置物架",size:"寬 80 x 深 35 x 高 180 cm",price:"2,400",desc:"五層收納空間實用，組裝簡易。",photos:[sampleSvg("五層置物架","#8f8371","#6f6558")]}
-  ],
+  // 商品一律從 Firebase 讀取；讀取失敗時顯示「暫時載入不了」，不顯示任何範例商品
+  products:[],
+  // 平常以後台「聯繫資訊」存的資料為準；這裡只有 Firebase 讀取失敗時才會用到，
+  // 所以放真實的店家資訊（後台改了聯繫資訊時記得也更新這裡），避免客人看到錯的電話或 LINE
   contact:{
-    addr:"台北市大安區 XX 路 XX 號",
-    phone:"02-2345-6789",
-    line:"@xintong",
-    hours:"週一至週六 10:00-19:00",
-    email:"info@xintong.com",
-    fbUrl:"https://www.facebook.com/",
-    lineUrl:"https://line.me/",
-    mapUrl:"https://maps.app.goo.gl/iWKwKGHVVPiFbbFw9"
+    addr:"台北市大安區文昌街184號",
+    phone:"02-2705-3858",
+    line:"@833pzizi",
+    hours:"全年無休，每天 10:00-21:00",
+    email:"service@hsintong.cc",
+    fbUrl:"https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW",
+    lineUrl:"https://lin.ee/YiaZm7f",
+    mapUrl:"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86"
   },
   pageText:{},
   tagDefs:[]
@@ -1641,7 +1628,7 @@ function normalizeProduct(product){
   if(typeof product.photoCount!=="number")product.photoCount=product.photos.filter(Boolean).length;
   product.dimensions=product.dimensions||{width:"",depth:"",height:""};
   product.specs=Array.isArray(product.specs)?product.specs:[];
-  product.status=product.status==="archived"?"archived":"active";
+  product.status=!product.status||product.status==="active"?"active":product.status; // 封存、垃圾桶都不顯示
   product.badges=Array.isArray(product.badges)?product.badges:[];
   const hasDims=product.dimensions.width||product.dimensions.depth||product.dimensions.height;
   if(!product.specs.length&&product.size&&!hasDims){
@@ -1695,6 +1682,7 @@ function allTagBadgesHtml(product){
   return matched.map(def=>`<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`).join("");
 }
 let searchQuery="";
+let productsLoadFailed=false;
 let favoritesRoomFilter="全部";
 function extractGdriveId(url){
   const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
@@ -1754,6 +1742,21 @@ function getSizeSummary(product){
   // "x" 後面、變成下一行開頭孤零零一個 x，讀起來卡卡的。
   return parts.join(" x ").replace(/ cm(?= x )/g,"");
 }
+// 特價：有填特價、而且沒設結束日或還沒過期（結束日當天整天都算）才生效，過期自動恢復原價
+function activeSalePrice(product){
+  const sale=String(product.salePrice||"").trim();
+  if(!sale)return "";
+  if(product.saleEnd&&!(new Date(`${product.saleEnd}T23:59:59`)>=new Date()))return "";
+  return sale;
+}
+// 特價結束日："2026-01-05" → "1/5"
+function saleEndText(end){const [,m,d]=String(end).split("-");return `${Number(m)}/${Number(d)}`}
+// 卡片、商品頁顯示的價格（HTML）：特價期間顯示特價＋劃掉的原價
+function priceHtml(product){
+  const sale=activeSalePrice(product),base=String(product.price||"").trim();
+  if(sale)return `<span class="price-now">${escapeHTML(formatPrice(sale))}</span>${base?`<s class="price-was">${escapeHTML(formatPrice(base))}</s>`:""}`;
+  return base?escapeHTML(formatPrice(base)):"";
+}
 function formatPrice(price){
   const text=String(price||"").trim();
   if(!text)return "";
@@ -1793,7 +1796,7 @@ function applyLayoutVisibility(){
   if(catTiles)catTiles.style.display=state.layout?.showCatTiles===false?"none":"";
 }
 
-function activeProducts(){return state.products.filter(p=>p.status!=="archived")}
+function activeProducts(){return state.products.filter(p=>p.status==="active")}
 function mainCount(id){return activeProducts().filter(p=>p.mainCat===id).length}
 function subCount(mainId,subId){return activeProducts().filter(p=>p.mainCat===mainId&&p.subCat===subId).length}
 function renderCategories(){
@@ -1908,7 +1911,7 @@ function toggleMobileNav(force){
 function renderProducts(animate=true){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
-  let list=state.products.filter(p=>p.status!=="archived");
+  let list=state.products.filter(p=>p.status==="active");
   const q=searchQuery.trim().toLowerCase();
   if(q){
     // 搜尋要涵蓋全部商品、全部分類，不受目前選取的分類侷限
@@ -1936,7 +1939,8 @@ function renderProducts(animate=true){
   if(!list.length){
     const empty=document.createElement("div");
     empty.style.cssText="width:100%;text-align:center;padding:56px 20px;color:var(--soft)";
-    empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`:"此分類尚無商品";
+    empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`
+      :productsLoadFailed?"商品資料暫時載入不了，請稍後重新整理頁面；也可以直接打電話或傳 LINE 詢問。":"此分類尚無商品";
     grid.appendChild(empty);
   }
   // 「全部分類」瀏覽（沒有搜尋、也沒選特定分類）才加分區標題：商品本來就已經照
@@ -2023,13 +2027,14 @@ function renderProducts(animate=true){
     const info=document.createElement("div");
     info.className="product-info";
     const badgesHtml=allTagBadgesHtml(product);
+    const price=priceHtml(product);
     info.innerHTML=`
       <div class="product-name">${escapeHTML(product.name)}</div>
       <div class="product-meta-row">
         <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
       </div>
       ${badgesHtml?`<div class="product-badges-row">${badgesHtml}</div>`:""}
-      ${product.price?`<span class="product-price">${escapeHTML(formatPrice(product.price))}</span>`:""}
+      ${price?`<span class="product-price">${price}</span>`:""}
     `;
     card.appendChild(info);
     card.addEventListener("click",()=>openProductDetail(product.id,wrap));
@@ -2121,12 +2126,13 @@ function renderPicks(){
     const card=document.createElement("article");
     card.className="p-card reveal";
     card.style.transitionDelay=(idx*70)+"ms";
+    const price=priceHtml(product);
     card.innerHTML=`
       <div class="p-card__media"></div>
       <div class="p-card__title">${escapeHTML(product.name)}</div>
       <div class="p-card__foot">
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
-        ${product.price?`<span class="price">${escapeHTML(formatPrice(product.price))}</span>`:""}
+        ${price?`<span class="price">${price}</span>`:""}
       </div>
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
         <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
@@ -2369,7 +2375,7 @@ function toggleFavoritesPanel(force){
 function favoriteProductsWithMeta(){
   return state.favorites.map(f=>{
     const product=state.products.find(p=>p.id===f.id);
-    return product&&product.status!=="archived"?{...product,_qty:f.qty||1,_note:f.note||""}:null;
+    return product&&product.status==="active"?{...product,_qty:f.qty||1,_note:f.note||""}:null;
   }).filter(Boolean);
 }
 function renderFavoritesRoomTabs(allProducts){
@@ -2411,7 +2417,7 @@ function renderFavorites(){
   }
   footer.style.display="block";
   const products=favoritesRoomFilter==="全部"?allProducts:allProducts.filter(p=>(p.room||"未分類")===favoritesRoomFilter);
-  const total=products.reduce((sum,p)=>{const price=parsePriceNumber(p.price);return price!=null?sum+price*p._qty:sum},0);
+  const total=products.reduce((sum,p)=>{const price=parsePriceNumber(activeSalePrice(p)||p.price);return price!=null?sum+price*p._qty:sum},0);
   document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>$ ${total.toLocaleString()}</span>`:"";
   if(!products.length){
     list.innerHTML='<div class="favorites-empty">這個房間還沒收藏。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
@@ -2422,7 +2428,7 @@ function renderFavorites(){
     const item=document.createElement("div");
     item.className="favorite-item";
     const photo=normalizePhotoUrl((product.photos||[])[0]||"",200);
-    const price=parsePriceNumber(product.price);
+    const price=parsePriceNumber(activeSalePrice(product)||product.price);
     const subtotal=price!=null?`$ ${(price*product._qty).toLocaleString()}`:"";
     item.innerHTML=`
       <img src="${escapeHTML(photo)}" alt="">
@@ -2453,6 +2459,7 @@ function renderFavorites(){
 }
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
+let lbOption=-1; // 商品頁目前選的顏色／款式（-1＝沒選）
 let lbTouchStartX=0,lbTouchStartY=0;
 // ── 點商品卡片時照片從卡片飛進燈箱 ─────────────────────────────
 // 只有動畫期間會用一張照片複本（.lb-fly）代替燈箱照片；照片落定之後就是原本的
@@ -2559,6 +2566,7 @@ function openProductDetail(id,sourceWrap){
   const flipPrep=prepareLbFlip(sourceWrap);
   lbFlipSource=flipPrep?sourceWrap:null;
   const isProductSwitch=lbProduct!==product;
+  lbOption=-1; // 每次打開都從「還沒選款式」開始，跟照片從第 1 張開始一致
   lbProduct=product;
   // 跟商品列表卡片用同一個寬度（600），瀏覽器多半已經有快取，一開燈箱就能立刻
   // 顯示正確的照片，不用等網路重新抓一張沒快取過的大圖（原本預設 1600 寬）。
@@ -2715,6 +2723,28 @@ function getProductDisplayParts(product){
   const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?sanitizeDescHtml(rawDesc):escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
   return {cat,desc,sizeHtml:productSizeHtml(product)};
 }
+// 顏色／款式（後台填的 options）：點了會換到那個款式指定的照片，用 LINE 詢問時也會帶上選的款式
+function productOptions(product){return (Array.isArray(product.options)?product.options:[]).filter(o=>o&&String(o.name||"").trim())}
+function optionsHtml(product){
+  const opts=productOptions(product);
+  if(!opts.length)return "";
+  const chosen=opts[lbOption];
+  return `<div class="lb-opts">
+    <div class="lb-opts-k">顏色／款式${chosen?`<span>：${escapeHTML(chosen.name)}</span>`:""}</div>
+    <div class="lb-opts-list">${opts.map((o,i)=>`<button type="button" class="lb-opt${i===lbOption?" active":""}" data-opt="${i}" aria-pressed="${i===lbOption}"><span class="lb-opt-dot" style="background:${/^#[0-9a-f]{6}$/i.test(o.color||"")?o.color:"#d8cbb8"}"></span>${escapeHTML(o.name)}</button>`).join("")}</div>
+  </div>`;
+}
+// 再按一次同一個款式就取消選取
+document.getElementById("lbInfo").addEventListener("click",e=>{
+  const btn=e.target.closest(".lb-opt");
+  if(!btn||!lbProduct)return;
+  const i=Number(btn.dataset.opt),opt=productOptions(lbProduct)[i];
+  if(!opt)return;
+  lbOption=lbOption===i?-1:i;
+  if(lbOption>=0&&Number.isInteger(opt.photo)&&opt.photo>=0&&opt.photo<lbImages.length)lbCurrent=opt.photo;
+  lbRender();
+  document.querySelector(`#lbInfo .lb-opt[data-opt="${i}"]`)?.focus();
+});
 let lbImgToken=0;
 function lbRender(resetImage){
   const img=document.getElementById("lbImg");
@@ -2756,13 +2786,16 @@ function lbRender(resetImage){
   }
   if(lbProduct){
     const {cat,desc,sizeHtml}=getProductDisplayParts(lbProduct);
+    const price=priceHtml(lbProduct);
     info.innerHTML=`
       <div class="lb-cat-row">
         <div class="lb-product-cat">${escapeHTML(cat)}</div>
         <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
       </div>
       <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
-      ${lbProduct.price?`<div class="lb-product-price">${escapeHTML(formatPrice(lbProduct.price))}</div>`:""}
+      ${price?`<div class="lb-product-price">${price}${activeSalePrice(lbProduct)&&lbProduct.saleEnd?`<span class="price-until">特價到 ${saleEndText(lbProduct.saleEnd)}</span>`:""}</div>`:""}
+      ${lbProduct.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(lbProduct.leadTime)}</span></div>`:""}
+      ${optionsHtml(lbProduct)}
       ${lineInquireBtnHtml(lbProduct)}
       ${sizeHtml}
       ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
@@ -2775,7 +2808,8 @@ function buildLineInquireUrl(product,intro="您好，我想詢問這件商品：
   if(!lineId)return "";
   // LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
   const productUrl=`${location.origin}${location.pathname}#product-${product.id}`;
-  const msg=`${intro}${product.name||""}\n${productUrl}`;
+  const opt=product===lbProduct?productOptions(product)[lbOption]:null;
+  const msg=`${intro}${product.name||""}${opt?`（${opt.name}）`:""}\n${productUrl}`;
   return `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
 }
 function lineInquireBtnHtml(product){
@@ -2845,7 +2879,7 @@ function renderSharedWishlist(ids){
     openModal("wishlistModal");
     return;
   }
-  const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status!=="archived");
+  const products=ids.map(id=>state.products.find(p=>p.id===id)).filter(p=>p&&p.status==="active");
   if(!products.length){
     container.innerHTML='<div class="favorites-empty">找不到這些商品，可能已下架。</div>';
   }else{
@@ -3058,18 +3092,9 @@ Object.assign(window,{
     if(meta){
       try{localStorage.setItem(SWR_CACHE_KEY,JSON.stringify({savedAt:Date.now(),meta,products}))}catch(e){}
     }
-  }else if(!meta&&(!products||!products.length)){
-    // 雲端完全沒有資料（meta 跟商品都沒抓到），試試 localStorage
-    try{
-      const local=localStorage.getItem(STORAGE_KEY);
-      if(local){
-        const data=JSON.parse(local);
-        if(data.products)data.products=data.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)}));
-        Object.assign(state,data);
-        await Storage.set(data);
-        toast("資料已從本機同步到 Firebase ☁️");
-      }
-    }catch(e){}
+  }else if(!products){
+    // 商品讀取失敗（網路斷線、Firebase 暫時不能用等）：畫面上沒有快取的商品時顯示「暫時載入不了」
+    productsLoadFailed=true;
   }
 
   state.products=state.products.map(normalizeProduct);

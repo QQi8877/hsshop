@@ -396,6 +396,13 @@ tr.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 }
 body.quickcat-mode .quickcat-bar{display:flex}
 .quickcat-bar select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:var(--paper);color:var(--ink)}
+.quickcat-bar .bulk-opt[hidden]{display:none}
+.bulk-opt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+/* 批次換示意圖：跟商品編輯裡同一套圖，縮小成一排 */
+.bulk-figures{gap:6px}
+.bulk-figures .figure-tile{width:58px;height:54px;padding:3px}
+.bulk-figures .figure-text{font-size:12px}
+.bulk-figures .figure-none{width:44px;height:34px;font-size:11px}
 .row-actions{display:flex;gap:6px;flex-wrap:nowrap}
 .row-actions button{
   font-size:12px;
@@ -646,6 +653,16 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .figure-preview-text{font-size:12.5px;color:var(--muted);line-height:1.6}
 .figure-preview-text strong{display:block;color:var(--ink);font-size:13.5px}
 .figure-preview-text span{display:block;text-wrap:pretty}
+.view-on-site{display:inline-block;margin:-14px 0 8px;font-size:12.5px;color:var(--tan-dark)}
+.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.quick-chips button{border:1px solid var(--line);border-radius:999px;background:var(--white);color:var(--muted);padding:4px 10px;font-size:12px}
+.quick-chips button:hover{border-color:var(--tan);color:var(--tan-dark)}
+/* 顏色／款式（見 renderOptionEditor） */
+.option-editor{display:grid;gap:6px;margin-top:6px}
+.option-row{display:grid;grid-template-columns:42px minmax(0,1fr) 120px 30px;gap:6px;align-items:center}
+.modal .option-row input[type="color"]{width:42px;height:38px;padding:3px;border:1px solid var(--line);border-radius:7px;background:var(--cream);cursor:pointer}
+.modal .option-row input[type="text"],.modal .option-row select{padding:8px 10px}
 .add-spec-btn{
   border:1px dashed var(--tan);
   border-radius:7px;
@@ -843,7 +860,60 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .btn-primary{flex:1;border:0;background:var(--charcoal);color:var(--white)}
 .btn-primary:hover{background:var(--tan-dark)}
 
+/* 詢價熱度：一個系列、一個顏色（長條的顏色 #9c6a2c 對背景的對比度已驗證），數字寫在長條尾端 */
+.heat-range{display:flex;gap:6px;flex-wrap:wrap;margin:-6px 0 18px}
+.heat-range button{padding:6px 14px;border:1px solid var(--line);border-radius:999px;background:var(--white);color:var(--muted);font-size:13px;cursor:pointer}
+.heat-range button:hover{border-color:var(--tan)}
+.heat-range button.active{border-color:var(--charcoal);background:var(--charcoal);color:var(--white)}
+.heat-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:24px}
+.heat-kpi{border:1px solid var(--line);border-radius:10px;background:var(--white);padding:12px 14px}
+.heat-kpi-v{font-size:26px;font-weight:600;line-height:1.15;color:var(--ink)}
+.heat-kpi-l{margin-top:4px;font-size:12.5px;color:var(--muted)}
+.heat-h,.restore-h{margin:0 0 8px;font-size:14px;font-weight:600;color:var(--ink)}
+.heat-bars{list-style:none;margin:0 0 6px;padding:0}
+.heat-row{
+  display:grid;grid-template-columns:22px minmax(0,1.1fr) minmax(0,1fr);align-items:center;gap:10px;
+  width:100%;padding:6px 6px;border:0;border-radius:8px;background:transparent;
+  color:var(--ink);font-size:13.5px;text-align:left;cursor:pointer;
+}
+.heat-row:hover,.heat-row:focus-visible{background:var(--cream)}
+.heat-rank{text-align:right;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.heat-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.heat-name small{margin-left:6px;font-size:11.5px;color:var(--muted)}
+.heat-track{display:flex;align-items:center;gap:6px;min-height:22px;border-left:1px solid var(--line)}
+.heat-bar{flex:none;height:12px;min-width:3px;border-radius:0 4px 4px 0;background:#9c6a2c}
+.heat-row:hover .heat-bar,.heat-row:focus-visible .heat-bar{filter:brightness(1.15)}
+.heat-val{font-size:12.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+.heat-more{margin:0 0 20px 38px;padding:4px 0;border:0;background:transparent;color:var(--tan-dark);font-size:13px;cursor:pointer}
+.heat-more:hover{text-decoration:underline}
+.heat-gap{height:18px}
+.heat-pairs{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.heat-pairs li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 4px;border-bottom:1px solid var(--line);font-size:13.5px}
+.heat-plus{margin:0 6px;color:var(--muted)}
+.heat-pair-n{flex:none;color:var(--muted);font-variant-numeric:tabular-nums}
+.heat-empty{padding:14px 0;font-size:13.5px;line-height:1.7;color:var(--muted)}
+.heat-foot{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.heat-note{margin:22px 0 0}
+.heat-tip{
+  position:absolute;z-index:5;max-width:250px;padding:8px 11px;pointer-events:none;
+  border:1px solid var(--line);border-radius:8px;background:var(--white);box-shadow:0 8px 24px rgba(0,0,0,.14);
+  font-size:12.5px;line-height:1.5;color:var(--muted);
+}
+.heat-tip strong{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink)}
+.heat-tip strong::before{content:"";width:12px;height:2px;border-radius:1px;background:#9c6a2c}
+.heat-tip span{display:block}
+/* 從備份還原的確認畫面 */
+.restore-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 16px;margin:0 0 18px;font-size:13.5px}
+.restore-facts dt{color:var(--muted)}
+.restore-facts dd{margin:0;color:var(--ink)}
+.restore-steps{margin:0;padding-left:20px;font-size:13.5px;line-height:1.7;color:var(--ink)}
+.restore-steps li+li{margin-top:4px}
+.restore-extra{margin-top:4px;font-size:12.5px;color:var(--muted)}
+
 @media(max-width:760px){
+  .form-grid-2{grid-template-columns:1fr}
+  .option-row{grid-template-columns:42px minmax(0,1fr) 30px}
+  .option-row select{grid-column:2/4}
   header{padding:14px 15px}
   .layout{flex-direction:column;padding:16px 15px 40px;gap:14px}
   .sidebar{width:100%;position:static;top:auto}
@@ -852,6 +922,10 @@ body.quickcat-mode .quickcat-bar{display:flex}
   table{min-width:680px}
   .modal-scroll{padding:22px 18px}
   .photo-slots{grid-template-columns:repeat(3,1fr)}
+  .heat-row{grid-template-columns:22px minmax(0,1fr);row-gap:3px}
+  .heat-track{grid-column:2}
+  .heat-kpi{padding:10px}
+  .heat-kpi-v{font-size:22px}
 }
 </style>
 </head>
@@ -891,12 +965,16 @@ body.quickcat-mode .quickcat-bar{display:flex}
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
           <button onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
           <button onclick="closeHeaderDropdowns();undoMigratePhotosToCloudinary()">↩ 復原上次搬遷</button>
-          <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 快速分類</button>
+          <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 批次操作</button>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
+          <button onclick="closeHeaderDropdowns();openHeatReport()">📊 詢價熱度</button>
+          <button onclick="closeHeaderDropdowns();downloadFullBackup()">💾 下載完整備份</button>
+          <button onclick="closeHeaderDropdowns();document.getElementById('backupFileInput').click()">📂 從備份還原</button>
         </div></div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
+      <input type="file" id="backupFileInput" accept=".json,application/json" style="display:none" onchange="handleBackupFile(event)">
       <button class="add-btn" onclick="openProductModal(null)">＋ 新增商品</button>
       <button class="add-btn" onclick="logoutGate()" style="background:transparent;border:1px solid var(--line);color:var(--muted)">登出</button>
       <a href="index.html" target="_blank" rel="noopener">前往前台 ↗</a>
@@ -919,6 +997,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
         <button class="filter-chip warn" data-filter="noDesc" onclick="setFilter('noDesc')">缺說明 <span class="n" id="fc-noDesc"></span></button>
         <button class="filter-chip warn" data-filter="noPhoto" onclick="setFilter('noPhoto')">缺照片 <span class="n" id="fc-noPhoto"></span></button>
         <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
+        <button class="filter-chip" data-filter="trashed" onclick="setFilter('trashed')">垃圾桶 <span class="n" id="fc-trashed"></span></button>
       </div>
       <div class="summary">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -941,9 +1020,20 @@ body.quickcat-mode .quickcat-bar{display:flex}
       </div>
       <div class="quickcat-bar" id="quickCatBar">
         <span id="quickCatCount">已選 0 個</span>
-        <select id="quickCatMain" onchange="updateQuickCatSubSelect()"></select>
-        <select id="quickCatSub"></select>
-        <button class="sync-btn" onclick="applyQuickCat()">套用分類</button>
+        <select id="bulkAction" onchange="updateBulkControls()" aria-label="要對勾選的商品做什麼">
+          <option value="category">改分類</option>
+          <option value="publish">上架</option>
+          <option value="archive">封存</option>
+          <option value="addTag">加上標籤</option>
+          <option value="removeTag">拿掉標籤</option>
+          <option value="figure">換尺寸示意圖</option>
+          <option value="trash">丟進垃圾桶</option>
+          <option value="untrash">從垃圾桶救回</option>
+        </select>
+        <span class="bulk-opt" data-for="category"><select id="quickCatMain" onchange="updateQuickCatSubSelect()" aria-label="主分類"></select><select id="quickCatSub" aria-label="子分類"></select></span>
+        <select class="bulk-opt" id="bulkTag" data-for="addTag removeTag" aria-label="標籤" hidden></select>
+        <div class="bulk-opt bulk-figures" id="bulkFigure" data-for="figure" role="group" aria-label="尺寸示意圖" hidden></div>
+        <button class="sync-btn" onclick="applyBulkAction()">套用</button>
         <button class="btn-secondary" onclick="toggleQuickCatMode(false)">取消</button>
       </div>
       <div class="table-wrap">
@@ -960,7 +1050,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
               <th data-sort="desc">說明</th>
               <th data-sort="photos">照片</th>
               <th data-sort="status">狀態</th>
-              <th style="width:80px"></th>
+              <th style="width:170px"></th>
             </tr>
           </thead>
           <tbody id="tbody"></tbody>
@@ -974,9 +1064,10 @@ body.quickcat-mode .quickcat-bar{display:flex}
 
 <div class="modal-overlay" id="productModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('productModal')">×</button>
+    <button class="modal-close" onclick="requestCloseProductModal()">×</button>
     <div class="modal-scroll">
     <div class="modal-title" id="productModalTitle">新增商品</div>
+    <a class="view-on-site" id="productViewLink" href="#" target="_blank" rel="noopener" hidden>在前台看這件商品 ↗</a>
     <label>主分類</label>
     <select id="pMainCat" onchange="updateSubSelect();renderFigurePicker()"></select>
     <label>子分類</label>
@@ -985,6 +1076,26 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <input type="text" id="pName" placeholder="例：北歐實木餐桌">
     <label>參考售價（選填，格式自由，例如 3,200 或 洽詢）</label>
     <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
+    <div class="form-grid-2">
+      <div>
+        <label>特價（選填，前台會顯示特價、把原價劃掉）</label>
+        <input type="text" id="pSalePrice" placeholder="例：2,800">
+      </div>
+      <div>
+        <label>特價到哪一天（選填，不填就一直特價）</label>
+        <input type="date" id="pSaleEnd">
+      </div>
+    </div>
+    <label>交期（選填，只會顯示在前台的商品頁）</label>
+    <input type="text" id="pLeadTime" placeholder="例：現貨、約 2–3 週">
+    <div class="quick-chips" id="leadTimeChips">
+      <button type="button" onclick="setLeadTime(this.textContent)">現貨</button>
+      <button type="button" onclick="setLeadTime(this.textContent)">約 3–5 天</button>
+      <button type="button" onclick="setLeadTime(this.textContent)">約 1–2 週</button>
+      <button type="button" onclick="setLeadTime(this.textContent)">約 2–3 週</button>
+      <button type="button" onclick="setLeadTime(this.textContent)">約 1 個月</button>
+      <button type="button" onclick="setLeadTime(this.textContent)">需訂製，請洽詢</button>
+    </div>
     <label>商品標籤（會顯示在前台商品卡片左上角；同時勾選多個時，畫面只會顯示優先度最高的一個）</label>
     <div class="tag-checkbox-grid" id="pBadges"></div>
     <input type="hidden" id="pSize">
@@ -1053,8 +1164,12 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <div class="photo-slots" id="photoSlots"></div>
     </div>
 
+    <label>顏色／款式（選填，前台商品頁可以點選；可以指定點了換成哪張照片）</label>
+    <div class="option-editor" id="optionEditor"></div>
+    <button class="add-spec-btn" type="button" onclick="addOptionRow()">＋ 新增顏色／款式</button>
+
     <div class="modal-actions">
-      <button class="btn-secondary" type="button" onclick="closeModal('productModal')">取消</button>
+      <button class="btn-secondary" type="button" onclick="requestCloseProductModal()">取消</button>
       <button class="btn-primary" type="button" onclick="saveProduct()">儲存商品</button>
     </div>
     </div>
@@ -1244,6 +1359,40 @@ body.quickcat-mode .quickcat-bar{display:flex}
   </div>
 </div>
 
+<div class="modal-overlay" id="heatModal">
+  <div class="modal" style="max-width:680px">
+    <button class="modal-close" onclick="closeModal('heatModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">詢價熱度</div>
+    <div class="heat-range" role="group" aria-label="統計期間">
+      <button type="button" data-range="30">近 30 天</button>
+      <button type="button" data-range="90">近 90 天</button>
+      <button type="button" data-range="all">全部</button>
+    </div>
+    <div id="heatBody"></div>
+    <p class="catmgr-hint heat-note">統計的是客人在網站上按「收藏清單」的「一次詢問」或「複製清單連結」時存下來的清單；同一位客人按兩次會算兩次。直接在單一商品按「LINE 詢問」不會被記錄，所以實際問過的人只會比這裡多。</p>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeModal('heatModal')">完成</button>
+    </div>
+    </div>
+    <div class="heat-tip" id="heatTip" role="tooltip" hidden></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="restoreModal">
+  <div class="modal" style="max-width:640px">
+    <button class="modal-close" onclick="closeModal('restoreModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">從備份還原</div>
+    <div id="restoreSummary"></div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('restoreModal')">取消</button>
+      <button class="btn-primary" id="restoreConfirmBtn" onclick="confirmRestore()">確認還原</button>
+    </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="bulkUploadModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
@@ -1353,6 +1502,11 @@ function escapeHTML(str=""){
 
 let catalog=[];
 let products=[];
+// 商品狀態：active＝上架中、archived＝封存（前台看不到）、trashed＝在垃圾桶（30 天後自動永久刪除）
+const TRASH_DAYS=30;
+const isLive=p=>p.status==="active";
+function trashDaysLeft(p){return Math.max(0,Math.ceil(((p.trashedAt||0)+TRASH_DAYS*864e5-Date.now())/864e5))}
+function updateTotalCount(){document.getElementById("totalCount").textContent=`共 ${products.filter(isLive).length} 個上架商品`}
 let contact={};
 let pageText={};
 let layout={};
@@ -1431,8 +1585,8 @@ const sorters={
 function sortCompare(a,b){return sorters[sortKey]?sorters[sortKey](a,b):0}
 async function syncOrderToFrontend(){
   const btn=document.getElementById("syncBtn");
-  const active=products.filter(p=>p.status!=="archived");
-  const archived=products.filter(p=>p.status==="archived");
+  const active=products.filter(isLive);
+  const archived=products.filter(p=>p.status==="archived"); // 垃圾桶裡的商品不參與排序
   const sorted=active.slice().sort((a,b)=>sortDir*sortCompare(a,b));
   if(!confirm(`將以目前排序方式（${document.querySelector("thead th.sorted")?.textContent.trim()||"商品名稱・筆畫"}）覆蓋前台商品的顯示順序，共 ${sorted.length} 個商品。確定要套用嗎？`))return;
   btn.disabled=true;
@@ -1526,7 +1680,7 @@ let pendingCatDelete=null;
 function deleteMainCategoryRequest(mainId){
   const cat=getMainCat(mainId);
   if(!cat)return;
-  const affected=products.filter(p=>p.mainCat===mainId&&p.status!=="archived");
+  const affected=products.filter(p=>p.mainCat===mainId&&isLive(p));
   if(!affected.length){
     if(!confirm(`確定要刪除主分類「${cat.name}」嗎？`))return;
     catalog=catalog.filter(c=>c.id!==mainId);
@@ -1546,7 +1700,7 @@ function deleteSubCategoryRequest(mainId,subId){
   const main=getMainCat(mainId);
   const sub=main?.subs?.find(s=>s.id===subId);
   if(!main||!sub)return;
-  const affected=products.filter(p=>p.mainCat===mainId&&p.subCat===subId&&p.status!=="archived");
+  const affected=products.filter(p=>p.mainCat===mainId&&p.subCat===subId&&isLive(p));
   if(!affected.length){
     if(!confirm(`確定要刪除子分類「${sub.name}」嗎？`))return;
     main.subs=main.subs.filter(s=>s.id!==subId);
@@ -1565,6 +1719,11 @@ function deleteSubCategoryRequest(mainId,subId){
 }
 window.deleteMainCategoryRequest=deleteMainCategoryRequest;
 window.deleteSubCategoryRequest=deleteSubCategoryRequest;
+// 分類被刪掉、選擇「封存商品」時：垃圾桶裡的商品繼續留在垃圾桶，只是之後救回來會回到封存
+function archiveForDeletedCategory(p){
+  if(p.status==="trashed")p.trashedFrom="archived";
+  else p.status="archived";
+}
 function confirmCatDelete(){
   if(!pendingCatDelete)return;
   const action=document.querySelector('input[name="catDelAction"]:checked').value;
@@ -1576,7 +1735,7 @@ function confirmCatDelete(){
       if(!targetId){toast("請選擇要移動到的分類");return}
       affected.forEach(p=>{p.mainCat=targetId;p.subCat=null});
     }else{
-      affected.forEach(p=>{p.status="archived"});
+      affected.forEach(archiveForDeletedCategory);
     }
     catalog=catalog.filter(c=>c.id!==mainId);
   }else{
@@ -1586,7 +1745,7 @@ function confirmCatDelete(){
     if(action==="move"){
       affected.forEach(p=>{p.subCat=targetId||null});
     }else{
-      affected.forEach(p=>{p.status="archived"});
+      affected.forEach(archiveForDeletedCategory);
     }
     if(main)main.subs=main.subs.filter(s=>s.id!==subId);
   }
@@ -1914,7 +2073,7 @@ function renderPicksSelected(){
     if(!p)return "";
     return `
       <div style="display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:6px 8px">
-        <span style="flex:1;font-size:13px">${escapeHTML(p.name)}</span>
+        <span style="flex:1;font-size:13px">${escapeHTML(p.name)}${isLive(p)?"":` <span style="color:var(--danger)">（${p.status==="trashed"?"在垃圾桶":"已封存"}，前台不會顯示）</span>`}</span>
         <button onclick="movePick(${i},-1)" ${i===0?"disabled":""} title="往前移" style="border:0;background:transparent;cursor:pointer;opacity:${i===0?".35":"1"}">▲</button>
         <button onclick="movePick(${i},1)" ${i===layoutPicksIds.length-1?"disabled":""} title="往後移" style="border:0;background:transparent;cursor:pointer;opacity:${i===layoutPicksIds.length-1?".35":"1"}">▼</button>
         <button onclick="removePick('${id}')" title="移除" style="border:0;background:transparent;color:var(--danger);cursor:pointer">×</button>
@@ -1946,7 +2105,7 @@ window.addPick=addPick;
 function renderPicksCandidates(){
   const wrap=document.getElementById("picksCandidatesList");
   const q=(document.getElementById("picksSearchInput").value||"").trim().toLowerCase();
-  const list=products.filter(p=>p.status!=="archived"&&!layoutPicksIds.includes(p.id)&&(!q||(p.name||"").toLowerCase().includes(q))).slice(0,30);
+  const list=products.filter(p=>isLive(p)&&!layoutPicksIds.includes(p.id)&&(!q||(p.name||"").toLowerCase().includes(q))).slice(0,30);
   if(!list.length){wrap.innerHTML='<div class="catmgr-hint" style="padding:6px">沒有符合的商品</div>';return}
   wrap.innerHTML=list.map(p=>`
     <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 6px;cursor:pointer;border-radius:6px" onclick="addPick('${p.id}')" onmouseover="this.style.background='var(--cream)'" onmouseout="this.style.background='transparent'">
@@ -2030,7 +2189,7 @@ async function handleBulkFiles(event){
       rawOriginals.push(dataUrl);
       photos.push(await resizeImageToUniform(dataUrl));
     }
-    const existing=products.find(p=>p.status!=="archived"&&(p.name||"").trim()===name);
+    const existing=products.find(p=>isLive(p)&&(p.name||"").trim()===name);
     let fullPhotos,fullOriginals,targetId,product;
     if(existing){
       targetId=existing.id;
@@ -2074,7 +2233,7 @@ async function handleBulkFiles(event){
       console.warn("商品／圖庫寫入失敗",e);
     }
   }
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  updateTotalCount();
   renderSidebar();
   renderTable();
   log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
@@ -2083,7 +2242,6 @@ async function handleBulkFiles(event){
 document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
 document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
 
-/* ── 快速分類（勾選多個商品，一次套用主／子分類）──────────────── */
 /* ── 頂部工具列的「網站設定」「商品工具」下拉選單 ───────────────── */
 window.toggleHeaderDropdown=function(id){
   const el=document.getElementById(id);
@@ -2098,6 +2256,7 @@ document.addEventListener("click",e=>{
   if(!e.target.closest(".dropdown"))closeHeaderDropdowns();
 });
 
+/* ── 批次操作（勾選多個商品，一次改分類／上架／封存／標籤／示意圖／丟垃圾桶）──── */
 window.toggleQuickCatMode=function(force){
   quickCatMode=typeof force==="boolean"?force:!quickCatMode;
   quickCatSelected.clear();
@@ -2106,6 +2265,7 @@ window.toggleQuickCatMode=function(force){
   if(quickCatMode){
     document.getElementById("quickCatMain").innerHTML=catalog.map(c=>`<option value="${escapeHTML(c.id)}">${escapeHTML(c.name)}</option>`).join("");
     updateQuickCatSubSelect();
+    updateBulkControls();
   }
   updateQuickCatCount();
   renderTable();
@@ -2137,24 +2297,133 @@ window.toggleQuickCatSelectAll=function(checkbox){
 function updateQuickCatCount(){
   document.getElementById("quickCatCount").textContent=`已選 ${quickCatSelected.size} 個`;
 }
-window.applyQuickCat=async function(){
-  if(!quickCatSelected.size){toast("請先勾選商品");return}
+let bulkFigureChoice="";
+// 選不同動作時，只顯示那個動作需要的選項
+window.updateBulkControls=function(){
+  const action=document.getElementById("bulkAction").value;
+  document.querySelectorAll("#quickCatBar [data-for]").forEach(el=>{el.hidden=!el.dataset.for.split(" ").includes(action)});
+  if(action==="addTag"||action==="removeTag"){
+    const sel=document.getElementById("bulkTag");
+    const keep=sel.value;
+    sel.innerHTML=tagDefs.length
+      ?tagDefs.map(d=>`<option value="${escapeHTML(d.key)}">${escapeHTML(d.label)}</option>`).join("")
+      :'<option value="">還沒有標籤，先到「標籤管理」新增</option>';
+    if(tagDefs.some(d=>d.key===keep))sel.value=keep;
+  }
+  if(action==="figure")renderBulkFigures();
+};
+function renderBulkFigures(){
+  const wrap=document.getElementById("bulkFigure");
+  const tile=(value,content,label)=>`<button type="button" class="figure-tile${bulkFigureChoice===value?" selected":""}" data-value="${value}" aria-pressed="${bulkFigureChoice===value}" aria-label="${label}">${content}</button>`;
+  wrap.innerHTML=tile("",'<span class="figure-text">自動</span>',"自動")
+    +DIM_FIGURES.map(f=>tile(f.key,dimFigureSvg(f.key),f.label)).join("")
+    +tile("none",'<span class="figure-none">不顯示</span>',"不顯示");
+  wrap.querySelectorAll(".figure-tile").forEach(btn=>btn.addEventListener("click",()=>{
+    bulkFigureChoice=btn.dataset.value;
+    renderBulkFigures();
+  }));
+}
+// 改好幾件商品：先寫進資料庫，寫不進去就把畫面上的改動還原，資料庫跟畫面才不會對不上
+async function saveProductsChange(list,mutate){
+  const before=list.map(p=>JSON.parse(JSON.stringify(p)));
+  list.forEach(mutate);
+  let saved=0;
+  try{
+    while(saved<list.length){
+      const chunk=list.slice(saved,saved+400); // 一次批次寫入最多 500 筆
+      const batch=writeBatch(db);
+      chunk.forEach(p=>batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p)));
+      await batch.commit();
+      saved+=chunk.length;
+    }
+    return true;
+  }catch(e){
+    list.forEach((p,i)=>{
+      if(i<saved)return;
+      Object.keys(p).forEach(k=>delete p[k]);
+      Object.assign(p,before[i]);
+    });
+    toast("儲存失敗："+(e.message||String(e)),4000);
+    return false;
+  }finally{
+    updateTotalCount();
+    renderSidebar();
+    renderTable();
+  }
+}
+const moveToTrash=p=>{p.trashedFrom=p.status;p.status="trashed";p.trashedAt=Date.now()};
+// 救回：回到丟掉之前的狀態（上架中或封存）；回到上架的排到最後面
+function takeOutOfTrash(p){
+  p.status=p.trashedFrom==="archived"?"archived":"active";
+  if(p.status==="active")p.sortOrder=nextSortOrder();
+  delete p.trashedFrom;
+  delete p.trashedAt;
+}
+async function applyQuickCat(){
   const mainId=document.getElementById("quickCatMain").value;
   const subId=document.getElementById("quickCatSub").value||null;
+  if(!mainId){toast("還沒有分類，先到「分類管理」新增");return}
   const targets=products.filter(p=>quickCatSelected.has(p.id));
-  targets.forEach(p=>{p.mainCat=mainId;p.subCat=subId});
-  try{
-    const batch=writeBatch(db);
-    targets.forEach(p=>batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p)));
-    await batch.commit();
-    toast(`已將 ${quickCatSelected.size} 個商品分類為「${getMainName(mainId)}」☁️`);
-  }catch(e){
-    toast("套用失敗："+(e.message||String(e)),4000);
+  if(await saveProductsChange(targets,p=>{p.mainCat=mainId;p.subCat=subId})){
+    toast(`已將 ${targets.length} 個商品分類為「${getMainName(mainId)}」☁️`);
+    finishBulk();
   }
+}
+function finishBulk(){
   quickCatSelected.clear();
+  document.getElementById("qcSelectAll").checked=false;
   updateQuickCatCount();
-  renderSidebar();
   renderTable();
+}
+window.applyBulkAction=async function(){
+  if(!quickCatSelected.size){toast("請先勾選商品");return}
+  const action=document.getElementById("bulkAction").value;
+  if(action==="category")return applyQuickCat();
+  const selected=products.filter(p=>quickCatSelected.has(p.id));
+  let targets,mutate,done;
+  if(action==="publish"){
+    targets=selected.filter(p=>p.status!=="active");
+    if(!targets.length){toast("勾選的商品都已經在上架中");return}
+    if(!confirm(`把 ${targets.length} 個商品上架嗎？上架後前台就看得到。`))return;
+    mutate=p=>{delete p.trashedFrom;delete p.trashedAt;p.status="active";p.sortOrder=nextSortOrder()};
+    done=`已上架 ${targets.length} 個商品`;
+  }else if(action==="archive"){
+    targets=selected.filter(isLive);
+    if(!targets.length){toast("勾選的商品裡沒有上架中的");return}
+    if(!confirm(`把 ${targets.length} 個商品封存嗎？封存後前台看不到，隨時可以還原上架。`))return;
+    mutate=p=>{p.status="archived"};
+    done=`已封存 ${targets.length} 個商品`;
+  }else if(action==="addTag"||action==="removeTag"){
+    const key=document.getElementById("bulkTag").value;
+    const def=tagDefs.find(d=>d.key===key);
+    if(!def){toast("還沒有標籤，先到「標籤管理」新增");return}
+    const adding=action==="addTag";
+    targets=selected.filter(p=>(p.badges||[]).includes(key)!==adding);
+    if(!targets.length){toast(adding?`勾選的商品都已經有「${def.label}」`:`勾選的商品都沒有「${def.label}」`);return}
+    mutate=adding?p=>{p.badges=[...(p.badges||[]),key]}:p=>{p.badges=(p.badges||[]).filter(b=>b!==key)};
+    done=`已${adding?"加上":"拿掉"} ${targets.length} 個商品的「${def.label}」標籤`;
+  }else if(action==="figure"){
+    const choice=validDimFigure(bulkFigureChoice);
+    targets=selected.filter(p=>(p.dimFigure||"")!==choice);
+    if(!targets.length){toast("勾選的商品已經都是這張示意圖");return}
+    mutate=p=>{p.dimFigure=choice};
+    done=`已更換 ${targets.length} 個商品的尺寸示意圖`;
+  }else if(action==="trash"){
+    targets=selected.filter(p=>p.status!=="trashed");
+    if(!targets.length){toast("勾選的商品都已經在垃圾桶裡");return}
+    if(!confirm(`把 ${targets.length} 個商品丟進垃圾桶嗎？${TRASH_DAYS} 天內都可以在「垃圾桶」救回來。`))return;
+    mutate=moveToTrash;
+    done=`已把 ${targets.length} 個商品丟進垃圾桶，${TRASH_DAYS} 天內可以救回`;
+  }else if(action==="untrash"){
+    targets=selected.filter(p=>p.status==="trashed");
+    if(!targets.length){toast("勾選的商品裡沒有在垃圾桶的");return}
+    mutate=takeOutOfTrash;
+    done=`已救回 ${targets.length} 個商品`;
+  }else return;
+  if(await saveProductsChange(targets,mutate)){
+    toast(done+" ☁️");
+    finishBulk();
+  }
 };
 
 /* ── 表格列拖曳排序（只在依顯示順序、無篩選時開放）─────────────── */
@@ -2200,7 +2469,7 @@ async function reorderProductRow(srcId,targetId){
   }
   // 依照畫面上目前的排序欄位排列（可能是名稱、分類…等，不一定是自訂順序），
   // 這樣拖曳的來源／目標位置才會跟使用者看到的列一致
-  list=list.filter(p=>p.status!=="archived").sort((a,b)=>sortDir*sortCompare(a,b));
+  list=list.filter(isLive).sort((a,b)=>sortDir*sortCompare(a,b));
   const srcIdx=list.findIndex(p=>p.id===srcId);
   const targetIdx=list.findIndex(p=>p.id===targetId);
   if(srcIdx<0||targetIdx<0)return;
@@ -2228,6 +2497,9 @@ let workingPhotos=[];
 // 套用裁切／縮放時只改 workingPhotos，這個陣列維持原樣，之後才有辦法回去重新調整。
 let workingPhotosOriginal=[];
 let workingSpecs=[];
+let workingOptions=[];   // 顏色／款式：[{name,color,photo}]，編輯時 photo 是第幾格照片（從 0 開始，跟格子上的號碼一致），存檔時換成第幾張；null＝不換照片
+let productModalToken=0; // 開窗後非同步讀照片期間又開了別的商品時，舊的讀取結果不要蓋掉畫面
+let productFormBaseline=null; // 開窗時表單的內容，用來判斷有沒有還沒儲存的修改
 let uploadMethod="file";
 // 正在背景上傳到 Cloudinary 的照片格編號，畫面上疊「上傳中…」用
 let slotsUploading=new Set();
@@ -2482,7 +2754,7 @@ window.applyAutoDesc=function(){
   toast("已自動產生文案，記得檢查一下內容再儲存");
 };
 window.bulkAutoDesc=async function(){
-  const targets=products.filter(p=>p.status!=="archived"&&!p.desc);
+  const targets=products.filter(p=>isLive(p)&&!p.desc);
   if(!targets.length){toast("目前沒有缺說明的商品");return}
   if(!confirm(`將為 ${targets.length} 個缺商品說明的商品自動產生文案並直接儲存，確定要執行嗎？`))return;
   const btn=document.getElementById("bulkAutoDescBtn");
@@ -2510,7 +2782,7 @@ window.bulkAutoDesc=async function(){
 // 上傳到 Cloudinary、換成網址存起來。已經是網址的（http 開頭，不管是本來就
 // 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
 window.migratePhotosToCloudinary=async function(){
-  const targets=products.filter(p=>p.status!=="archived"&&(p.photos||[]).length);
+  const targets=products.filter(p=>isLive(p)&&(p.photos||[]).length);
   const heroIsBase64=/^data:/i.test(layout.heroImage||"");
   const catImagesBase64=catalog.filter(c=>/^data:/i.test(c.image||"")).length;
   if(!targets.length&&!heroIsBase64&&!catImagesBase64){toast("目前沒有可以搬遷的照片");return}
@@ -3048,9 +3320,62 @@ function scheduleFigureRefresh(){
   requestAnimationFrame(()=>{figureRefreshQueued=false;renderFigurePicker()});
 }
 
+/* ── 顏色／款式編輯 ─────────────────────────────────────────── */
+function renderOptionEditor(){
+  const editor=document.getElementById("optionEditor");
+  if(!editor)return;
+  const filledSlots=workingPhotos.map((photo,k)=>photo?k:-1).filter(k=>k>=0);
+  editor.innerHTML=workingOptions.map((o,i)=>`<div class="option-row" data-i="${i}">
+    <input type="color" value="${/^#[0-9a-f]{6}$/i.test(o.color||"")?o.color:"#d8cbb8"}" title="顏色" aria-label="顏色">
+    <input type="text" value="${escapeHTML(o.name||"")}" placeholder="名稱，例：白橡、梧桐木紋" aria-label="顏色／款式名稱">
+    <select aria-label="點了換成哪張照片"><option value="">點了不換照片</option>${filledSlots.map(k=>`<option value="${k}"${o.photo===k?" selected":""}>換成照片 ${k+1}</option>`).join("")}</select>
+    <button type="button" class="spec-del-btn" aria-label="刪除這個顏色／款式">×</button>
+  </div>`).join("");
+  editor.querySelectorAll(".option-row").forEach(row=>{
+    const i=Number(row.dataset.i),o=workingOptions[i];
+    const [color,name]=row.querySelectorAll("input");
+    color.addEventListener("input",()=>{o.color=color.value});
+    name.addEventListener("input",()=>{o.name=name.value});
+    row.querySelector("select").addEventListener("change",e=>{o.photo=e.target.value===""?null:Number(e.target.value)});
+    row.querySelector("button").addEventListener("click",()=>{workingOptions.splice(i,1);renderOptionEditor()});
+  });
+}
+window.addOptionRow=function(){
+  workingOptions.push({name:"",color:"#d8cbb8",photo:null});
+  renderOptionEditor();
+  document.querySelector("#optionEditor .option-row:last-child input[type=text]")?.focus();
+};
+// 照片換位置或刪掉時，顏色／款式指定的照片格跟著調整（換掉照片內容、補到空格都不用動）
+function remapOptionPhotos(mapIndex){
+  workingOptions.forEach(o=>{
+    if(!Number.isInteger(o.photo))return;
+    const next=mapIndex(o.photo);
+    o.photo=Number.isInteger(next)?next:null;
+  });
+}
+window.setLeadTime=function(text){document.getElementById("pLeadTime").value=text};
+
+/* ── 還沒儲存就關閉的提醒 ───────────────────────────────────── */
+function productFormState(){
+  const val=id=>document.getElementById(id).value;
+  return JSON.stringify([val("pMainCat"),val("pSubCat"),val("pName"),val("pPrice"),val("pSalePrice"),val("pSaleEnd"),val("pLeadTime"),
+    getCheckedBadges(),val("pWidth"),val("pDepth"),val("pHeight"),workingSpecs.filter(sp=>sp.part||sp.w||sp.d||sp.h),
+    workingDimFigure,document.getElementById("pDesc").innerHTML,workingPhotos,workingOptions]);
+}
+function productFormDirty(){return productFormBaseline!==null&&productFormState()!==productFormBaseline}
+window.requestCloseProductModal=function(){
+  if(productFormDirty()&&!confirm("這個商品還有修改沒有儲存，確定要關閉嗎？（沒儲存的修改會不見）"))return;
+  productFormBaseline=null;
+  closeModal("productModal");
+};
+window.addEventListener("beforeunload",e=>{
+  if(document.getElementById("productModal").classList.contains("open")&&productFormDirty()){e.preventDefault();e.returnValue=""}
+});
+window.duplicateProductRow=function(id){openProductModal(id,{copy:true})};
+
 window.setUploadMethod=function(method,el){
   uploadMethod=method;
-  document.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active"));
+  el.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active")); // 只換這一排，批次上傳視窗那排不要動到
   el.classList.add("active");
   document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
   document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
@@ -3097,6 +3422,8 @@ function renderPhotoSlots(){
         const tmpOrig=workingPhotosOriginal[dragSrcIdx];
         workingPhotosOriginal[dragSrcIdx]=workingPhotosOriginal[i];
         workingPhotosOriginal[i]=tmpOrig;
+        const from=dragSrcIdx;
+        remapOptionPhotos(k=>k===from?i:k===i?from:k);
         dragSrcIdx=null;
         renderPhotoSlots();
         toast("圖片順序已更新");
@@ -3140,6 +3467,9 @@ function renderPhotoSlots(){
         event.stopPropagation();
         workingPhotos[i]="";
         workingPhotosOriginal[i]="";
+        const newIndex=new Map();
+        workingPhotos.forEach((photo,idx)=>{if(photo)newIndex.set(idx,newIndex.size)});
+        remapOptionPhotos(k=>newIndex.get(k));
         const filledPairs=workingPhotos.map((p,idx)=>[p,workingPhotosOriginal[idx]]).filter(([p])=>Boolean(p));
         workingPhotos=new Array(MAX_PHOTOS).fill("");
         workingPhotosOriginal=new Array(MAX_PHOTOS).fill("");
@@ -3159,6 +3489,7 @@ function renderPhotoSlots(){
     }
     container.appendChild(slot);
   }
+  renderOptionEditor(); // 照片張數變了，顏色／款式的「換成照片 N」選單跟著更新
 }
 function handleSlotFile(slotIdx,event){
   const file=event.target.files[0];
@@ -3224,6 +3555,7 @@ async function promptUrlForSlot(slotIdx){
   slotsUploading.delete(slotIdx);
   renderPhotoSlots();
 }
+
 window.addPhotoByUrl=async function(){
   const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請輸入圖片網址");return}
@@ -3395,12 +3727,20 @@ function deleteTagRequest(key){
   toast("標籤已刪除");
 }
 
-window.openProductModal=async function(id){
-  editingProductId=id;
+// copy：複製這件商品——帶入它的全部內容（含照片）開成「新增商品」，按儲存才會建立新商品
+window.openProductModal=async function(id,{copy=false}={}){
+  const token=++productModalToken;
+  productFormBaseline=null;
+  editingProductId=copy?null:id;
   workingPhotos=new Array(MAX_PHOTOS).fill("");
   workingPhotosOriginal=new Array(MAX_PHOTOS).fill("");
   workingSpecs=[];
-  document.getElementById("productModalTitle").textContent=id?"編輯商品":"新增商品";
+  workingOptions=[];
+  const source=id?products.find(p=>p.id===id):null;
+  document.getElementById("productModalTitle").textContent=copy?`新增商品（複製自「${source?.name||""}」）`:id?"編輯商品":"新增商品";
+  const viewLink=document.getElementById("productViewLink");
+  viewLink.hidden=!(id&&!copy&&source?.status==="active");
+  viewLink.href=`index.html#product-${encodeURIComponent(id||"")}`;
   document.getElementById("urlInput").value="";
   document.getElementById("gdriveInput").value="";
   setUploadMethod("file",document.querySelector(".upload-method-btn"));
@@ -3412,8 +3752,12 @@ window.openProductModal=async function(id){
     document.getElementById("pMainCat").value=product.mainCat||"";
     updateSubSelect();
     document.getElementById("pSubCat").value=product.subCat||"";
-    document.getElementById("pName").value=product.name||"";
+    document.getElementById("pName").value=copy?`${product.name||""}（複製）`:product.name||"";
     document.getElementById("pPrice").value=product.price||"";
+    document.getElementById("pSalePrice").value=product.salePrice||"";
+    document.getElementById("pSaleEnd").value=product.saleEnd||"";
+    document.getElementById("pLeadTime").value=product.leadTime||"";
+    workingOptions=(product.options||[]).map(o=>({name:o.name||"",color:o.color||"#d8cbb8",photo:Number.isInteger(o.photo)?o.photo:null}));
     renderBadgeCheckboxes(product.badges||[]);
     document.getElementById("pSize").value=product.size||"";
     document.getElementById("pWidth").value=product.dimensions?.width||"";
@@ -3437,7 +3781,7 @@ window.openProductModal=async function(id){
       renderPhotoSlots();
       openModal("productModal");
       const galleryData=await loadGallery(id);
-      if(editingProductId!==id)return; // 使用者切換到別的商品了，不要覆蓋畫面
+      if(token!==productModalToken)return; // 使用者切換到別的商品了，不要覆蓋畫面
       if(galleryData.photos.length){cover=galleryData.photos;coverOriginals=galleryData.originals}
     }
     cover.slice(0,MAX_PHOTOS).forEach((photo,index)=>workingPhotos[index]=photo);
@@ -3447,7 +3791,7 @@ window.openProductModal=async function(id){
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
     ["pName","pSize","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
-    document.getElementById("pPrice").value="";
+    ["pPrice","pSalePrice","pSaleEnd","pLeadTime"].forEach(fid=>document.getElementById(fid).value="");
     renderBadgeCheckboxes([]);
     document.getElementById("pDesc").innerHTML="";
     workingDimFigure="";
@@ -3455,6 +3799,7 @@ window.openProductModal=async function(id){
   renderSpecEditor();
   renderPhotoSlots();
   openModal("productModal");
+  productFormBaseline=productFormState();
 };
 
 function getSizeSummary(dimensions,size){
@@ -3495,6 +3840,15 @@ window.saveProduct=async function(){
       h:(spec.h||"").trim()
     })),
     dimFigure:validDimFigure(workingDimFigure),
+    salePrice:document.getElementById("pSalePrice").value.trim(),
+    saleEnd:document.getElementById("pSaleEnd").value,
+    leadTime:document.getElementById("pLeadTime").value.trim(),
+    options:workingOptions.filter(o=>o.name.trim()).map(o=>({
+      name:o.name.trim(),
+      color:/^#[0-9a-f]{6}$/i.test(o.color)?o.color:"#d8cbb8",
+      // 照片格位置 → 存起來的第幾張（照片中間有空格時兩者不一樣）
+      photo:Number.isInteger(o.photo)&&workingPhotos[o.photo]?workingPhotos.slice(0,o.photo).filter(Boolean).length:null
+    })),
     desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
   };
   // 這裡故意不用 normalizePhotoUrl：那個函式現在會幫 Cloudinary 網址加上
@@ -3512,7 +3866,10 @@ window.saveProduct=async function(){
   let product;
   if(editingProductId){
     const index=products.findIndex(p=>p.id===editingProductId);
-    product={id:editingProductId,status:products[index].status,sortOrder:products[index].sortOrder,...data};
+    const prev=products[index];
+    product={id:editingProductId,status:prev.status,sortOrder:prev.sortOrder,...data};
+    // 在垃圾桶裡改內容也要記得是什麼時候丟的，30 天到期一樣會自動清掉
+    if(prev.status==="trashed")Object.assign(product,{trashedAt:prev.trashedAt??Date.now(),trashedFrom:prev.trashedFrom||"active"});
     products[index]=product;
   }else{
     product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
@@ -3530,44 +3887,48 @@ window.saveProduct=async function(){
       toast("儲存失敗："+msg,4000);
     }
   }
+  productFormBaseline=null;
   closeModal("productModal");
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  updateTotalCount();
   renderSidebar();
   renderTable();
 };
 
 window.archiveProductRow=async function(id){
   const p=products.find(p=>p.id===id);
-  if(!p)return;
-  p.status="archived";
-  await setDoc(doc(productsCol(),id),p);
-  toast("已封存");
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
-  renderSidebar();
-  renderTable();
+  if(p&&await saveProductsChange([p],p=>{p.status="archived"}))toast("已封存");
 };
 window.restoreProductRow=async function(id){
   const p=products.find(p=>p.id===id);
-  if(!p)return;
-  p.status="active";
   // 還原上架時排到最後面，避免沿用封存前的舊排序數值跟現在其他商品「撞號」，
   // 導致還原後的商品出現在畫面上很奇怪的位置。
-  p.sortOrder=nextSortOrder();
-  await setDoc(doc(productsCol(),id),p);
-  toast("已還原上架");
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
-  renderSidebar();
-  renderTable();
+  if(p&&await saveProductsChange([p],p=>{p.status="active";p.sortOrder=nextSortOrder()}))toast("已還原上架");
 };
+window.trashProductRow=async function(id){
+  const p=products.find(p=>p.id===id);
+  if(!p)return;
+  if(!confirm(`把「${p.name}」丟進垃圾桶嗎？${TRASH_DAYS} 天內都可以在「垃圾桶」救回來。`))return;
+  if(await saveProductsChange([p],moveToTrash))toast(`已丟進垃圾桶，${TRASH_DAYS} 天內可以救回`);
+};
+window.untrashProductRow=async function(id){
+  const p=products.find(p=>p.id===id);
+  if(p&&await saveProductsChange([p],takeOutOfTrash))toast(p.status==="active"?"已救回並上架":"已救回（封存中）");
+};
+// 只有垃圾桶裡的商品可以永久刪除
 window.deleteProductRow=async function(id){
   const p=products.find(p=>p.id===id);
   if(!p)return;
-  if(!confirm(`此操作無法復原，確定要永久刪除「${p.name}」嗎？`))return;
-  await deleteDoc(doc(productsCol(),id));
+  if(!confirm(`永久刪除後就救不回來了，確定要刪除「${p.name}」嗎？`))return;
+  try{
+    await deleteDoc(doc(productsCol(),id));
+  }catch(e){
+    toast("刪除失敗："+(e.message||String(e)),4000);
+    return;
+  }
   try{await deleteDoc(galleryDocRef(id))}catch(e){}
   products=products.filter(p=>p.id!==id);
   toast("已永久刪除");
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  updateTotalCount();
   renderSidebar();
   renderTable();
 };
@@ -3579,6 +3940,276 @@ function missingFlags(p){
     noDesc: !p.desc,
     noPhoto: !(p.photos||[]).filter(Boolean).length
   };
+}
+
+/* ── 詢價熱度：統計客人存下的收藏清單（前台「一次詢問」「複製清單連結」都會存一份，
+   存在 sitedata/{SITE_DOC}/wishlists，每份是 {ids, createdAt}）──────────────── */
+let heatLists=null;
+let heatRange="30";
+let heatShowAll=false;
+const HEAT_TOP=15;
+window.openHeatReport=async function(){
+  heatLists=null;
+  heatShowAll=false;
+  renderHeatRange();
+  document.getElementById("heatBody").innerHTML='<p class="heat-empty">讀取中…</p>';
+  openModal("heatModal");
+  try{
+    const snap=await getDocs(collection(db,"sitedata",SITE_DOC,"wishlists"));
+    heatLists=snap.docs.map(d=>d.data()).filter(d=>Array.isArray(d.ids));
+  }catch(e){
+    const denied=/permission/i.test(`${e.code||""} ${e.message||""}`);
+    document.getElementById("heatBody").innerHTML=`<p class="heat-empty">${denied
+      ?"讀不到收藏清單：資料庫的權限設定沒有開放後台讀取「wishlists」。"
+      :"讀取收藏清單失敗，請稍後再試一次。"}<br>（${escapeHTML(e.message||String(e))}）</p>`;
+    return;
+  }
+  renderHeatReport();
+};
+function renderHeatRange(){
+  document.querySelectorAll("#heatModal .heat-range button").forEach(b=>{
+    const on=b.dataset.range===heatRange;
+    b.classList.toggle("active",on);
+    b.setAttribute("aria-pressed",String(on));
+  });
+}
+document.querySelectorAll("#heatModal .heat-range button").forEach(b=>b.addEventListener("click",()=>{
+  heatRange=b.dataset.range;
+  heatShowAll=false;
+  renderHeatRange();
+  if(heatLists)renderHeatReport();
+}));
+// 統計：每件商品出現在幾份清單、最近一次是什麼時候，以及哪兩件常常一起出現
+function heatStats(lists){
+  const byId=new Map(products.map(p=>[p.id,p]));
+  const items=new Map(),pairs=new Map();
+  let missing=0;
+  for(const list of lists){
+    const ids=[...new Set(list.ids.filter(id=>typeof id==="string"))];
+    const known=ids.filter(id=>byId.has(id)).sort();
+    missing+=ids.length-known.length;
+    for(const id of known){
+      const it=items.get(id)||{product:byId.get(id),count:0,last:0};
+      it.count++;
+      it.last=Math.max(it.last,list.createdAt||0);
+      items.set(id,it);
+    }
+    for(let i=0;i<known.length;i++)for(let j=i+1;j<known.length;j++){
+      const key=known[i]+"|"+known[j];
+      pairs.set(key,(pairs.get(key)||0)+1);
+    }
+  }
+  const ranked=[...items.values()].sort((a,b)=>b.count-a.count||b.last-a.last||(a.product.name||"").localeCompare(b.product.name||"","zh-Hant"));
+  const topPairs=[...pairs.entries()].filter(([,n])=>n>=2).sort((a,b)=>b[1]-a[1]).slice(0,8)
+    .map(([key,n])=>({a:byId.get(key.split("|")[0]),b:byId.get(key.split("|")[1]),count:n}));
+  return{ranked,topPairs,missing};
+}
+const heatStatusNote=p=>isLive(p)?"":`<small>${p.status==="trashed"?"在垃圾桶":"已封存"}</small>`;
+const shortDate=ms=>{const d=new Date(ms);return `${d.getMonth()+1}/${d.getDate()}`};
+function renderHeatReport(){
+  const body=document.getElementById("heatBody");
+  const since=Date.now()-Number(heatRange)*864e5;
+  const lists=heatRange==="all"?heatLists:heatLists.filter(l=>typeof l.createdAt==="number"&&l.createdAt>=since);
+  const rangeText=heatRange==="all"?"到目前為止":`近 ${heatRange} 天`;
+  if(!lists.length){
+    body.innerHTML=`<p class="heat-empty">${rangeText}還沒有客人存收藏清單。客人把商品加進收藏、按「一次詢問」之後，這裡就會開始有資料。</p>`;
+    return;
+  }
+  const {ranked,topPairs,missing}=heatStats(lists);
+  const itemTotal=lists.reduce((sum,l)=>sum+new Set(l.ids).size,0);
+  const max=ranked[0]?.count||1;
+  const shown=heatShowAll?ranked:ranked.slice(0,HEAT_TOP);
+  body.innerHTML=`
+    <div class="heat-kpis">
+      <div class="heat-kpi"><div class="heat-kpi-v">${lists.length}</div><div class="heat-kpi-l">份收藏清單</div></div>
+      <div class="heat-kpi"><div class="heat-kpi-v">${ranked.length}</div><div class="heat-kpi-l">件商品被問過</div></div>
+      <div class="heat-kpi"><div class="heat-kpi-v">${(itemTotal/lists.length).toFixed(1)}</div><div class="heat-kpi-l">平均每份幾件</div></div>
+    </div>
+    <div class="heat-h">最常被詢問的商品</div>
+    ${ranked.length?`<ol class="heat-bars">${shown.map((it,i)=>`
+      <li><button type="button" class="heat-row" data-id="${escapeHTML(it.product.id)}" data-i="${i}">
+        <span class="heat-rank">${i+1}</span>
+        <span class="heat-name">${escapeHTML(it.product.name||"（未命名）")}${heatStatusNote(it.product)}</span>
+        <span class="heat-track"><span class="heat-bar" style="width:calc((100% - 34px) * ${(it.count/max).toFixed(4)})"></span><span class="heat-val">${it.count}</span></span>
+      </button></li>`).join("")}</ol>
+      ${ranked.length>HEAT_TOP?`<button type="button" class="heat-more" id="heatMoreBtn">${heatShowAll?"只看前 "+HEAT_TOP+" 名":`顯示全部 ${ranked.length} 件`}</button>`:'<div class="heat-gap"></div>'}`
+      :'<p class="heat-empty">清單裡的商品都已經永久刪除了。</p>'}
+    <div class="heat-h">常一起被詢問的組合</div>
+    ${topPairs.length?`<ul class="heat-pairs">${topPairs.map(pr=>`
+      <li><span>${escapeHTML(pr.a.name||"（未命名）")}<span class="heat-plus">＋</span>${escapeHTML(pr.b.name||"（未命名）")}</span><span class="heat-pair-n">${pr.count} 次</span></li>`).join("")}</ul>`
+      :'<p class="heat-empty">還沒有兩件商品一起出現在 2 份以上的清單。</p>'}
+    ${missing?`<p class="heat-foot">另有 ${missing} 次詢問的商品已經永久刪除，沒有列在上面。</p>`:""}`;
+  document.getElementById("heatMoreBtn")?.addEventListener("click",()=>{heatShowAll=!heatShowAll;renderHeatReport()});
+  const tip=document.getElementById("heatTip");
+  const modal=tip.parentElement;
+  const showTip=(row,x,y)=>{
+    const it=shown[Number(row.dataset.i)];
+    const pct=Math.round(it.count/lists.length*100);
+    tip.replaceChildren();
+    const strong=document.createElement("strong");
+    strong.textContent=`${it.count} 份清單有這件`;
+    const name=document.createElement("span");
+    name.textContent=it.product.name||"（未命名）";
+    const more=document.createElement("span");
+    more.textContent=`佔${rangeText}清單的 ${pct}%${it.last?`・最近一次 ${shortDate(it.last)}`:""}・點一下打開商品`;
+    tip.append(strong,name,more);
+    tip.hidden=false;
+    const box=modal.getBoundingClientRect();
+    const left=Math.min(x-box.left+14,box.width-tip.offsetWidth-8);
+    let top=y-box.top+16;
+    if(top+tip.offsetHeight>box.height-8)top=y-box.top-tip.offsetHeight-12;
+    tip.style.left=Math.max(8,left)+"px";
+    tip.style.top=Math.max(8,top)+"px";
+  };
+  const hideTip=()=>{tip.hidden=true};
+  body.querySelectorAll(".heat-row").forEach(row=>{
+    row.addEventListener("pointermove",e=>showTip(row,e.clientX,e.clientY));
+    row.addEventListener("pointerleave",hideTip);
+    row.addEventListener("focus",()=>{const r=row.getBoundingClientRect();showTip(row,r.left+r.width*.55,r.bottom-6)});
+    row.addEventListener("blur",hideTip);
+    row.addEventListener("click",()=>{hideTip();closeModal("heatModal");openProductModal(row.dataset.id)});
+  });
+}
+
+/* ── 完整備份與還原：網站設定＋所有商品（含封存、垃圾桶）＋每件商品的完整照片清單 ── */
+const BACKUP_FORMAT="hsshop-backup";
+let pendingRestore=null;
+const backupFileName=(note="")=>`信通家俱行-完整備份${note?"-"+note:""}-${localDateStr()}.json`;
+// 直接從資料庫讀最新的一份（不是用畫面上的資料），照片清單一次讀 8 件
+async function buildFullBackup(onProgress){
+  const siteSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
+  const productsSnap=await getDocs(productsCol());
+  const list=productsSnap.docs.map(d=>d.data());
+  const galleries={};
+  for(let i=0;i<list.length;i+=8){
+    await Promise.all(list.slice(i,i+8).map(async p=>{
+      const snap=await getDoc(galleryDocRef(p.id));
+      if(!snap.exists())return;
+      const g=snap.data();
+      galleries[p.id]={photos:g.photos||[],photoOriginals:g.photoOriginals||[]};
+    }));
+    onProgress?.(Math.min(i+8,list.length),list.length);
+  }
+  return{format:BACKUP_FORMAT,version:1,createdAt:new Date().toISOString(),site:siteSnap.exists()?siteSnap.data():{},products:list,galleries};
+}
+const downloadBackup=(data,note)=>downloadBlob(new Blob([JSON.stringify(data)],{type:"application/json"}),backupFileName(note));
+window.downloadFullBackup=async function(){
+  toast("正在準備備份…",3000);
+  try{
+    const data=await buildFullBackup((done,total)=>toast(`正在備份… ${done}/${total}`,3000));
+    downloadBackup(data);
+    toast(`已下載完整備份（${data.products.length} 件商品）`,3500);
+  }catch(e){
+    toast("備份失敗："+(e.message||String(e)),5000);
+  }
+};
+// 檢查是不是這個後台下載的備份檔，格式不對就整份不用
+function parseBackup(text){
+  let data;
+  try{data=JSON.parse(text)}catch(e){throw new Error("讀不懂這個檔案，請選後台「下載完整備份」存下來的 .json 檔")}
+  if(!data||data.format!==BACKUP_FORMAT)throw new Error("這不是後台「下載完整備份」存下來的檔案");
+  if(data.version!==1)throw new Error("這個備份檔的版本這個後台看不懂");
+  if(!data.site||typeof data.site!=="object"||Array.isArray(data.site))throw new Error("備份檔裡少了網站設定");
+  if(!Array.isArray(data.products))throw new Error("備份檔裡少了商品資料");
+  const ids=new Set();
+  for(const p of data.products){
+    if(!p||typeof p!=="object"||typeof p.id!=="string"||!p.id||p.id.includes("/"))throw new Error("備份檔裡有商品資料格式不對");
+    if(ids.has(p.id))throw new Error(`備份檔裡有重複的商品（${p.id}）`);
+    ids.add(p.id);
+  }
+  const galleries={};
+  for(const [id,g] of Object.entries(data.galleries&&typeof data.galleries==="object"?data.galleries:{})){
+    if(!ids.has(id))continue;
+    if(!g||!Array.isArray(g.photos))throw new Error("備份檔裡有照片資料格式不對");
+    galleries[id]={photos:g.photos,photoOriginals:Array.isArray(g.photoOriginals)?g.photoOriginals:[]};
+  }
+  data.galleries=galleries;
+  return data;
+}
+window.handleBackupFile=async function(event){
+  const file=event.target.files[0];
+  event.target.value="";
+  if(!file)return;
+  try{
+    pendingRestore=parseBackup(await file.text());
+  }catch(e){
+    toast(e.message,5000);
+    return;
+  }
+  renderRestoreSummary(pendingRestore);
+  openModal("restoreModal");
+};
+function renderRestoreSummary(data){
+  const list=data.products;
+  const count=st=>list.filter(p=>(p.status||"active")===st).length;
+  const statusText=[["active","上架中"],["archived","封存"],["trashed","垃圾桶"]].map(([st,label])=>count(st)?`${label} ${count(st)}`:"").filter(Boolean).join("、");
+  const backupIds=new Set(list.map(p=>p.id));
+  const extra=products.filter(p=>!backupIds.has(p.id));
+  const when=new Date(data.createdAt);
+  const site=data.site;
+  const siteParts=[
+    Array.isArray(site.catalog)&&`分類 ${site.catalog.length} 個`,
+    Array.isArray(site.tagDefs)&&`標籤 ${site.tagDefs.length} 個`,
+    site.contact&&"聯繫資訊",site.pageText&&"頁面文字",site.layout&&"首頁版面"
+  ].filter(Boolean);
+  document.getElementById("restoreSummary").innerHTML=`
+    <dl class="restore-facts">
+      <dt>備份時間</dt><dd>${isNaN(when)?"（不明）":escapeHTML(when.toLocaleString("zh-TW",{dateStyle:"medium",timeStyle:"short"}))}</dd>
+      <dt>商品</dt><dd>${list.length} 件${statusText?`（${statusText}）`:""}</dd>
+      <dt>網站設定</dt><dd>${escapeHTML(siteParts.join("、")||"（空的）")}</dd>
+    </dl>
+    <div class="restore-h">按下「確認還原」會：</div>
+    <ol class="restore-steps">
+      <li>先自動下載一份<strong>現在</strong>的完整備份，還原錯了可以用它再還原回來</li>
+      <li>網站設定（分類、標籤、聯繫資訊、頁面文字、首頁版面）整份換成備份裡的</li>
+      <li>備份裡的 ${list.length} 件商品（含照片）改回備份當時的內容</li>
+      <li>${extra.length
+        ?`現在有、但備份裡沒有的 ${extra.length} 件商品<strong>不會被刪除</strong>，會照原樣留著：<div class="restore-extra">${extra.slice(0,12).map(p=>escapeHTML(p.name||"（未命名）")).join("、")}${extra.length>12?` …等 ${extra.length} 件`:""}</div>`
+        :"現在的商品都在備份裡，不會多出或少掉商品"}</li>
+    </ol>`;
+}
+window.confirmRestore=async function(){
+  const data=pendingRestore;
+  if(!data)return;
+  const btn=document.getElementById("restoreConfirmBtn");
+  btn.disabled=true;
+  try{
+    toast("先下載一份現在的備份…",4000);
+    downloadBackup(await buildFullBackup(),"還原前");
+  }catch(e){
+    btn.disabled=false;
+    toast("沒辦法先備份現在的資料，所以還沒有還原："+(e.message||String(e)),5000);
+    return;
+  }
+  let step="網站設定";
+  try{
+    await setDoc(doc(db,"sitedata",SITE_DOC),data.site);
+    step="商品";
+    for(let i=0;i<data.products.length;i+=400){
+      const batch=writeBatch(db);
+      data.products.slice(i,i+400).forEach(p=>batch.set(doc(productsCol(),p.id),p));
+      await batch.commit();
+    }
+    step="照片";
+    for(const [i,p] of data.products.entries()){
+      const g=data.galleries[p.id];
+      // 備份當時沒有照片清單的商品，現在的也拿掉，照片數才會跟商品資料對得上
+      if(g)await setDoc(galleryDocRef(p.id),{photos:g.photos,photoOriginals:g.photoOriginals,batchBackup:null});
+      else await deleteDoc(galleryDocRef(p.id));
+      if(i%10===9)toast(`還原照片中… ${i+1}/${data.products.length}`,3000);
+    }
+  }catch(e){
+    toast(`還原到「${step}」時失敗：${e.message||String(e)}。可以用剛剛自動下載的「還原前」備份再還原一次，回到原本的樣子。`,8000);
+    return finishRestore();
+  }
+  toast(`已還原網站設定和 ${data.products.length} 件商品 ☁️`,4000);
+  return finishRestore();
+};
+async function finishRestore(){
+  pendingRestore=null;
+  document.getElementById("restoreConfirmBtn").disabled=false;
+  closeModal("restoreModal");
+  await boot();
 }
 
 async function boot(){
@@ -3625,15 +4256,32 @@ async function boot(){
     document.getElementById("tbody").innerHTML=`<tr><td colspan="11" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;
   }
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  await purgeExpiredTrash();
+  updateTotalCount();
   if(window.innerWidth>760)catalog.forEach(c=>openMainCats.add(c.id));
   renderSidebar();
   renderTable();
 }
 window.boot=boot;
+async function purgeExpiredTrash(){
+  const expired=products.filter(p=>p.status==="trashed"&&typeof p.trashedAt==="number"&&Date.now()-p.trashedAt>TRASH_DAYS*864e5);
+  const purged=[];
+  for(const p of expired){
+    try{
+      await deleteDoc(doc(productsCol(),p.id));
+      try{await deleteDoc(galleryDocRef(p.id))}catch(e){}
+      purged.push(p.id);
+    }catch(e){
+      console.warn("清除過期的垃圾桶商品失敗",p.id,e);
+    }
+  }
+  if(!purged.length)return;
+  products=products.filter(p=>!purged.includes(p.id));
+  toast(`已自動清除 ${purged.length} 個在垃圾桶超過 ${TRASH_DAYS} 天的商品`,3500);
+}
 
 function renderSidebar(){
-  const activeProducts=products.filter(p=>p.status!=="archived");
+  const activeProducts=products.filter(isLive);
   const allRow=`
     <div class="cat-row ${catFilterMain===null?"active":""}" onclick="setCatFilter(null,null)">
       <span class="cat-toggle"></span>
@@ -3686,21 +4334,23 @@ window.setFilter=function(f){
 };
 
 /* ── CSV 匯出／匯入（價格、尺寸、分類皆可批次編輯）────────────── */
-function getCurrentFilteredList(){
-  const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
-  let catFiltered=products.slice();
+// 左邊選的分類範圍內的商品（上面篩選籤的數字也是在這個範圍內統計）
+function catFilteredProducts(){
+  let list=products.slice();
   if(catFilterMain){
-    catFiltered=catFiltered.filter(p=>p.mainCat===catFilterMain);
-    if(catFilterSub)catFiltered=catFiltered.filter(p=>p.subCat===catFilterSub);
+    list=list.filter(p=>p.mainCat===catFilterMain);
+    if(catFilterSub)list=list.filter(p=>p.subCat===catFilterSub);
   }
-  let list=catFiltered.slice();
-  if(currentFilter==="archived"){
-    list=list.filter(p=>p.status==="archived");
+  return list;
+}
+// 再套上篩選籤、搜尋、排序：表格跟匯出 CSV 用同一份
+function filterAndSort(list){
+  const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
+  if(currentFilter==="archived"||currentFilter==="trashed"){
+    list=list.filter(p=>p.status===currentFilter);
   }else{
-    list=list.filter(p=>p.status!=="archived");
-    if(currentFilter!=="all"){
-      list=list.filter(p=>missingFlags(p)[currentFilter]);
-    }
+    list=list.filter(isLive);
+    if(currentFilter!=="all")list=list.filter(p=>missingFlags(p)[currentFilter]);
   }
   if(q){
     list=list.filter(p=>{
@@ -3709,9 +4359,9 @@ function getCurrentFilteredList(){
       return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
     });
   }
-  list.sort((a,b)=>sortDir*sortCompare(a,b));
-  return list;
+  return list.sort((a,b)=>sortDir*sortCompare(a,b));
 }
+function getCurrentFilteredList(){return filterAndSort(catFilteredProducts())}
 const CSV_HEADERS=["商品ID(請勿修改)","商品名稱(僅供參考,匯入不會套用)","主分類","子分類","寬cm","深cm","高cm","價格","狀態(上架或封存)"];
 function csvEscapeCell(val){
   const s=String(val??"");
@@ -3767,7 +4417,7 @@ window.exportProductsCSV=function(){
   const lines=[CSV_HEADERS.map(csvEscapeCell).join(",")];
   list.forEach(p=>{
     const d=p.dimensions||{};
-    const statusLabel=p.status==="archived"?"封存":"上架";
+    const statusLabel=p.status==="trashed"?"垃圾桶":p.status==="archived"?"封存":"上架";
     lines.push([
       p.id,
       p.name||"",
@@ -3781,18 +4431,24 @@ window.exportProductsCSV=function(){
     ].map(csvEscapeCell).join(","));
   });
   const csvContent="﻿"+lines.join("\n"); // 加 BOM，Excel 開啟中文才不會亂碼
-  const blob=new Blob([csvContent],{type:"text/csv;charset=utf-8"});
+  downloadBlob(new Blob([csvContent],{type:"text/csv;charset=utf-8"}),`hsshop-商品清單-${localDateStr()}.csv`);
+  toast(`已匯出 ${list.length} 筆商品`);
+};
+// 今天的日期（電腦上的當地時間，不是 UTC），檔名用
+function localDateStr(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function downloadBlob(blob,filename){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  const ts=new Date().toISOString().slice(0,10);
   a.href=url;
-  a.download=`hsshop-商品清單-${ts}.csv`;
+  a.download=filename;
   document.body.appendChild(a);
   a.click();
   a.remove();
-  URL.revokeObjectURL(url);
-  toast(`已匯出 ${list.length} 筆商品`);
-};
+  setTimeout(()=>URL.revokeObjectURL(url),10000);
+}
 
 let pendingCSVChanges=[];
 window.handleCSVImport=async function(event){
@@ -3822,6 +4478,10 @@ window.handleCSVImport=async function(event){
     const product=products.find(p=>p.id===(id||"").trim());
     if(!product){
       skipped.push({id:(id||"").trim()||"(空白)",reason:"找不到對應的商品 ID"});
+      return;
+    }
+    if(product.status==="trashed"){
+      skipped.push({id:product.id,reason:"這個商品在垃圾桶裡，先救回來再匯入"});
       return;
     }
     const fieldChanges=[];
@@ -3959,7 +4619,7 @@ window.confirmCSVImport=async function(){
   btn.textContent="確認套用變更";
   pendingCSVChanges=[];
   closeModal("csvImportModal");
-  document.getElementById("totalCount").textContent=`共 ${products.filter(p=>p.status!=="archived").length} 個上架商品`;
+  updateTotalCount();
   renderSidebar();
   renderTable();
 };
@@ -3995,17 +4655,11 @@ document.querySelectorAll("thead th[data-sort]").forEach(th=>{
 
 window.renderTable=function(){
   const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
-
   // 左邊分類是第一層篩選，上面的篩選籤（含數字）只在左邊選到的分類範圍內統計／篩選
-  let catFiltered=products.slice();
-  if(catFilterMain){
-    catFiltered=catFiltered.filter(p=>p.mainCat===catFilterMain);
-    if(catFilterSub)catFiltered=catFiltered.filter(p=>p.subCat===catFilterSub);
-  }
-
-  const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,archived:0};
+  const catFiltered=catFilteredProducts();
+  const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,archived:0,trashed:0};
   catFiltered.forEach(p=>{
-    if(p.status==="archived"){counts.archived++;return}
+    if(!isLive(p)){if(p.status in counts)counts[p.status]++;return}
     counts.all++;
     const m=missingFlags(p);
     if(m.noCat)counts.noCat++;
@@ -4014,25 +4668,7 @@ window.renderTable=function(){
     if(m.noPhoto)counts.noPhoto++;
   });
   Object.keys(counts).forEach(k=>{const el=document.getElementById("fc-"+k);if(el)el.textContent=counts[k]});
-
-  let list=catFiltered.slice();
-  if(currentFilter==="archived"){
-    list=list.filter(p=>p.status==="archived");
-  }else{
-    list=list.filter(p=>p.status!=="archived");
-    if(currentFilter!=="all"){
-      list=list.filter(p=>missingFlags(p)[currentFilter]);
-    }
-  }
-  if(q){
-    list=list.filter(p=>{
-      const cat=categoryLabel(p).toLowerCase();
-      const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
-      return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
-    });
-  }
-
-  list.sort((a,b)=>sortDir*sortCompare(a,b));
+  const list=filterAndSort(catFiltered);
 
   // 篩選條件（搜尋／狀態篩選／分類／排序欄位）只要有任何一項變動，分頁就跳回第 1 頁，
   // 不然容易切換篩選後停在一個已經沒有那麼多頁的頁碼、畫面變空白。
@@ -4070,7 +4706,7 @@ window.renderTable=function(){
     tbody.innerHTML='<tr><td colspan="11" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
-  // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/快速分類模式下拖曳造成順序混亂；
+  // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/批次操作模式下拖曳造成順序混亂；
   // 拖曳模式本身用獨立的開關（⠿ 按鈕）控制，不綁定目前的排序欄位
   const canReorder=dragModeEnabled&&!quickCatMode&&!q&&currentFilter==="all"&&!!catFilterMain;
   tbody.innerHTML=pagedList.map(p=>{
@@ -4083,7 +4719,7 @@ window.renderTable=function(){
       ? `<div class="missing-dots">${[m.noCat&&"分類",m.noSize&&"尺寸",m.noDesc&&"說明",m.noPhoto&&"照片"].filter(Boolean).map(()=>'<span class="missing-dot"></span>').join("")}</div>`
       : "";
     return `
-      <tr class="${p.status==="archived"?"is-archived":""}${canReorder?" reorderable":""}" data-id="${p.id}"${canReorder?' draggable="true"':""}>
+      <tr class="${isLive(p)?"":"is-archived"}${canReorder?" reorderable":""}" data-id="${p.id}"${canReorder?' draggable="true"':""}>
         <td class="qc-cell"><input type="checkbox" ${quickCatSelected.has(p.id)?"checked":""} onchange="toggleQuickCatSelect('${p.id}')"></td>
         <td class="drag-handle-cell">${canReorder?'<span class="drag-handle" title="拖曳調整順序">⠿</span>':""}</td>
         <td>${thumb}</td>
@@ -4099,11 +4735,14 @@ window.renderTable=function(){
         <td>${p.price?escapeHTML(p.price):'<span class="pill pill-missing">未填</span>'}</td>
         <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
-        <td>${p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
+        <td>${p.status==="trashed"?`<span class="pill pill-archived">垃圾桶・剩 ${trashDaysLeft(p)} 天</span>`
+          :p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>
         <td><div class="row-actions">
-          ${p.status==="archived"
-            ? `<button onclick="restoreProductRow('${p.id}')">還原</button><button class="danger" onclick="deleteProductRow('${p.id}')">刪除</button>`
-            : `<button onclick="archiveProductRow('${p.id}')">封存</button>`}
+          ${p.status==="trashed"
+            ? `<button onclick="untrashProductRow('${p.id}')">救回</button><button class="danger" onclick="deleteProductRow('${p.id}')">永久刪除</button>`
+            : p.status==="archived"
+            ? `<button onclick="restoreProductRow('${p.id}')">還原上架</button><button onclick="duplicateProductRow('${p.id}')">複製</button><button class="danger" onclick="trashProductRow('${p.id}')">刪除</button>`
+            : `<a href="index.html#product-${encodeURIComponent(p.id)}" target="_blank" rel="noopener" title="在前台看這件商品">前台 ↗</a><button onclick="duplicateProductRow('${p.id}')">複製</button><button onclick="archiveProductRow('${p.id}')">封存</button>`}
         </div></td>
       </tr>
     `;

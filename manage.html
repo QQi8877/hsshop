@@ -704,7 +704,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
   font-size:10px;
   color:var(--soft);
 }
-.has-img .slot-num{color:rgba(255,255,255,.72)}
+/* 有照片時號碼放在深色小圓底上，淺色照片上也看得到（顏色／款式用「照片 N」指定照片） */
+.has-img .slot-num{top:5px;left:5px;min-width:17px;padding:0 5px;border-radius:999px;background:rgba(32,30,29,.62);color:var(--white);font-size:11px;line-height:17px;text-align:center}
 .slot-overlay{
   position:absolute;
   inset:0;
@@ -3328,7 +3329,7 @@ function renderOptionEditor(){
   editor.innerHTML=workingOptions.map((o,i)=>`<div class="option-row" data-i="${i}">
     <input type="color" value="${/^#[0-9a-f]{6}$/i.test(o.color||"")?o.color:"#d8cbb8"}" title="顏色" aria-label="顏色">
     <input type="text" value="${escapeHTML(o.name||"")}" placeholder="名稱，例：白橡、梧桐木紋" aria-label="顏色／款式名稱">
-    <select aria-label="點了換成哪張照片"><option value="">點了不換照片</option>${filledSlots.map(k=>`<option value="${k}"${o.photo===k?" selected":""}>換成照片 ${k+1}</option>`).join("")}</select>
+    <select aria-label="點了換成哪張照片"><option value="">不換照片</option>${filledSlots.map(k=>`<option value="${k}"${o.photo===k?" selected":""}>換成照片 ${k+1}</option>`).join("")}</select>
     <button type="button" class="spec-del-btn" aria-label="刪除這個顏色／款式">×</button>
   </div>`).join("");
   editor.querySelectorAll(".option-row").forEach(row=>{

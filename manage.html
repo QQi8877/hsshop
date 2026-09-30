@@ -203,10 +203,12 @@ header{
   border-radius:999px;
   background:var(--paper);
   padding:8px 14px;
-  min-width:220px;
+  width:170px;
   color:var(--soft);
+  cursor:text;
 }
-.search-box input{flex:1;border:0;background:transparent;outline:none;color:var(--ink)}
+.search-box:focus-within{border-color:var(--tan)}
+.search-box input{flex:1;min-width:0;width:100%;border:0;background:transparent;outline:none;color:var(--ink)}
 .filter-chip{
   border:1px solid var(--line);
   background:var(--paper);
@@ -665,6 +667,11 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .view-on-site{display:inline-block;margin:-14px 0 14px;font-size:12.5px;color:var(--tan-dark)}
 .form-grid-2,.form-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;align-items:end}
 .form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 價格欄：打數字時前面自動出現「$」、數字自動加千分位；寫「洽詢」這種文字時不顯示「$」 */
+.price-input{position:relative}
+.price-prefix{position:absolute;left:13px;top:0;bottom:0;display:none;align-items:center;color:var(--ink);pointer-events:none}
+.price-input[data-kind="num"] .price-prefix{display:flex}
+.modal .price-input[data-kind="num"] input{padding-left:27px}
 /* 商品編輯：比較寬、分成幾個區塊，儲存按鈕固定在最下面不用捲到底 */
 .modal-wide{width:min(820px,100%)}
 .form-section-title{margin:30px 0 0;padding-top:22px;border-top:1px solid var(--line);font-size:15px;font-weight:600;color:var(--charcoal)}
@@ -1008,10 +1015,10 @@ body.quickcat-mode .quickcat-bar{display:flex}
     </aside>
     <div class="content">
       <div class="toolbar">
-        <div class="search-box">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="searchBox" placeholder="搜尋商品名稱、說明或分類…" oninput="renderTable()">
-        </div>
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="searchBox" aria-label="搜尋商品" oninput="renderTable()">
+        </label>
         <button class="filter-chip active" data-filter="all" onclick="setFilter('all')">全部 <span class="n" id="fc-all"></span></button>
         <button class="filter-chip warn" data-filter="noCat" onclick="setFilter('noCat')">缺分類 <span class="n" id="fc-noCat"></span></button>
         <button class="filter-chip warn" data-filter="noSize" onclick="setFilter('noSize')">缺尺寸 <span class="n" id="fc-noSize"></span></button>
@@ -1109,11 +1116,11 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="form-grid-3">
       <div>
         <label>參考售價（選填，也可以寫「洽詢」）</label>
-        <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
+        <div class="price-input" data-kind="empty"><span class="price-prefix" aria-hidden="true">$</span><input type="text" id="pPrice" placeholder="例：3,200 或 洽詢"></div>
       </div>
       <div>
         <label>特價（選填，原價會劃掉）</label>
-        <input type="text" id="pSalePrice" placeholder="例：2,800">
+        <div class="price-input" data-kind="empty"><span class="price-prefix" aria-hidden="true">$</span><input type="text" id="pSalePrice" inputmode="numeric" placeholder="例：2,800"></div>
       </div>
       <div>
         <label>特價到哪一天（不填＝一直特價）</label>
@@ -3394,6 +3401,58 @@ function remapOptionPhotos(mapIndex){
 }
 window.setLeadTime=function(text){document.getElementById("pLeadTime").value=text};
 
+/* ── 價格：自動加「$」和千分位 ───────────────────────────────── */
+// 純金額（可以已經打了 $／NT$、千分位逗號、空格、全形數字或「元」）→ 只留數字；
+// 「洽詢」這類文字 → null，照原樣存、照原樣顯示
+function priceDigits(text){
+  const t=String(text??"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[\s,，]/g,"");
+  const m=/^(?:NT\$|\$|＄)?(\d+)元?$/i.exec(t);
+  return m?m[1].replace(/^0+(?=\d)/,""):null;
+}
+const groupThousands=digits=>digits.replace(/\B(?=(\d{3})+(?!\d))/g,",");
+// 表格、匯入預覽顯示用：「100000」→「$ 100,000」（跟前台一樣），文字原樣
+function priceLabel(text){
+  const t=String(text??"").trim(),digits=priceDigits(t);
+  return digits!=null?`$ ${groupThousands(digits)}`:t;
+}
+// 存檔用：金額只存數字（「100,000」→「100000」），文字原樣
+function priceForSave(text){
+  const t=String(text??"").trim(),digits=priceDigits(t);
+  return digits!=null?digits:t;
+}
+function setPriceKind(input){
+  const t=input.value.trim();
+  input.parentElement.dataset.kind=!t?"empty":priceDigits(t)!=null?"num":"text";
+}
+function setPriceField(id,value){
+  const input=document.getElementById(id);
+  const t=String(value??"").trim(),digits=priceDigits(t);
+  input.value=digits!=null?groupThousands(digits):t;
+  setPriceKind(input);
+}
+// 邊打邊加千分位；游標放回原本那個數字後面，不然每打一個字游標就跳到最後
+function formatPriceInput(input){
+  const raw=input.value,digits=priceDigits(raw);
+  if(digits!=null&&groupThousands(digits)!==raw){
+    const formatted=groupThousands(digits);
+    const half=raw.replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0));
+    const caret=input.selectionStart??raw.length;
+    const dropped=half.replace(/\D/g,"").length-digits.length; // 拿掉的開頭 0
+    const keep=Math.max(0,half.slice(0,caret).replace(/\D/g,"").length-dropped);
+    let pos=0;
+    for(let seen=0;pos<formatted.length&&seen<keep;pos++)if(formatted[pos]!==",")seen++;
+    input.value=formatted;
+    if(document.activeElement===input)input.setSelectionRange(pos,pos);
+  }
+  setPriceKind(input);
+}
+["pPrice","pSalePrice"].forEach(id=>{
+  const input=document.getElementById(id);
+  // 注音輸入選字中先不要動欄位內容，選完字（compositionend）再整理
+  input.addEventListener("input",e=>{if(e.isComposing)setPriceKind(input);else formatPriceInput(input)});
+  input.addEventListener("compositionend",()=>formatPriceInput(input));
+});
+
 /* ── 還沒儲存就關閉的提醒 ───────────────────────────────────── */
 function productFormState(){
   const val=id=>document.getElementById(id).value;
@@ -3791,8 +3850,8 @@ window.openProductModal=async function(id,{copy=false}={}){
     updateSubSelect();
     document.getElementById("pSubCat").value=product.subCat||"";
     document.getElementById("pName").value=copy?`${product.name||""}（複製）`:product.name||"";
-    document.getElementById("pPrice").value=product.price||"";
-    document.getElementById("pSalePrice").value=product.salePrice||"";
+    setPriceField("pPrice",product.price);
+    setPriceField("pSalePrice",product.salePrice);
     document.getElementById("pSaleEnd").value=product.saleEnd||"";
     document.getElementById("pLeadTime").value=product.leadTime||"";
     workingOptions=(product.options||[]).map(o=>({name:o.name||"",color:o.color||"#d8cbb8",photo:Number.isInteger(o.photo)?o.photo:null}));
@@ -3829,7 +3888,9 @@ window.openProductModal=async function(id,{copy=false}={}){
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
     ["pName","pSize","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
-    ["pPrice","pSalePrice","pSaleEnd","pLeadTime"].forEach(fid=>document.getElementById(fid).value="");
+    ["pSaleEnd","pLeadTime"].forEach(fid=>document.getElementById(fid).value="");
+    setPriceField("pPrice","");
+    setPriceField("pSalePrice","");
     renderBadgeCheckboxes([]);
     document.getElementById("pDesc").innerHTML="";
     workingDimFigure="";
@@ -3869,7 +3930,7 @@ window.saveProduct=async function(){
     mainCat:document.getElementById("pMainCat").value,
     subCat:document.getElementById("pSubCat").value||null,
     name,
-    price:document.getElementById("pPrice").value.trim(),
+    price:priceForSave(document.getElementById("pPrice").value),
     badges:getCheckedBadges(),
     size,
     dimensions,
@@ -3880,7 +3941,7 @@ window.saveProduct=async function(){
       h:(spec.h||"").trim()
     })),
     dimFigure:validDimFigure(workingDimFigure),
-    salePrice:document.getElementById("pSalePrice").value.trim(),
+    salePrice:priceForSave(document.getElementById("pSalePrice").value),
     saleEnd:document.getElementById("pSaleEnd").value,
     leadTime:document.getElementById("pLeadTime").value.trim(),
     options:workingOptions.filter(o=>o.name.trim()).map(o=>({
@@ -4594,11 +4655,11 @@ window.handleCSVImport=async function(event){
       fieldChanges.push({key:"dims",label:"尺寸",oldVal:oldSize,newVal:newSize});
     }
 
-    // 價格
-    const newPrice=(priceCell||"").trim();
-    const priceChanged=newPrice!==(product.price||"");
+    // 價格：金額跟編輯商品一樣只存數字，「3,200」「NT$ 3,200」都算 3200，比對時才不會把沒改的當成有改
+    const newPrice=priceForSave(priceCell);
+    const priceChanged=newPrice!==priceForSave(product.price);
     if(priceChanged){
-      fieldChanges.push({key:"price",label:"價格",oldVal:product.price||"（空白）",newVal:newPrice||"（空白）"});
+      fieldChanges.push({key:"price",label:"價格",oldVal:priceLabel(product.price)||"（空白）",newVal:priceLabel(newPrice)||"（空白）"});
     }
 
     // 狀態
@@ -4726,12 +4787,12 @@ function sizeCellHtml(p,m){
 // 售價欄：售價是選填，沒填就顯示「—」；有特價時多一行特價（過了結束日顯示已結束）
 function priceCellHtml(p){
   const base=String(p.price??"").trim(),sale=String(p.salePrice??"").trim();
-  let html=base?escapeHTML(base):'<span class="cell-muted">—</span>';
+  let html=base?escapeHTML(priceLabel(base)):'<span class="cell-muted">—</span>';
   if(!sale)return html;
   const ended=p.saleEnd&&!(new Date(`${p.saleEnd}T23:59:59`)>=new Date());
   if(ended)return html+'<div class="cell-sale ended">特價已結束</div>';
   const [,mm,dd]=String(p.saleEnd||"").split("-");
-  return html+`<div class="cell-sale">特價 ${escapeHTML(sale)}${p.saleEnd?`<span>到 ${Number(mm)}/${Number(dd)}</span>`:""}</div>`;
+  return html+`<div class="cell-sale">特價 ${escapeHTML(priceLabel(sale))}${p.saleEnd?`<span>到 ${Number(mm)}/${Number(dd)}</span>`:""}</div>`;
 }
 window.renderTable=function(){
   const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();

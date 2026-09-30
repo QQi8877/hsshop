@@ -179,7 +179,7 @@ header{
   gap:6px;
   padding:6px 8px 6px 16px;
   border-radius:7px;
-  font-size:9.83px;
+  font-size:11.5px;
   color:var(--muted);
   cursor:pointer;
 }
@@ -265,7 +265,15 @@ tbody tr.is-archived{opacity:.55}
 .cell-name{font-weight:500;color:var(--charcoal)}
 .cell-name-link{cursor:pointer}
 .cell-name-link:hover{color:var(--tan-dark);text-decoration:underline}
-.cell-subcat{padding-left:18px;font-size:9.33px;color:var(--soft);margin-top:2px}
+.cell-subcat{padding-left:12px;font-size:11px;color:var(--soft);margin-top:2px}
+/* 表格：售價欄顯示特價、尺寸欄直接顯示寬×深×高，點縮圖也能打開編輯 */
+.cell-cat{white-space:nowrap}
+.cell-muted{color:var(--soft)}
+.cell-sale{margin-top:2px;font-size:11.5px;color:var(--danger);white-space:nowrap}
+.cell-sale span{display:block;color:var(--soft)}
+.cell-sale.ended{color:var(--soft)}
+.cell-dims{white-space:nowrap;font-variant-numeric:tabular-nums}
+.cell-thumb-link{cursor:pointer}
 .pill{
   display:inline-flex;
   align-items:center;
@@ -273,13 +281,13 @@ tbody tr.is-archived{opacity:.55}
   border-radius:999px;
   padding:3px 9px;
   font-size:11.5px;
+  white-space:nowrap;
 }
 .pill-ok{background:rgba(127,144,118,.15);color:var(--sage)}
 .pill-missing{background:rgba(199,138,58,.15);color:var(--warn)}
 .pill-archived{background:rgba(184,66,54,.12);color:var(--danger)}
 .pill-active{background:rgba(127,144,118,.15);color:var(--sage)}
-.missing-dots{display:flex;gap:4px;margin-top:3px}
-.missing-dot{width:6px;height:6px;border-radius:50%;background:var(--warn)}
+.missing-text{margin-top:2px;font-size:11.5px;color:#a0621d}
 .row-actions a{
   font-size:12px;
   color:var(--tan-dark);
@@ -374,6 +382,8 @@ tbody tr.is-archived{opacity:.55}
   cursor:pointer;
 }
 .dropdown-menu button:hover{background:var(--cream)}
+.menu-label{padding:8px 12px 3px;font-size:11px;letter-spacing:.06em;color:var(--soft)}
+.menu-label:not(:first-child){margin-top:4px;padding-top:10px;border-top:1px solid var(--line)}
 .qc-cell{display:none}
 body.quickcat-mode .qc-cell{display:table-cell;text-align:center}
 .qc-cell input[type="checkbox"]{width:20px;height:20px;cursor:pointer;accent-color:var(--tan-dark)}
@@ -494,6 +504,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
   width:100%;height:auto;padding:0;border:0;background:none;
 }
 .modal textarea{min-height:78px;resize:vertical}
+.modal input[type="date"]{height:calc(1.6em + 22px)} /* 跟旁邊的文字欄一樣高 */
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
 .rte-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px}
 .rte-toolbar button{
@@ -549,8 +560,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .rte-editor ul{margin:4px 0;padding-left:22px;list-style:disc}
 .rte-editor ol{margin:4px 0;padding-left:22px;list-style:decimal}
 .rte-editor li{margin:2px 0}
-.photos-section{margin-top:20px;border-top:1px solid var(--line);padding-top:18px}
-.photos-section-title{font-weight:600;color:var(--charcoal);font-size:14px}
 .photos-note{font-size:11px;color:var(--soft);margin:5px 0 13px}
 .upload-method-row{display:flex;gap:5px;margin-bottom:10px}
 .upload-method-btn{
@@ -653,8 +662,14 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .figure-preview-text{font-size:12.5px;color:var(--muted);line-height:1.6}
 .figure-preview-text strong{display:block;color:var(--ink);font-size:13.5px}
 .figure-preview-text span{display:block;text-wrap:pretty}
-.view-on-site{display:inline-block;margin:-14px 0 8px;font-size:12.5px;color:var(--tan-dark)}
-.form-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.view-on-site{display:inline-block;margin:-14px 0 14px;font-size:12.5px;color:var(--tan-dark)}
+.form-grid-2,.form-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;align-items:end}
+.form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+/* 商品編輯：比較寬、分成幾個區塊，儲存按鈕固定在最下面不用捲到底 */
+.modal-wide{width:min(820px,100%)}
+.form-section-title{margin:30px 0 0;padding-top:22px;border-top:1px solid var(--line);font-size:15px;font-weight:600;color:var(--charcoal)}
+.view-on-site+.form-section-title{margin-top:0;padding-top:0;border-top:0}
+.modal-footer{display:flex;gap:10px;padding:14px 32px 16px;border-top:1px solid var(--line);background:var(--paper)}
 .quick-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .quick-chips button{border:1px solid var(--line);border-radius:999px;background:var(--white);color:var(--muted);padding:4px 10px;font-size:12px}
 .quick-chips button:hover{border-color:var(--tan);color:var(--tan-dark)}
@@ -912,7 +927,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .restore-extra{margin-top:4px;font-size:12.5px;color:var(--muted)}
 
 @media(max-width:760px){
-  .form-grid-2{grid-template-columns:1fr}
+  .form-grid-2,.form-grid-3{grid-template-columns:1fr}
+  .modal-footer{padding:12px 18px}
   .option-row{grid-template-columns:42px minmax(0,1fr) 30px}
   .option-row select{grid-column:2/4}
   header{padding:14px 15px}
@@ -963,15 +979,19 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <div class="dropdown" id="toolsDropdown">
         <button class="add-btn" style="background:var(--tan-dark)" onclick="toggleHeaderDropdown('toolsDropdown')">🛠 商品工具 ▾</button>
         <div class="dropdown-menu"><div class="dropdown-menu-inner">
-          <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
-          <button onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
-          <button onclick="closeHeaderDropdowns();undoMigratePhotosToCloudinary()">↩ 復原上次搬遷</button>
+          <div class="menu-label">一次處理很多件</div>
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 批次操作</button>
+          <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
+          <div class="menu-label">匯出／匯入</div>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
+          <div class="menu-label">報表與備份</div>
           <button onclick="closeHeaderDropdowns();openHeatReport()">📊 詢價熱度</button>
           <button onclick="closeHeaderDropdowns();downloadFullBackup()">💾 下載完整備份</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('backupFileInput').click()">📂 從備份還原</button>
+          <div class="menu-label">舊照片搬到圖床</div>
+          <button onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
+          <button onclick="closeHeaderDropdowns();undoMigratePhotosToCloudinary()">↩ 復原上次搬遷</button>
         </div></div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
@@ -1046,9 +1066,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
               <th style="width:60px">縮圖</th>
               <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
               <th data-sort="cat">分類</th>
-              <th data-sort="size">尺寸</th>
+              <th data-sort="size" title="寬 × 深 × 高（cm）">尺寸</th>
               <th>參考售價</th>
-              <th data-sort="desc">說明</th>
               <th data-sort="photos">照片</th>
               <th data-sort="status">狀態</th>
               <th style="width:170px"></th>
@@ -1064,30 +1083,44 @@ body.quickcat-mode .quickcat-bar{display:flex}
 <div class="toast" id="toast"></div>
 
 <div class="modal-overlay" id="productModal">
-  <div class="modal">
+  <div class="modal modal-wide">
     <button class="modal-close" onclick="requestCloseProductModal()">×</button>
     <div class="modal-scroll">
     <div class="modal-title" id="productModalTitle">新增商品</div>
     <a class="view-on-site" id="productViewLink" href="#" target="_blank" rel="noopener" hidden>在前台看這件商品 ↗</a>
-    <label>主分類</label>
-    <select id="pMainCat" onchange="updateSubSelect();renderFigurePicker()"></select>
-    <label>子分類</label>
-    <div id="pSubCatWrap"><select id="pSubCat" onchange="renderFigurePicker()"></select></div>
-    <label>商品名稱 *</label>
-    <input type="text" id="pName" placeholder="例：北歐實木餐桌">
-    <label>參考售價（選填，格式自由，例如 3,200 或 洽詢）</label>
-    <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
+
+    <div class="form-section-title">基本資料</div>
     <div class="form-grid-2">
       <div>
-        <label>特價（選填，前台會顯示特價、把原價劃掉）</label>
+        <label>主分類</label>
+        <select id="pMainCat" onchange="updateSubSelect();renderFigurePicker()"></select>
+      </div>
+      <div>
+        <label>子分類</label>
+        <div id="pSubCatWrap"><select id="pSubCat" onchange="renderFigurePicker()"></select></div>
+      </div>
+    </div>
+    <label>商品名稱 *</label>
+    <input type="text" id="pName" placeholder="例：北歐實木餐桌">
+    <label>商品標籤（顯示在前台商品卡片左上角；勾選多個時只顯示優先度最高的一個）</label>
+    <div class="tag-checkbox-grid" id="pBadges"></div>
+
+    <div class="form-section-title">價格與交期</div>
+    <div class="form-grid-3">
+      <div>
+        <label>參考售價（選填，也可以寫「洽詢」）</label>
+        <input type="text" id="pPrice" placeholder="例：NT$ 3,200 或 洽詢">
+      </div>
+      <div>
+        <label>特價（選填，原價會劃掉）</label>
         <input type="text" id="pSalePrice" placeholder="例：2,800">
       </div>
       <div>
-        <label>特價到哪一天（選填，不填就一直特價）</label>
+        <label>特價到哪一天（不填＝一直特價）</label>
         <input type="date" id="pSaleEnd">
       </div>
     </div>
-    <label>交期（選填，只會顯示在前台的商品頁）</label>
+    <label>交期（選填，只顯示在前台的商品頁）</label>
     <input type="text" id="pLeadTime" placeholder="例：現貨、約 2–3 週">
     <div class="quick-chips" id="leadTimeChips">
       <button type="button" onclick="setLeadTime(this.textContent)">現貨</button>
@@ -1097,50 +1130,10 @@ body.quickcat-mode .quickcat-bar{display:flex}
       <button type="button" onclick="setLeadTime(this.textContent)">約 1 個月</button>
       <button type="button" onclick="setLeadTime(this.textContent)">需訂製，請洽詢</button>
     </div>
-    <label>商品標籤（會顯示在前台商品卡片左上角；同時勾選多個時，畫面只會顯示優先度最高的一個）</label>
-    <div class="tag-checkbox-grid" id="pBadges"></div>
-    <input type="hidden" id="pSize">
-    <div class="dimension-grid">
-      <div>
-        <label>寬 W（cm）</label>
-        <input type="text" id="pWidth" placeholder="例：120">
-      </div>
-      <div>
-        <label>深 D（cm）</label>
-        <input type="text" id="pDepth" placeholder="例：60">
-      </div>
-      <div>
-        <label>高 H（cm）</label>
-        <input type="text" id="pHeight" placeholder="例：75">
-      </div>
-    </div>
-    <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
-    <div class="spec-editor" id="specEditor"></div>
-    <button class="add-spec-btn" type="button" onclick="addSpecRow()">＋ 新增部位列</button>
-    <label>尺寸示意圖（前台商品頁「尺寸」旁邊的線稿，會標出寬、深、高）</label>
-    <div class="figure-picker" id="pFigurePicker" role="group" aria-label="尺寸示意圖"></div>
-    <div class="figure-preview" id="pFigurePreview"></div>
-    <label>商品說明（選填）</label>
-    <div class="rte-toolbar">
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
-      <select onmousedown="event.preventDefault()" onchange="if(this.value){rteApply('pDesc','fontSize',this.value);this.value=''}">
-        <option value="">文字大小</option>
-        <option value="12px">小</option>
-        <option value="15px">標準</option>
-        <option value="18px">大</option>
-        <option value="24px">特大</option>
-      </select>
-      <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
-      <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertUnorderedList')">• 項目符號</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertOrderedList')">1. 編號清單</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="applyAutoDesc()">🪄 自動產生文案</button>
-    </div>
-    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="材質、特色說明"></div>
 
+    <div class="form-section-title">照片與款式</div>
     <div class="photos-section">
-      <div class="photos-section-title">商品照片（最多 5 張）</div>
+      <label>商品照片（最多 5 張）</label>
       <div class="photos-note">
         第 1 張是封面，第 2 張是滑鼠移過商品時的切換圖片。Google Drive 連結請先設定為「知道連結的任何人都可以檢視」。
       </div>
@@ -1164,22 +1157,62 @@ body.quickcat-mode .quickcat-bar{display:flex}
       </div>
       <div class="photo-slots" id="photoSlots"></div>
     </div>
-
     <label>顏色／款式（選填，前台商品頁可以點選；可以指定點了換成哪張照片）</label>
     <div class="option-editor" id="optionEditor"></div>
     <button class="add-spec-btn" type="button" onclick="addOptionRow()">＋ 新增顏色／款式</button>
 
-    <div class="modal-actions">
-      <button class="btn-secondary" type="button" onclick="requestCloseProductModal()">取消</button>
-      <button class="btn-primary" type="button" onclick="saveProduct()">儲存商品</button>
+    <div class="form-section-title">尺寸</div>
+    <input type="hidden" id="pSize">
+    <div class="dimension-grid">
+      <div>
+        <label>寬 W（cm）</label>
+        <input type="text" id="pWidth" placeholder="例：120">
+      </div>
+      <div>
+        <label>深 D（cm）</label>
+        <input type="text" id="pDepth" placeholder="例：60">
+      </div>
+      <div>
+        <label>高 H（cm）</label>
+        <input type="text" id="pHeight" placeholder="例：75">
+      </div>
     </div>
+    <label>詳細尺寸規格（cm，非必填，填哪個算哪個）</label>
+    <div class="spec-editor" id="specEditor"></div>
+    <button class="add-spec-btn" type="button" onclick="addSpecRow()">＋ 新增部位列</button>
+    <label>尺寸示意圖（前台商品頁「尺寸」旁邊的線稿，會標出寬、深、高）</label>
+    <div class="figure-picker" id="pFigurePicker" role="group" aria-label="尺寸示意圖"></div>
+    <div class="figure-preview" id="pFigurePreview"></div>
+
+    <div class="form-section-title">商品說明</div>
+    <div class="rte-toolbar">
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
+      <select onmousedown="event.preventDefault()" onchange="if(this.value){rteApply('pDesc','fontSize',this.value);this.value=''}">
+        <option value="">文字大小</option>
+        <option value="12px">小</option>
+        <option value="15px">標準</option>
+        <option value="18px">大</option>
+        <option value="24px">特大</option>
+      </select>
+      <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
+      <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertUnorderedList')">• 項目符號</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertOrderedList')">1. 編號清單</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="applyAutoDesc()">🪄 自動產生文案</button>
+    </div>
+    <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="材質、特色說明"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" type="button" onclick="requestCloseProductModal()">取消</button>
+      <button class="btn-primary" type="button" id="productSaveBtn" onclick="saveProduct()">儲存商品</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="catMgrModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('catMgrModal')">×</button>
+    <button class="modal-close" onclick="closeCategoryManage()">×</button>
     <div class="modal-scroll">
     <div class="modal-title">分類管理</div>
     <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可重新命名、排序（▲▼）、隱藏／顯示（顧客端）、刪除主分類與子分類。</p>
@@ -1194,7 +1227,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 
 <div class="modal-overlay" id="tagMgrModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('tagMgrModal')">×</button>
+    <button class="modal-close" onclick="closeTagManage()">×</button>
     <div class="modal-scroll">
     <div class="modal-title">標籤管理</div>
     <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可改名、改顏色、排序（▲▼，順序＝前台顯示的優先度）、刪除。刪除已經有商品在用的標籤時，會一併從那些商品身上移除。</p>
@@ -1306,12 +1339,11 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-scroll">
     <div class="modal-title">頁面文字</div>
     <p class="catmgr-hint">首頁上的標語、標題等文字，留空就會顯示預設文字（灰色小字提示的內容）。</p>
-    <label>首頁英文小標</label><input type="text" id="ptHeroTag" placeholder="XIN TONG FURNITURE">
+    <label>首頁英文小標</label><input type="text" id="ptHeroTag" placeholder="HSIN TONG FURNITURE">
     <label>首頁大標題</label><input type="text" id="ptHeroTitle" placeholder="信通家俱行">
     <label>首頁副標</label><input type="text" id="ptHeroSub" placeholder="讓家，更有溫度">
     <label>首頁說明文字</label><input type="text" id="ptHeroDesc" placeholder="用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。">
     <label>首頁按鈕文字</label><input type="text" id="ptHeroCta" placeholder="探索商品">
-    <label>商品區標題</label><input type="text" id="ptProductsTitle" placeholder="精選商品">
     <label>聯繫區標題</label><input type="text" id="ptContactTitle" placeholder="聯繫我們">
     <label>聯繫區英文小標</label><input type="text" id="ptContactSub" placeholder="CONTACT US">
     <div class="modal-actions">
@@ -1579,7 +1611,6 @@ const sorters={
   name:(a,b)=>strokeCollator.compare(a.name||"",b.name||""),
   cat:(a,b)=>strokeCollator.compare(categoryLabel(a),categoryLabel(b)),
   size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
-  desc:(a,b)=>Number(!!b.desc)-Number(!!a.desc),
   photos:(a,b)=>(b.photoCount??(b.photos||[]).filter(Boolean).length)-(a.photoCount??(a.photos||[]).filter(Boolean).length),
   status:(a,b)=>(a.status||"").localeCompare(b.status||"")
 };
@@ -1631,12 +1662,11 @@ function openCategoryManage(){
   openModal("catMgrModal");
 }
 window.openCategoryManage=openCategoryManage;
-function closeCategoryManage(){
+async function closeCategoryManage(){
   closeModal("catMgrModal");
   renderSidebar();
   renderCatSelect();
-  saveMeta();
-  toast("分類已儲存 ☁️");
+  if(await saveMeta())toast("分類已儲存 ☁️"); // 存不進去時 saveMeta 自己會顯示原因
 }
 window.closeCategoryManage=closeCategoryManage;
 function addMainCategoryInline(){
@@ -1930,17 +1960,17 @@ async function saveContactManage(){
     lineUrl:document.getElementById("cLineUrl").value,
     mapUrl:document.getElementById("cMapUrl").value
   };
+  if(!await saveMeta())return;
   closeModal("contactModal");
-  const ok=await saveMeta();
-  toast(ok?"聯繫資訊已更新 ☁️":"儲存失敗，請檢查網路連線");
+  toast("聯繫資訊已更新 ☁️");
 }
 window.saveContactManage=saveContactManage;
 
 /* ── 頁面文字（首頁標語等） ───────────────────────────────────── */
-const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","productsTitle","contactTitle","contactSub"];
+const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","contactTitle","contactSub"];
 const PAGE_TEXT_INPUT_IDS={
   heroTag:"ptHeroTag",heroTitle:"ptHeroTitle",heroSub:"ptHeroSub",heroDesc:"ptHeroDesc",heroCta:"ptHeroCta",
-  productsTitle:"ptProductsTitle",contactTitle:"ptContactTitle",contactSub:"ptContactSub"
+  contactTitle:"ptContactTitle",contactSub:"ptContactSub"
 };
 function openPageTextManage(){
   PAGE_TEXT_FIELDS.forEach(key=>{
@@ -1956,9 +1986,9 @@ async function savePageTextManage(){
     if(value)next[key]=value;
   });
   pageText=next;
+  if(!await saveMeta())return;
   closeModal("pageTextModal");
-  const ok=await saveMeta();
-  toast(ok?"頁面文字已更新 ☁️":"儲存失敗，請檢查網路連線");
+  toast("頁面文字已更新 ☁️");
 }
 window.savePageTextManage=savePageTextManage;
 
@@ -2129,9 +2159,9 @@ async function saveLayoutSettings(){
     else delete c.image;
   });
   layout=next;
+  if(!await saveMeta())return;
   closeModal("layoutModal");
-  const ok=await saveMeta();
-  toast(ok?"首頁版面已更新 ☁️":"儲存失敗，請檢查網路連線");
+  toast("首頁版面已更新 ☁️");
 }
 window.saveLayoutSettings=saveLayoutSettings;
 
@@ -2589,6 +2619,14 @@ async function saveGallery(id,photos,originals,batchBackup=null){
 }
 
 window.openModal=function(id){document.getElementById(id).classList.add("open")};
+document.addEventListener("keydown",e=>{
+  if(e.key!=="Escape"||e.isComposing)return; // 打中文選字時按 Esc 是取消選字，不是關視窗
+  const open=document.querySelectorAll(".modal-overlay.open");
+  if(open.length){
+    e.preventDefault();
+    open[open.length-1].querySelector(".modal-close")?.click();
+  }else closeHeaderDropdowns();
+});
 window.closeModal=function(id){document.getElementById(id).classList.remove("open")};
 
 /* ── 商品說明簡易富文本編輯器（底線／文字大小／文字顏色／網底）─── */
@@ -3627,10 +3665,9 @@ window.openTagManage=function(){
   renderTagMgrList();
   openModal("tagMgrModal");
 };
-window.closeTagManage=function(){
+window.closeTagManage=async function(){
   closeModal("tagMgrModal");
-  saveMeta();
-  toast("標籤已儲存 ☁️");
+  if(await saveMeta())toast("標籤已儲存 ☁️");
 };
 function renderTagMgrList(){
   const wrap=document.getElementById("tagMgrList");
@@ -3816,7 +3853,9 @@ function getSizeSummary(dimensions,size){
 // 商品名稱、說明如果用到全新的字，前台不會壞掉，只是那個字會自動改用瀏覽器內建字型顯示，
 // 字體會跟其他文字不太一樣。商品種類變多、或想確保新字都涵蓋到的話，可以請 Claude
 // 「重新產生字型子集」，掃一次目前的商品資料重新產生 index.html 那三個字型網址。
+let productSaving=false; // 儲存中：擋掉連按，新增商品時才不會建立兩件一樣的
 window.saveProduct=async function(){
+  if(productSaving)return;
   if(slotsUploading.size){toast("還有照片正在上傳中，請稍候幾秒再儲存");return}
   const name=document.getElementById("pName").value.trim();
   if(!name){toast("請填寫商品名稱");return}
@@ -3858,42 +3897,64 @@ window.saveProduct=async function(){
   // 動態加不同尺寸（例如列表縮圖用 w_500）就會疊出一長串重複的轉換參數。
   // Google Drive 連結例外：分享連結本身不是圖片網址，一定要轉成真正的縮圖
   // 網址格式才能當 <img src> 使用，所以還是要轉，只是只轉 Drive、不轉 Cloudinary。
-  const fullPhotos=workingPhotos.filter(Boolean).map(url=>/drive\.google\.com/i.test(url)?convertGdriveUrl(url):url);
-  // 原圖陣列要跟 fullPhotos 用同一套「哪些欄位有值」規則過濾，位置才會對得上
-  const fullOriginals=workingPhotos.map((p,i)=>p?(workingPhotosOriginal[i]||""):null).filter(v=>v!==null);
-  // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
-  data.photos=fullPhotos.length?[await thumbFor(fullPhotos[0])]:[];
-  data.photoCount=fullPhotos.length;
-  let product;
-  if(editingProductId){
-    const index=products.findIndex(p=>p.id===editingProductId);
-    const prev=products[index];
-    product={id:editingProductId,status:prev.status,sortOrder:prev.sortOrder,...data};
-    // 在垃圾桶裡改內容也要記得是什麼時候丟的，30 天到期一樣會自動清掉
-    if(prev.status==="trashed")Object.assign(product,{trashedAt:prev.trashedAt??Date.now(),trashedFrom:prev.trashedFrom||"active"});
-    products[index]=product;
-  }else{
-    product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
-    products.push(product);
-  }
+  const saveBtn=document.getElementById("productSaveBtn");
+  productSaving=true;
+  saveBtn.disabled=true;
+  saveBtn.textContent="儲存中…";
   try{
-    await setDoc(doc(productsCol(),product.id),product);
-    await saveGallery(product.id,fullPhotos,fullOriginals);
-    toast(editingProductId?"商品已更新 ☁️":"商品已新增 ☁️");
-  }catch(e){
-    const msg=e.message||String(e);
-    if(/exceeds the maximum allowed size/i.test(msg)){
-      toast("儲存失敗：這個商品的照片加起來太大了，請減少照片張數，或用「調整照片位置與縮放」裁切掉不必要的部分後再試一次",5000);
+    const fullPhotos=workingPhotos.filter(Boolean).map(url=>/drive\.google\.com/i.test(url)?convertGdriveUrl(url):url);
+    // 原圖陣列要跟 fullPhotos 用同一套「哪些欄位有值」規則過濾，位置才會對得上
+    const fullOriginals=workingPhotos.map((p,i)=>p?(workingPhotosOriginal[i]||""):null).filter(v=>v!==null);
+    // 商品文件只存封面照的縮圖版本＋photoCount，原始畫質照片另外寫進 gallery 子文件
+    data.photos=fullPhotos.length?[await thumbFor(fullPhotos[0])]:[];
+    data.photoCount=fullPhotos.length;
+    const index=editingProductId?products.findIndex(p=>p.id===editingProductId):-1;
+    let product;
+    if(index>=0){
+      const prev=products[index];
+      product={id:editingProductId,status:prev.status,sortOrder:prev.sortOrder,...data};
+      // 在垃圾桶裡改內容也要記得是什麼時候丟的，30 天到期一樣會自動清掉
+      if(prev.status==="trashed")Object.assign(product,{trashedAt:prev.trashedAt??Date.now(),trashedFrom:prev.trashedFrom||"active"});
     }else{
-      toast("儲存失敗："+msg,4000);
+      product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
     }
+    try{
+      await setDoc(doc(productsCol(),product.id),product);
+    }catch(e){
+      // 沒存進去：畫面跟表格都不動，編輯視窗留著，改好的內容還在，可以再按一次
+      showProductSaveError(e,"儲存失敗");
+      return;
+    }
+    if(index>=0)products[index]=product;
+    else{
+      products.push(product);
+      editingProductId=product.id; // 新商品已經建立了，照片沒存到而再按一次儲存時，要改同一件、不能再建一件
+    }
+    updateTotalCount();
+    renderSidebar();
+    renderTable();
+    try{
+      await saveGallery(product.id,fullPhotos,fullOriginals);
+    }catch(e){
+      showProductSaveError(e,"商品資料已儲存，但照片沒有存成功");
+      return;
+    }
+    toast(index>=0?"商品已更新 ☁️":"商品已新增 ☁️");
+    productFormBaseline=null;
+    closeModal("productModal");
+  }catch(e){
+    showProductSaveError(e,"儲存失敗");
+  }finally{
+    productSaving=false;
+    saveBtn.disabled=false;
+    saveBtn.textContent="儲存商品";
   }
-  productFormBaseline=null;
-  closeModal("productModal");
-  updateTotalCount();
-  renderSidebar();
-  renderTable();
 };
+function showProductSaveError(e,prefix){
+  const msg=e.message||String(e);
+  if(/exceeds the maximum allowed size/i.test(msg))toast(`${prefix}：這個商品的照片加起來太大了，請減少照片張數，或用「調整照片位置與縮放」裁切掉不必要的部分後再試一次`,6000);
+  else toast(`${prefix}：${msg}（編輯視窗還開著，可以再按一次「儲存商品」）`,6000);
+}
 
 window.archiveProductRow=async function(id){
   const p=products.find(p=>p.id===id);
@@ -4214,7 +4275,7 @@ async function finishRestore(){
 }
 
 async function boot(){
-  document.getElementById("tbody").innerHTML='<tr><td colspan="11" class="loading">載入中…</td></tr>';
+  document.getElementById("tbody").innerHTML='<tr><td colspan="10" class="loading">載入中…</td></tr>';
   try{
     const metaSnap=await getDoc(doc(db,"sitedata",SITE_DOC));
     metaRaw=metaSnap.exists()?metaSnap.data():{};
@@ -4254,7 +4315,7 @@ async function boot(){
       }
     }
   }catch(e){
-    document.getElementById("tbody").innerHTML=`<tr><td colspan="11" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
+    document.getElementById("tbody").innerHTML=`<tr><td colspan="10" class="empty-state">讀取失敗：${escapeHTML(e.message||String(e))}</td></tr>`;
     return;
   }
   await purgeExpiredTrash();
@@ -4654,6 +4715,24 @@ document.querySelectorAll("thead th[data-sort]").forEach(th=>{
   });
 });
 
+// 尺寸欄：有寬深高就直接顯示（沒填的那邊顯示 –），只有文字尺寸或規格表的顯示「已填」
+function sizeCellHtml(p,m){
+  if(m.noSize)return '<span class="pill pill-missing">缺尺寸</span>';
+  const d=p.dimensions||{};
+  const parts=[d.width,d.depth,d.height].map(v=>String(v??"").trim());
+  if(!parts.some(Boolean))return '<span class="pill pill-ok">已填</span>';
+  return `<span class="cell-dims" title="寬 × 深 × 高（cm）">${parts.map(v=>escapeHTML(v||"–")).join("×")}</span>`;
+}
+// 售價欄：售價是選填，沒填就顯示「—」；有特價時多一行特價（過了結束日顯示已結束）
+function priceCellHtml(p){
+  const base=String(p.price??"").trim(),sale=String(p.salePrice??"").trim();
+  let html=base?escapeHTML(base):'<span class="cell-muted">—</span>';
+  if(!sale)return html;
+  const ended=p.saleEnd&&!(new Date(`${p.saleEnd}T23:59:59`)>=new Date());
+  if(ended)return html+'<div class="cell-sale ended">特價已結束</div>';
+  const [,mm,dd]=String(p.saleEnd||"").split("-");
+  return html+`<div class="cell-sale">特價 ${escapeHTML(sale)}${p.saleEnd?`<span>到 ${Number(mm)}/${Number(dd)}</span>`:""}</div>`;
+}
 window.renderTable=function(){
   const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
   // 左邊分類是第一層篩選，上面的篩選籤（含數字）只在左邊選到的分類範圍內統計／篩選
@@ -4704,7 +4783,7 @@ window.renderTable=function(){
 
   const tbody=document.getElementById("tbody");
   if(!list.length){
-    tbody.innerHTML='<tr><td colspan="11" class="empty-state">沒有符合條件的商品</td></tr>';
+    tbody.innerHTML='<tr><td colspan="10" class="empty-state">沒有符合條件的商品</td></tr>';
     return;
   }
   // 拖曳排序只在「未篩選」時開放，避免在篩選/搜尋/批次操作模式下拖曳造成順序混亂；
@@ -4716,25 +4795,24 @@ window.renderTable=function(){
     const thumb=photos.length
       ? `<img class="cell-thumb" src="${escapeHTML(photos[0])}" alt="">`
       : `<div class="cell-thumb-empty">無圖</div>`;
-    const dots=[m.noCat,m.noSize,m.noDesc,m.noPhoto].filter(Boolean).length
-      ? `<div class="missing-dots">${[m.noCat&&"分類",m.noSize&&"尺寸",m.noDesc&&"說明",m.noPhoto&&"照片"].filter(Boolean).map(()=>'<span class="missing-dot"></span>').join("")}</div>`
-      : "";
+    // 還缺哪些資料直接寫在商品名稱下面（原本只有幾個沒標字的小圓點）
+    const missing=[m.noCat&&"分類",m.noSize&&"尺寸",m.noDesc&&"說明",m.noPhoto&&"照片"].filter(Boolean);
+    const missingNote=missing.length?`<div class="missing-text">缺：${missing.join("、")}</div>`:"";
     return `
       <tr class="${isLive(p)?"":"is-archived"}${canReorder?" reorderable":""}" data-id="${p.id}"${canReorder?' draggable="true"':""}>
         <td class="qc-cell"><input type="checkbox" ${quickCatSelected.has(p.id)?"checked":""} onchange="toggleQuickCatSelect('${p.id}')"></td>
         <td class="drag-handle-cell">${canReorder?'<span class="drag-handle" title="拖曳調整順序">⠿</span>':""}</td>
-        <td>${thumb}</td>
+        <td class="cell-thumb-link" onclick="openProductModal('${p.id}')" title="編輯這件商品">${thumb}</td>
         <td>
           <div class="cell-name cell-name-link" onclick="openProductModal('${p.id}')">${escapeHTML(p.name||"（未命名）")}</div>
-          ${dots}
+          ${missingNote}
         </td>
-        <td>${m.noCat?'<span class="pill pill-missing">待分類</span>':`
+        <td class="cell-cat">${m.noCat?'<span class="pill pill-missing">待分類</span>':`
           <div>${escapeHTML(getMainName(p.mainCat))}</div>
           ${p.subCat?`<div class="cell-subcat">${escapeHTML(getSubName(p.mainCat,p.subCat))}</div>`:""}
         `}</td>
-        <td>${m.noSize?'<span class="pill pill-missing">缺尺寸</span>':'<span class="pill pill-ok">已填</span>'}</td>
-        <td>${p.price?escapeHTML(p.price):'<span class="pill pill-missing">未填</span>'}</td>
-        <td>${m.noDesc?'<span class="pill pill-missing">缺說明</span>':'<span class="pill pill-ok">已填</span>'}</td>
+        <td>${sizeCellHtml(p,m)}</td>
+        <td>${priceCellHtml(p)}</td>
         <td>${m.noPhoto?'<span class="pill pill-missing">0 張</span>':(p.photoCount??photos.length)+' 張'}</td>
         <td>${p.status==="trashed"?`<span class="pill pill-archived">垃圾桶・剩 ${trashDaysLeft(p)} 天</span>`
           :p.status==="archived"?'<span class="pill pill-archived">已封存</span>':'<span class="pill pill-active">上架中</span>'}</td>

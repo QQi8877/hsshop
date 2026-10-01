@@ -375,8 +375,13 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .cat-tile:hover{background:#e1d3b9}
 .cat-tile__thumb{width:74px;height:74px;border-radius:var(--radius-pill);background:var(--paper);overflow:hidden;display:grid;place-items:center}
 .cat-tile__thumb img{width:76%;height:76%;object-fit:contain;transition:opacity .34s ease}
-/* 商品照片載入完成才淡入（見 fadeInOnLoad）；用 img 提高權重，蓋過 .img-primary 的 opacity:1 */
+/* 商品照片載入完成才淡入（見 fadeInOnLoad）；用 img 提高權重，蓋過 .img-primary 的 opacity:1。
+   商品卡片的照片還沒載好時，照片位置先放一塊會呼吸的淡色底（.photo-skel，載好就拿掉）；
+   載好後底色模糊淡出、照片從模糊變清楚淡入（動態參考 transitions.dev 的 Skeleton loader and reveal）。
+   這塊底只在照片載入中才存在、模糊只有淡入那 0.4 秒，平常不會讓瀏覽器多算東西 */
 img.img-fade:not(.is-loaded){opacity:0}
+.photo-skel{position:absolute;inset:14%;z-index:0;border-radius:14px;background:#efe5d6;pointer-events:none;animation:photo-skel-pulse 1s ease-in-out infinite}
+@keyframes photo-skel-pulse{50%{opacity:.55}}
 .cat-tile__name{font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--charcoal)}
 .cat-tile__count{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .cat-tile--cta{justify-content:center;background:var(--sage);color:#fff}
@@ -470,6 +475,13 @@ img.img-fade:not(.is-loaded){opacity:0}
 .cat-tab:hover,.sub-tab:hover{border-color:var(--tan);color:var(--tan-dark)}
 .cat-tab.active{background:var(--charcoal);border-color:var(--charcoal);color:var(--white)}
 .sub-tab.active{background:var(--sage);border-color:var(--sage);color:var(--white)}
+/* 換分類時，選中的深色底從原本那顆滑到新點的那顆（見 syncTabPill；動態參考 transitions.dev
+   的 Tabs sliding）。底色那塊疊在其他按鈕上面、選中的那顆字再疊在底色上面 */
+.categories-bar,.sub-categories-bar{position:relative}
+.cat-tab,.sub-tab,.cat-side-btn{position:relative;transition:color .25s cubic-bezier(.22,1,.36,1)}
+.tab-pill{position:absolute;left:0;top:0;z-index:1;pointer-events:none;background:var(--charcoal)}
+.sub-categories-bar>.tab-pill{background:var(--sage)}
+.has-pill>.cat-tab.active,.has-pill>.sub-tab.active,.has-pill>.cat-side-btn.active{z-index:2;background:transparent;border-color:transparent}
 .products-grid{
   display:flex;
   flex-wrap:wrap;
@@ -738,9 +750,12 @@ img.img-fade:not(.is-loaded){opacity:0}
 .favorite-btn:hover{transform:scale(1.1)}
 .favorite-btn.active{color:var(--danger)}
 .favorite-btn.active svg path{fill:currentColor}
-/* 按愛心回饋：按鈕彈一下＋外圈擴散，小愛心飛到導覽列收藏按鈕（見 flyHeartToFab） */
-.fav-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--tan);pointer-events:none}
-.favorite-btn .fav-ring,.lb-favorite .fav-ring{border-color:var(--danger)}
+/* 按愛心回饋：愛心填色、往內縮再彈回來、噴出 8 顆小點點（見 popFavoriteButton；動態參考
+   transitions.dev 的 Like button，免費授權可商用），小愛心飛到導覽列收藏按鈕（見 flyHeartToFab） */
+.favorite-btn svg path,.p-card__fav svg path,.lb-favorite svg path{transition:fill .15s cubic-bezier(.22,1,.36,1)}
+.like-particles{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;color:var(--danger)}
+.p-card__fav .like-particles{color:var(--tan)}
+.like-particles i{position:absolute;left:0;top:0;border-radius:50%;background:currentColor;opacity:0}
 .fav-fly{position:fixed;left:0;top:0;width:20px;height:20px;margin:-10px 0 0 -10px;z-index:550;pointer-events:none;color:var(--tan)}
 .fav-fly svg{display:block;width:20px;height:20px}
 .fav-fly svg path{fill:currentColor}
@@ -780,7 +795,14 @@ img.img-fade:not(.is-loaded){opacity:0}
   font-family:var(--font-mono);
   font-size:11px;
   font-weight:600;
+  overflow:hidden;
 }
+/* 收藏數字變了：新數字從下面（變少時從上面）帶模糊浮進來（見 setFavoritesCount；
+   動態參考 transitions.dev 的 Number pop-in） */
+.num-digits{display:inline-flex}
+.num-digit{display:inline-block;animation:num-pop-in .5s cubic-bezier(.34,1.45,.64,1) both}
+.num-digit[data-stagger="1"]{animation-delay:70ms}
+@keyframes num-pop-in{from{transform:translateY(calc(8px * var(--digit-dir,1)));opacity:0;filter:blur(2px)}to{transform:none;opacity:1;filter:blur(0)}}
 .favorites-panel{
   position:fixed;
   top:0;
@@ -993,6 +1015,8 @@ footer a:hover{color:var(--color-on-dark)}
 }
 .modal textarea{min-height:78px;resize:vertical}
 .modal input:focus,.modal textarea:focus,.modal select:focus{border-color:var(--tan)}
+/* 提示訊息：從下面浮上來，帶一點縮放和模糊；出現用 .35 秒、收起用比較快的 .25 秒
+   （動態參考 transitions.dev 的 Toast） */
 .toast{
   position:fixed;
   right:16px;
@@ -1003,12 +1027,13 @@ footer a:hover{color:var(--color-on-dark)}
   color:var(--white);
   padding:12px 18px;
   opacity:0;
-  transform:translateY(8px);
+  transform:translateY(16px) scale(.97);
+  filter:blur(2px);
   pointer-events:none;
-  transition:.25s;
+  transition:opacity .25s cubic-bezier(.22,1,.36,1),transform .25s cubic-bezier(.22,1,.36,1),filter .25s cubic-bezier(.22,1,.36,1);
   font-size:13px;
 }
-.toast.show{opacity:1;transform:translateY(0)}
+.toast.show{opacity:1;transform:none;filter:blur(0);transition-duration:.35s}
 #lightbox{
   display:flex;
   position:fixed;
@@ -1063,11 +1088,13 @@ footer a:hover{color:var(--color-on-dark)}
   display:grid;place-items:center;
   background:var(--paper);
   color:var(--charcoal);
-  font-size:16px;
   flex-shrink:0;
+  transition:background .15s,border-color .15s,color .15s;
 }
+.lb-favorite svg{width:16px;height:16px}
 .lb-favorite:hover{border-color:var(--tan);color:var(--tan-dark)}
 .lb-favorite.active{background:var(--danger);border-color:var(--danger);color:#fff}
+.lb-favorite.active svg path{fill:currentColor}
 .lb-stage{
   position:relative;
   width:100%;
@@ -1865,7 +1892,61 @@ function renderCategories(){
   }else{
     subBar.style.display="none";
   }
+  scheduleTabPills();
 }
+// 選中分類的底色：記住上一次的位置，重畫之後從舊位置滑到新點的那顆
+// （手機版是上方兩排分類鈕，電腦版是左側分類清單）。
+// 先把三排要的位置一次量完、再一起改，瀏覽器只要排版一次；滑動用 Web Animations 播，
+// 不用先放回舊位置再逼瀏覽器重排（Google 的 INP 指標看的就是點下去到畫面更新要多久）
+const tabPillPos={};
+const TAB_PILL_EASE="cubic-bezier(.22,1,.36,1)";
+function measureTabPill(container,selector){
+  const active=container?.querySelector(selector);
+  if(!active||!container.offsetWidth)return null; // 沒有選中的、或這一排現在沒顯示（例如電腦版的上方分類列）
+  return {x:active.offsetLeft,y:active.offsetTop,w:active.offsetWidth,h:active.offsetHeight,radius:getComputedStyle(active).borderRadius};
+}
+function applyTabPill(container,key,pos,animate,fadeIn){
+  if(!container)return;
+  let pill=container.querySelector(":scope > .tab-pill");
+  if(!pos){
+    pill?.remove();
+    container.classList.remove("has-pill");
+    delete tabPillPos[key];
+    return;
+  }
+  const prev=tabPillPos[key],isNew=!pill;
+  if(isNew){
+    pill=document.createElement("span");
+    pill.className="tab-pill";
+    pill.setAttribute("aria-hidden","true");
+    container.prepend(pill);
+  }
+  const frame=p=>({transform:`translate(${p.x}px,${p.y}px)`,width:p.w+"px",height:p.h+"px"});
+  Object.assign(pill.style,frame(pos),{borderRadius:pos.radius});
+  container.classList.add("has-pill");
+  tabPillPos[key]=pos;
+  if(!animate||prefersReducedMotion())return;
+  if(prev&&(prev.x!==pos.x||prev.y!==pos.y||prev.w!==pos.w||prev.h!==pos.h))pill.animate([frame(prev),frame(pos)],{duration:250,easing:TAB_PILL_EASE});
+  else if(isNew&&!prev&&fadeIn)pill.animate([{opacity:0},{opacity:1}],{duration:250,easing:"ease"}); // 子分類第一次點選：淡入
+}
+// 等這次點擊的工作（含重畫商品格）做完、下一個畫面要畫之前才量位置，不在點擊當下逼瀏覽器排版
+let tabPillFrame=0;
+function scheduleTabPills(){
+  if(!tabPillFrame)tabPillFrame=requestAnimationFrame(()=>{tabPillFrame=0;syncTabPills(true)});
+}
+function syncTabPills(animate){
+  const rows=[
+    [document.getElementById("categoriesBar"),":scope > .cat-tab.active","bar",false],
+    [document.getElementById("subCategoriesBar"),":scope > .sub-tab.active","sub:"+state.activeMain,true],
+    [document.getElementById("catSidebar"),":scope > .cat-side-btn.active","side",false],
+  ];
+  const sizes=rows.map(([el,sel])=>measureTabPill(el,sel));
+  rows.forEach(([el,,key,fadeIn],i)=>applyTabPill(el,key,sizes[i],animate,fadeIn));
+}
+// 視窗大小變了、字型載入完，按鈕寬度位置會變：直接對齊，不播滑動
+let tabPillResizeTimer=null;
+window.addEventListener("resize",()=>{clearTimeout(tabPillResizeTimer);tabPillResizeTimer=setTimeout(()=>syncTabPills(false),120)});
+document.fonts?.ready.then(()=>syncTabPills(false));
 /* ── 批次上傳照片（依檔名比對商品）───────────────────────────── */
 let searchDebounceTimer=null;
 let searchWasEmptyBeforeTyping=true;
@@ -1989,7 +2070,7 @@ function renderProducts(animate=true){
       cover.alt=product.name;
       cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
-      fadeInOnLoad(cover);
+      fadeInOnLoad(cover,wrap);
       cover.onerror=()=>showBrokenImage(wrap,cover);
       wrap.appendChild(cover);
       if(totalCount>1){
@@ -2090,12 +2171,46 @@ function renderAppliedChips(){
 // 商品照片載入完成才淡入。這一輪已經載入過的網址（切換分類、Firebase 資料回來後
 // 重畫列表）直接顯示、不重播淡入，不然每次重畫整排照片都會閃一下。
 const loadedPhotoSrcs=new Set();
-function fadeInOnLoad(img){
+// 照片框真的出現在畫面上、照片又還沒載好，才放那塊會呼吸的底（.photo-skel）。
+// 畫面外的照片（往下捲才會開始載）不先放：幾十塊在背景一直跑的動畫，會讓每次點按都慢一點
+const skelWaiting=new Set();
+let skelCleanupTimer=null;
+const photoSkelObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
+  entries.forEach(({target,isIntersecting})=>{
+    if(!isIntersecting)return;
+    photoSkelObserver.unobserve(target);
+    if(!skelWaiting.delete(target))return;
+    const skel=document.createElement("span");
+    skel.className="photo-skel";
+    target.prepend(skel);
+  });
+}):null;
+// host：照片所在的框（商品卡片）。載好後底色模糊淡出、照片從模糊變清楚，淡完就把那塊底拿掉
+function fadeInOnLoad(img,host){
   const key=img.src;
   img.classList.add("img-fade");
   if(loadedPhotoSrcs.has(key)){img.classList.add("is-loaded");return}
-  img.addEventListener("load",()=>{loadedPhotoSrcs.add(key);img.classList.add("is-loaded")},{once:true});
-  img.addEventListener("error",()=>img.classList.add("is-loaded"),{once:true});
+  if(host&&photoSkelObserver){
+    skelWaiting.add(host);
+    photoSkelObserver.observe(host);
+    // 商品格重畫後，舊的框不會再出現：過一下把它們從觀察清單拿掉，不要一直留在記憶體
+    clearTimeout(skelCleanupTimer);
+    skelCleanupTimer=setTimeout(()=>skelWaiting.forEach(h=>{if(!h.isConnected){photoSkelObserver.unobserve(h);skelWaiting.delete(h)}}),1000);
+  }
+  const done=ok=>{
+    if(ok)loadedPhotoSrcs.add(key);
+    img.classList.add("is-loaded");
+    if(!host)return;
+    skelWaiting.delete(host);
+    photoSkelObserver?.unobserve(host);
+    const skel=host.querySelector(":scope > .photo-skel");
+    if(!skel)return;
+    if(!ok||prefersReducedMotion()){skel.remove();return}
+    skel.animate({opacity:0,filter:"blur(2px)"},{duration:400,easing:"ease-in-out",fill:"forwards"}).finished.catch(()=>{}).then(()=>skel.remove());
+    img.animate([{filter:"blur(2px)"},{filter:"blur(0)"}],{duration:400,easing:"ease-in-out"});
+  };
+  img.addEventListener("load",()=>done(true),{once:true});
+  img.addEventListener("error",()=>done(false),{once:true});
 }
 /* ── 捲動進場動畫：見上方 .reveal CSS ─────────────────────────── */
 const revealObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
@@ -2159,7 +2274,7 @@ function renderPicks(){
       cover.alt=product.name;
       cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
-      fadeInOnLoad(cover);
+      fadeInOnLoad(cover,media);
       media.appendChild(cover);
       if(totalCount>1){
         const showHover=src=>{
@@ -2225,7 +2340,7 @@ function renderCategoryTiles(){
       document.getElementById("categories").scrollIntoView({behavior:"smooth",block:"start"});
     });
   });
-  grid.querySelectorAll(".cat-tile__thumb img").forEach(fadeInOnLoad);
+  grid.querySelectorAll(".cat-tile__thumb img").forEach(img=>fadeInOnLoad(img));
   const cta=document.getElementById("catCta");
   if(cta)cta.href=state.contact?.lineUrl||"#";
   initRevealOnScroll();
@@ -2289,23 +2404,53 @@ const prefersReducedMotion=()=>window.matchMedia("(prefers-reduced-motion: reduc
 // 飛行中的愛心數量：大於 0 時 renderFavorites() 先不更新導覽列的收藏數字，
 // 等愛心飛到收藏按鈕才更新，數字跳動的時間點才會跟愛心「落地」對得上。
 let favCountHolds=0;
+// 收藏時愛心往內縮一下再彈回來，同時往外噴 8 顆小點點；取消收藏只把顏色退掉，不彈也不噴
+// （動態參考 transitions.dev 的 Like button）
+// 點點飛多遠：商品卡片 overflow:hidden，飛太遠會被切掉。這裡刻意不讀 getComputedStyle，
+// 按下去的當下不要逼瀏覽器重算整頁樣式，按鈕反應才快（Google 的 INP 指標看的就是這個）
+const LIKE_DIST={"favorite-btn":18,"p-card__fav":22,"lb-favorite":24};
 function popFavoriteButton(btn,adding){
-  if(prefersReducedMotion())return;
-  if(!adding){
-    btn.animate([{transform:"scale(1)"},{transform:"scale(.8)",offset:.4},{transform:"scale(1)"}],{duration:320,easing:"ease-out"});
-    return;
+  if(!adding||prefersReducedMotion())return;
+  const pop="cubic-bezier(.34,1.96,.64,1)";
+  // .favorite-btn 滑鼠移上去本來就放大 1.1：從 1.1 彈，結束時才不會跳一下
+  const base=btn.classList.contains("favorite-btn")&&btn.matches(":hover")?1.1:1;
+  btn.animate([{transform:`scale(${base})`,easing:pop},{transform:`scale(${base*.82})`,offset:.3,easing:pop},{transform:`scale(${base})`}],{duration:350});
+  const dist=LIKE_DIST[Object.keys(LIKE_DIST).find(c=>btn.classList.contains(c))]||20;
+  const wrap=document.createElement("span");
+  wrap.className="like-particles";
+  const anims=[];
+  for(let i=0;i<8;i++){
+    // 每顆的角度、距離、大小、速度都抖一點，噴起來才自然
+    const angle=i/8*Math.PI*2+(Math.random()-.5)*.5,d=dist*(.85+Math.random()*.4);
+    const x=Math.cos(angle)*d,y=Math.sin(angle)*d,size=3*(.8+Math.random()*.5);
+    const duration=600*(.85+Math.random()*.3),delay=Math.random()*40;
+    const dot=document.createElement("i");
+    dot.style.width=dot.style.height=size+"px";
+    dot.style.margin=`${-size/2}px 0 0 ${-size/2}px`;
+    wrap.appendChild(dot);
+    anims.push(dot.animate([{opacity:0,transform:"translate(0,0) scale(.4)"},{opacity:1,transform:`translate(${x*.25}px,${y*.25}px) scale(1)`,offset:.2},{opacity:0,transform:`translate(${x}px,${y}px) scale(${.4+Math.random()*.4})`}],{duration,delay,easing:"ease-out",fill:"forwards"}));
   }
-  btn.animate([{transform:"scale(1)"},{transform:"scale(1.32)",offset:.35},{transform:"scale(.9)",offset:.7},{transform:"scale(1)"}],{duration:460,easing:"ease-out"});
-  const ring=document.createElement("span");
-  ring.className="fav-ring";
-  btn.appendChild(ring);
-  ring.animate([{transform:"scale(1)",opacity:.75},{transform:"scale(2)",opacity:0}],{duration:520,easing:"cubic-bezier(.2,.7,.3,1)"})
-    .finished.catch(()=>{}).then(()=>ring.remove());
+  btn.appendChild(wrap);
+  Promise.allSettled(anims.map(a=>a.finished)).then(()=>wrap.remove());
 }
 function bumpFavoritesFab(){
   if(prefersReducedMotion())return;
   document.querySelector(".favorites-fab")?.animate([{transform:"scale(1)"},{transform:"scale(1.1)",offset:.35},{transform:"scale(1)"}],{duration:380,easing:"ease-out"});
-  document.getElementById("favoritesCount")?.animate([{transform:"scale(1)"},{transform:"scale(1.55)",offset:.35},{transform:"scale(1)"}],{duration:420,easing:"ease-out"});
+}
+// 導覽列的收藏數字：數字有變才換；第一次顯示（剛打開網站）不播動畫
+// （動態參考 transitions.dev 的 Number pop-in）
+let favCountShown=false;
+function setFavoritesCount(n){
+  const el=document.getElementById("favoritesCount");
+  if(!el)return;
+  const text=String(n),prev=Number(el.textContent)||0;
+  if(favCountShown&&el.textContent===text)return;
+  const animate=favCountShown&&!prefersReducedMotion();
+  favCountShown=true;
+  if(!animate){el.textContent=text;return}
+  // 每次都換成新的數字元素，動畫自己會從頭播，不用逼瀏覽器先重排版面
+  el.style.setProperty("--digit-dir",n>prev?"1":"-1");
+  el.innerHTML=`<span class="num-digits">${[...text].map((ch,i,all)=>`<span class="num-digit"${all.length>1&&i===all.length-1?' data-stagger="1"':""}>${ch}</span>`).join("")}</span>`;
 }
 function flyHeartToFab(btn){
   if(prefersReducedMotion())return;
@@ -2331,7 +2476,7 @@ function flyHeartToFab(btn){
     .finished.catch(()=>{}).then(()=>{
       fly.remove();
       favCountHolds--;
-      if(!favCountHolds)document.getElementById("favoritesCount").textContent=favoriteProductsWithMeta().length;
+      if(!favCountHolds)setFavoritesCount(favoriteProductsWithMeta().length);
       bumpFavoritesFab();
     });
 }
@@ -2409,14 +2554,13 @@ function renderFavoritesRoomTabs(allProducts){
 }
 function renderFavorites(){
   const list=document.getElementById("favoritesList");
-  const count=document.getElementById("favoritesCount");
   const footer=document.getElementById("favoritesFooter");
   const subtitle=document.getElementById("favoritesSubtitle");
   document.getElementById("favoritesPreview").style.display="none";
   list.style.display="";
   const allProducts=favoriteProductsWithMeta();
   const totalQty=allProducts.reduce((sum,p)=>sum+p._qty,0);
-  if(!favCountHolds)count.textContent=allProducts.length;
+  if(!favCountHolds)setFavoritesCount(allProducts.length);
   subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 30 天`:"";
   renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
@@ -2639,7 +2783,6 @@ function updateLbFavoriteBtn(){
   if(!btn||!lbProduct)return;
   const active=isFavorite(lbProduct.id);
   btn.classList.toggle("active",active);
-  btn.textContent=active?"♥":"♡";
   btn.setAttribute("aria-label",active?"從喜愛清單移除":"加入喜愛清單");
 }
 function toggleLbFavorite(){
@@ -2799,7 +2942,7 @@ function lbRender(resetImage){
     info.innerHTML=`
       <div class="lb-cat-row">
         <div class="lb-product-cat">${escapeHTML(cat)}</div>
-        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">♡</button>
+        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
       </div>
       <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
       ${price?`<div class="lb-product-price">${price}${activeSalePrice(lbProduct)&&lbProduct.saleEnd?`<span class="price-until">特價到 ${saleEndText(lbProduct.saleEnd)}</span>`:""}</div>`:""}

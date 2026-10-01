@@ -1137,11 +1137,13 @@ footer a:hover{color:var(--color-on-dark)}
 }
 .lb-inquire-btn:hover{background:#05a648}
 .lb-inquire-btn svg{flex-shrink:0}
-.lb-product-note{border-top:1px solid var(--line);margin-top:18px;padding-top:14px;font-size:14px;color:var(--muted)}
+.lb-product-note{font-size:14px;color:var(--muted)}
 .lb-product-note ul{margin:4px 0;padding-left:22px;list-style:disc}
 .lb-product-note ol{margin:4px 0;padding-left:22px;list-style:decimal}
 .lb-product-note li{margin:2px 0}
 .lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
+/* 「商品說明」標題上面一條淺灰線，把上面的尺寸跟商品說明分開 */
+.lb-desc-title{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
 /* 詳情頁的尺寸區塊（見 productSizeHtml）：左邊線稿（dim-figures.js）標出寬／深／高的方向，
    右邊逐列寫數字，桌子、櫃架、板凳多一行「約幾尺」；椅子的座高那一列用品牌色標出來 */
 .lb-dim{display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center}
@@ -1757,12 +1759,18 @@ function priceHtml(product){
   if(sale)return `<span class="price-now">${escapeHTML(formatPrice(sale))}</span>${base?`<s class="price-was">${escapeHTML(formatPrice(base))}</s>`:""}`;
   return base?escapeHTML(formatPrice(base)):"";
 }
+// 純金額（可以已經有 $／NT$、千分位逗號、空格、全形數字或「元」）→ 只留數字；「洽詢」這類文字 → null
+function priceDigits(text){
+  const t=String(text??"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[\s,，]/g,"");
+  const m=/^(?:NT\$|\$|＄)?(\d+)元?$/i.exec(t);
+  return m?m[1].replace(/^0+(?=\d)/,""):null;
+}
 function formatPrice(price){
   const text=String(price||"").trim();
   if(!text)return "";
-  // 純數字／千分位符號才自動補 NT$，其他文字（例如「洽詢」）原樣顯示
-  if(/^[\d,，]+$/.test(text))return `$ ${text}`;
-  return text;
+  // 金額一律顯示成「$ 3,200」（自動補 $ 和千分位），其他文字（例如「洽詢」）原樣顯示
+  const digits=priceDigits(text);
+  return digits!=null?`$ ${digits.replace(/\B(?=(\d{3})+(?!\d))/g,",")}`:text;
 }
 function toast(msg,dur=2200){
   const el=document.getElementById("toast");
@@ -2364,8 +2372,9 @@ function setFavoriteNote(id,note){
   saveFavoritesLocal();
 }
 function parsePriceNumber(price){
-  const text=String(price||"").replace(/[,，]/g,"").trim();
-  const n=parseFloat(text);
+  const digits=priceDigits(price);
+  if(digits!=null)return Number(digits);
+  const n=parseFloat(String(price||"").replace(/[,，]/g,"").trim());
   return Number.isFinite(n)?n:null;
 }
 function toggleFavoritesPanel(force){
@@ -2798,7 +2807,7 @@ function lbRender(resetImage){
       ${optionsHtml(lbProduct)}
       ${lineInquireBtnHtml(lbProduct)}
       ${sizeHtml}
-      ${desc?`<div class="lb-spec-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
+      ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
     `;
     updateLbFavoriteBtn();
   }

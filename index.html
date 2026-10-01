@@ -341,7 +341,7 @@ nav.nav--scrolled .nav-logo{font-size:16px}
   box-shadow:0 16px 32px rgba(46,38,30,.14);
 }
 .p-card__media{position:relative;isolation:isolate;aspect-ratio:1/1;background:var(--color-card,var(--paper));border-radius:16px;overflow:hidden}
-.p-card__media img{position:absolute;top:50%;left:50%;width:88%;height:88%;object-fit:contain;transform:translate(-50%,-50%);transition:opacity .34s ease,transform .34s ease,filter .4s ease-in-out}
+.p-card__media img{position:absolute;top:50%;left:50%;width:88%;height:88%;object-fit:contain;transform:translate(-50%,-50%);transition:opacity .34s ease,transform .34s ease}
 .p-card__media .img-primary{opacity:1;z-index:1}
 .p-card__media .img-secondary{opacity:0;z-index:2}
 .p-card:hover .p-card__media .img-primary.has-secondary{opacity:0}
@@ -376,16 +376,12 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .cat-tile__thumb{width:74px;height:74px;border-radius:var(--radius-pill);background:var(--paper);overflow:hidden;display:grid;place-items:center}
 .cat-tile__thumb img{width:76%;height:76%;object-fit:contain;transition:opacity .34s ease}
 /* 商品照片載入完成才淡入（見 fadeInOnLoad）；用 img 提高權重，蓋過 .img-primary 的 opacity:1。
-   商品卡片的照片還沒載好時，照片位置先顯示一塊會呼吸的淡色底；載好後底色模糊淡出、
-   照片從模糊變清楚淡入（動態參考 transitions.dev 的 Skeleton loader and reveal） */
-img.img-fade:not(.is-loaded){opacity:0;filter:blur(2px)}
-.product-img-wrap::before,.p-card__media::before{
-  content:"";position:absolute;inset:14%;z-index:0;border-radius:14px;background:#efe5d6;
-  opacity:0;filter:blur(2px);pointer-events:none;
-  transition:opacity .4s ease-in-out,filter .4s ease-in-out;
-}
-.product-img-wrap.is-loading::before,.p-card__media.is-loading::before{opacity:1;filter:blur(0);animation:photo-skel-pulse 1s ease-in-out infinite}
-@keyframes photo-skel-pulse{50%{background-color:#f7f1e8}}
+   商品卡片的照片還沒載好時，照片位置先放一塊會呼吸的淡色底（.photo-skel，載好就拿掉）；
+   載好後底色模糊淡出、照片從模糊變清楚淡入（動態參考 transitions.dev 的 Skeleton loader and reveal）。
+   這塊底只在照片載入中才存在、模糊只有淡入那 0.4 秒，平常不會讓瀏覽器多算東西 */
+img.img-fade:not(.is-loaded){opacity:0}
+.photo-skel{position:absolute;inset:14%;z-index:0;border-radius:14px;background:#efe5d6;pointer-events:none;animation:photo-skel-pulse 1s ease-in-out infinite}
+@keyframes photo-skel-pulse{50%{opacity:.55}}
 .cat-tile__name{font-family:var(--font-heading);font-size:14px;font-weight:600;color:var(--charcoal)}
 .cat-tile__count{font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .cat-tile--cta{justify-content:center;background:var(--sage);color:#fff}
@@ -483,10 +479,7 @@ img.img-fade:not(.is-loaded){opacity:0;filter:blur(2px)}
    的 Tabs sliding）。底色那塊疊在其他按鈕上面、選中的那顆字再疊在底色上面 */
 .categories-bar,.sub-categories-bar{position:relative}
 .cat-tab,.sub-tab,.cat-side-btn{position:relative;transition:color .25s cubic-bezier(.22,1,.36,1)}
-.tab-pill{
-  position:absolute;left:0;top:0;z-index:1;pointer-events:none;background:var(--charcoal);
-  transition:transform .25s cubic-bezier(.22,1,.36,1),width .25s cubic-bezier(.22,1,.36,1),height .25s cubic-bezier(.22,1,.36,1),opacity .25s ease;
-}
+.tab-pill{position:absolute;left:0;top:0;z-index:1;pointer-events:none;background:var(--charcoal)}
 .sub-categories-bar>.tab-pill{background:var(--sage)}
 .has-pill>.cat-tab.active,.has-pill>.sub-tab.active,.has-pill>.cat-side-btn.active{z-index:2;background:transparent;border-color:transparent}
 .products-grid{
@@ -668,7 +661,7 @@ img.img-fade:not(.is-loaded){opacity:0;filter:blur(2px)}
   object-position:center;
   padding:5px;
   box-sizing:border-box;
-  transition:opacity .34s ease,transform .34s ease,filter .4s ease-in-out;
+  transition:opacity .34s ease,transform .34s ease;
 }
 .img-primary{opacity:1;z-index:1}
 .img-secondary{opacity:0;z-index:2}
@@ -760,9 +753,6 @@ img.img-fade:not(.is-loaded){opacity:0;filter:blur(2px)}
 /* 按愛心回饋：愛心填色、往內縮再彈回來、噴出 8 顆小點點（見 popFavoriteButton；動態參考
    transitions.dev 的 Like button，免費授權可商用），小愛心飛到導覽列收藏按鈕（見 flyHeartToFab） */
 .favorite-btn svg path,.p-card__fav svg path,.lb-favorite svg path{transition:fill .15s cubic-bezier(.22,1,.36,1)}
-.favorite-btn{--like-dist:18px} /* 卡片 overflow:hidden，點點飛太遠會被切掉 */
-.p-card__fav{--like-dist:22px}
-.lb-favorite{--like-dist:24px}
 .like-particles{position:absolute;left:50%;top:50%;width:0;height:0;pointer-events:none;color:var(--danger)}
 .p-card__fav .like-particles{color:var(--tan)}
 .like-particles i{position:absolute;left:0;top:0;border-radius:50%;background:currentColor;opacity:0}
@@ -810,9 +800,8 @@ img.img-fade:not(.is-loaded){opacity:0;filter:blur(2px)}
 /* 收藏數字變了：新數字從下面（變少時從上面）帶模糊浮進來（見 setFavoritesCount；
    動態參考 transitions.dev 的 Number pop-in） */
 .num-digits{display:inline-flex}
-.num-digit{display:inline-block}
-.favorites-count.is-animating .num-digit{animation:num-pop-in .5s cubic-bezier(.34,1.45,.64,1) both}
-.favorites-count.is-animating .num-digit[data-stagger="1"]{animation-delay:70ms}
+.num-digit{display:inline-block;animation:num-pop-in .5s cubic-bezier(.34,1.45,.64,1) both}
+.num-digit[data-stagger="1"]{animation-delay:70ms}
 @keyframes num-pop-in{from{transform:translateY(calc(8px * var(--digit-dir,1)));opacity:0;filter:blur(2px)}to{transform:none;opacity:1;filter:blur(0)}}
 .favorites-panel{
   position:fixed;
@@ -1903,48 +1892,56 @@ function renderCategories(){
   }else{
     subBar.style.display="none";
   }
-  syncTabPills(true);
+  scheduleTabPills();
 }
-// 選中分類的底色：記住上一次的位置，重畫之後先放回舊位置、再滑到新點的那顆
-// （手機版是上方兩排分類鈕，電腦版是左側分類清單）
+// 選中分類的底色：記住上一次的位置，重畫之後從舊位置滑到新點的那顆
+// （手機版是上方兩排分類鈕，電腦版是左側分類清單）。
+// 先把三排要的位置一次量完、再一起改，瀏覽器只要排版一次；滑動用 Web Animations 播，
+// 不用先放回舊位置再逼瀏覽器重排（Google 的 INP 指標看的就是點下去到畫面更新要多久）
 const tabPillPos={};
-function syncTabPill(container,selector,key,animate,fadeIn){
+const TAB_PILL_EASE="cubic-bezier(.22,1,.36,1)";
+function measureTabPill(container,selector){
+  const active=container?.querySelector(selector);
+  if(!active||!container.offsetWidth)return null; // 沒有選中的、或這一排現在沒顯示（例如電腦版的上方分類列）
+  return {x:active.offsetLeft,y:active.offsetTop,w:active.offsetWidth,h:active.offsetHeight,radius:getComputedStyle(active).borderRadius};
+}
+function applyTabPill(container,key,pos,animate,fadeIn){
   if(!container)return;
   let pill=container.querySelector(":scope > .tab-pill");
-  const active=container.querySelector(selector);
-  if(!active||!container.offsetWidth){ // 沒有選中的、或這一排現在沒顯示（例如電腦版的上方分類列）
+  if(!pos){
     pill?.remove();
     container.classList.remove("has-pill");
     delete tabPillPos[key];
     return;
   }
-  const pos={x:active.offsetLeft,y:active.offsetTop,w:active.offsetWidth,h:active.offsetHeight};
-  const prev=tabPillPos[key];
-  const isNew=!pill;
+  const prev=tabPillPos[key],isNew=!pill;
   if(isNew){
     pill=document.createElement("span");
     pill.className="tab-pill";
     pill.setAttribute("aria-hidden","true");
     container.prepend(pill);
   }
-  pill.style.borderRadius=getComputedStyle(active).borderRadius;
-  const place=p=>{pill.style.transform=`translate(${p.x}px,${p.y}px)`;pill.style.width=p.w+"px";pill.style.height=p.h+"px"};
-  const slide=animate&&prev&&!prefersReducedMotion();
-  pill.style.transition="none";
-  place(slide?prev:pos);
-  // 子分類第一次點選時淡入（沒有上一個位置可以滑過來）；剛打開網站時直接顯示
-  if(isNew&&fadeIn&&animate&&!prev&&!prefersReducedMotion())pill.style.opacity="0";
-  void pill.offsetWidth;
-  pill.style.transition="";
-  place(pos);
-  pill.style.opacity="";
-  tabPillPos[key]=pos;
+  const frame=p=>({transform:`translate(${p.x}px,${p.y}px)`,width:p.w+"px",height:p.h+"px"});
+  Object.assign(pill.style,frame(pos),{borderRadius:pos.radius});
   container.classList.add("has-pill");
+  tabPillPos[key]=pos;
+  if(!animate||prefersReducedMotion())return;
+  if(prev&&(prev.x!==pos.x||prev.y!==pos.y||prev.w!==pos.w||prev.h!==pos.h))pill.animate([frame(prev),frame(pos)],{duration:250,easing:TAB_PILL_EASE});
+  else if(isNew&&!prev&&fadeIn)pill.animate([{opacity:0},{opacity:1}],{duration:250,easing:"ease"}); // 子分類第一次點選：淡入
+}
+// 等這次點擊的工作（含重畫商品格）做完、下一個畫面要畫之前才量位置，不在點擊當下逼瀏覽器排版
+let tabPillFrame=0;
+function scheduleTabPills(){
+  if(!tabPillFrame)tabPillFrame=requestAnimationFrame(()=>{tabPillFrame=0;syncTabPills(true)});
 }
 function syncTabPills(animate){
-  syncTabPill(document.getElementById("categoriesBar"),":scope > .cat-tab.active","bar",animate);
-  syncTabPill(document.getElementById("subCategoriesBar"),":scope > .sub-tab.active","sub:"+state.activeMain,animate,true);
-  syncTabPill(document.getElementById("catSidebar"),":scope > .cat-side-btn.active","side",animate);
+  const rows=[
+    [document.getElementById("categoriesBar"),":scope > .cat-tab.active","bar",false],
+    [document.getElementById("subCategoriesBar"),":scope > .sub-tab.active","sub:"+state.activeMain,true],
+    [document.getElementById("catSidebar"),":scope > .cat-side-btn.active","side",false],
+  ];
+  const sizes=rows.map(([el,sel])=>measureTabPill(el,sel));
+  rows.forEach(([el,,key,fadeIn],i)=>applyTabPill(el,key,sizes[i],animate,fadeIn));
 }
 // 視窗大小變了、字型載入完，按鈕寬度位置會變：直接對齊，不播滑動
 let tabPillResizeTimer=null;
@@ -2174,15 +2171,46 @@ function renderAppliedChips(){
 // 商品照片載入完成才淡入。這一輪已經載入過的網址（切換分類、Firebase 資料回來後
 // 重畫列表）直接顯示、不重播淡入，不然每次重畫整排照片都會閃一下。
 const loadedPhotoSrcs=new Set();
-// host：照片所在的框（商品卡片），照片載好之前框裡先顯示會呼吸的淡色底（.is-loading）
+// 照片框真的出現在畫面上、照片又還沒載好，才放那塊會呼吸的底（.photo-skel）。
+// 畫面外的照片（往下捲才會開始載）不先放：幾十塊在背景一直跑的動畫，會讓每次點按都慢一點
+const skelWaiting=new Set();
+let skelCleanupTimer=null;
+const photoSkelObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
+  entries.forEach(({target,isIntersecting})=>{
+    if(!isIntersecting)return;
+    photoSkelObserver.unobserve(target);
+    if(!skelWaiting.delete(target))return;
+    const skel=document.createElement("span");
+    skel.className="photo-skel";
+    target.prepend(skel);
+  });
+}):null;
+// host：照片所在的框（商品卡片）。載好後底色模糊淡出、照片從模糊變清楚，淡完就把那塊底拿掉
 function fadeInOnLoad(img,host){
   const key=img.src;
   img.classList.add("img-fade");
   if(loadedPhotoSrcs.has(key)){img.classList.add("is-loaded");return}
-  host?.classList.add("is-loading");
-  const done=()=>{img.classList.add("is-loaded");host?.classList.remove("is-loading")};
-  img.addEventListener("load",()=>{loadedPhotoSrcs.add(key);done()},{once:true});
-  img.addEventListener("error",done,{once:true});
+  if(host&&photoSkelObserver){
+    skelWaiting.add(host);
+    photoSkelObserver.observe(host);
+    // 商品格重畫後，舊的框不會再出現：過一下把它們從觀察清單拿掉，不要一直留在記憶體
+    clearTimeout(skelCleanupTimer);
+    skelCleanupTimer=setTimeout(()=>skelWaiting.forEach(h=>{if(!h.isConnected){photoSkelObserver.unobserve(h);skelWaiting.delete(h)}}),1000);
+  }
+  const done=ok=>{
+    if(ok)loadedPhotoSrcs.add(key);
+    img.classList.add("is-loaded");
+    if(!host)return;
+    skelWaiting.delete(host);
+    photoSkelObserver?.unobserve(host);
+    const skel=host.querySelector(":scope > .photo-skel");
+    if(!skel)return;
+    if(!ok||prefersReducedMotion()){skel.remove();return}
+    skel.animate({opacity:0,filter:"blur(2px)"},{duration:400,easing:"ease-in-out",fill:"forwards"}).finished.catch(()=>{}).then(()=>skel.remove());
+    img.animate([{filter:"blur(2px)"},{filter:"blur(0)"}],{duration:400,easing:"ease-in-out"});
+  };
+  img.addEventListener("load",()=>done(true),{once:true});
+  img.addEventListener("error",()=>done(false),{once:true});
 }
 /* ── 捲動進場動畫：見上方 .reveal CSS ─────────────────────────── */
 const revealObserver=("IntersectionObserver" in window)?new IntersectionObserver(entries=>{
@@ -2378,12 +2406,16 @@ const prefersReducedMotion=()=>window.matchMedia("(prefers-reduced-motion: reduc
 let favCountHolds=0;
 // 收藏時愛心往內縮一下再彈回來，同時往外噴 8 顆小點點；取消收藏只把顏色退掉，不彈也不噴
 // （動態參考 transitions.dev 的 Like button）
+// 點點飛多遠：商品卡片 overflow:hidden，飛太遠會被切掉。這裡刻意不讀 getComputedStyle，
+// 按下去的當下不要逼瀏覽器重算整頁樣式，按鈕反應才快（Google 的 INP 指標看的就是這個）
+const LIKE_DIST={"favorite-btn":18,"p-card__fav":22,"lb-favorite":24};
 function popFavoriteButton(btn,adding){
   if(!adding||prefersReducedMotion())return;
   const pop="cubic-bezier(.34,1.96,.64,1)";
-  // composite:add 疊在原本的 transform 上（.favorite-btn 滑鼠移上去本來就放大 1.1），結束時才不會跳一下
-  btn.animate([{transform:"scale(1)",easing:pop},{transform:"scale(.82)",offset:.3,easing:pop},{transform:"scale(1)"}],{duration:350,composite:"add"});
-  const dist=parseFloat(getComputedStyle(btn).getPropertyValue("--like-dist"))||20;
+  // .favorite-btn 滑鼠移上去本來就放大 1.1：從 1.1 彈，結束時才不會跳一下
+  const base=btn.classList.contains("favorite-btn")&&btn.matches(":hover")?1.1:1;
+  btn.animate([{transform:`scale(${base})`,easing:pop},{transform:`scale(${base*.82})`,offset:.3,easing:pop},{transform:`scale(${base})`}],{duration:350});
+  const dist=LIKE_DIST[Object.keys(LIKE_DIST).find(c=>btn.classList.contains(c))]||20;
   const wrap=document.createElement("span");
   wrap.className="like-particles";
   const anims=[];
@@ -2416,11 +2448,9 @@ function setFavoritesCount(n){
   const animate=favCountShown&&!prefersReducedMotion();
   favCountShown=true;
   if(!animate){el.textContent=text;return}
+  // 每次都換成新的數字元素，動畫自己會從頭播，不用逼瀏覽器先重排版面
   el.style.setProperty("--digit-dir",n>prev?"1":"-1");
   el.innerHTML=`<span class="num-digits">${[...text].map((ch,i,all)=>`<span class="num-digit"${all.length>1&&i===all.length-1?' data-stagger="1"':""}>${ch}</span>`).join("")}</span>`;
-  el.classList.remove("is-animating");
-  void el.offsetWidth; // 重新觸發動畫
-  el.classList.add("is-animating");
 }
 function flyHeartToFab(btn){
   if(prefersReducedMotion())return;

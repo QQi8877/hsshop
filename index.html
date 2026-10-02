@@ -1155,9 +1155,10 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-opt:hover{border-color:var(--tan)}
 .lb-opt.active{border-color:var(--tan-dark);box-shadow:inset 0 0 0 1px var(--tan-dark)}
 .lb-opt-dot{flex:none;width:16px;height:16px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(32,30,29,.18)}
+/* 「LINE 詢問這件商品」放在商品頁最下面（商品說明下面） */
 .lb-inquire-btn{
   display:flex;align-items:center;justify-content:center;gap:8px;
-  width:100%;padding:13px 16px;margin-bottom:18px;
+  width:100%;padding:13px 16px;margin-top:24px;
   background:#06c755;color:#fff;border:0;border-radius:8px;
   font-size:15px;font-weight:500;text-decoration:none;
   transition:background .18s ease;
@@ -1192,9 +1193,6 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-dim-ask{padding:14px;border-radius:8px;border:1px dashed var(--color-line-strong);background:rgba(243,238,230,.5)}
 .lb-dim-ask strong{display:block;font-family:var(--font-heading);font-size:17px;font-weight:600;color:var(--ink);margin-bottom:2px}
 .lb-dim-ask p{font-size:13.5px;color:var(--muted);text-wrap:pretty}
-.lb-dim-line{display:inline-flex;align-items:center;gap:7px;margin-top:10px;border-radius:999px;background:#06c755;color:#fff;font-size:13.5px;font-weight:600;padding:8px 16px;text-decoration:none;transition:background .18s ease}
-.lb-dim-line:hover{background:#05a648}
-.lb-dim-line svg{width:15px;height:15px;flex:none}
 /* 360px 寬的手機（很多 Android）示意圖縮小一點，右邊的數字才不會太擠 */
 @media(max-width:360px){
   .lb-dim{grid-template-columns:108px minmax(0,1fr);gap:12px}
@@ -1628,6 +1626,12 @@ function sanitizeDescHtml(html){
     });
   });
   return div.innerHTML;
+}
+// 說明裡看得到的字都沒有（例如後台刪光後只剩一個 <br>）就當成沒寫，不顯示空白的「商品說明」
+function richTextIsEmpty(html){
+  const s=String(html??"");
+  if(/<img\b/i.test(s))return false;
+  return !s.replace(/<[^>]*>/g,"").replace(/&nbsp;|&#160;|&#xa0;/gi,"").replace(/[\s\u200b\ufeff]/g,"");
 }
 const DEFAULT_STATE={
   catalog:structuredClone(DEFAULT_CATALOG),
@@ -2827,13 +2831,13 @@ function dimExtraHtml(label,spec,axes){
   else body=bits.map(bit=>`${bit.axis} ${bit.dim.text!==undefined?escapeHTML(bit.dim.text):`${dimCmText(bit.dim)} cm`}`).join(" × ");
   return `<div class="lb-dim-extra"><span>${escapeHTML(label)}</span>${body}</div>`;
 }
-const LINE_CHAT_ICON=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
-function customNoteHtml(product,lineUrl){
+const hasLineContact=()=>!!(state.contact?.line||"").trim();
+function customNoteHtml(product,hasLine){
   if(!(product.badges||[]).includes("custom"))return "";
   const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
   const def=defs.find(d=>d.key==="custom");
   if(!def)return "";
-  return `<div class="lb-dim-note"><span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span><span>${lineUrl?"這款可以依你家的空間訂做尺寸，傳 LINE 告訴老闆需要的寬、深、高。":"這款可以依你家的空間訂做尺寸，歡迎告訴我們需要的寬、深、高。"}</span></div>`;
+  return `<div class="lb-dim-note"><span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span><span>${hasLine?"這款可以依你家的空間訂做尺寸，傳 LINE 告訴老闆需要的寬、深、高。":"這款可以依你家的空間訂做尺寸，歡迎告訴我們需要的寬、深、高。"}</span></div>`;
 }
 function productSizeHtml(product){
   const d=product.dimensions||{};
@@ -2856,7 +2860,7 @@ function productSizeHtml(product){
     const value=String(spec.value||"").trim();
     return value&&!/洽詢/.test(value)?`<div class="lb-dim-extra"><span>${escapeHTML(spec.label||"尺寸備註")}</span>${escapeHTML(withCm(value))}</div>`:"";
   }).join("");
-  const lineUrl=buildLineInquireUrl(product,"您好，我想詢問這件商品的尺寸：");
+  const hasLine=hasLineContact();
   const chi=kind!=="chair"&&kind!=="armchair";
   const rows=dimRowHtml("寬",W,{chi,adj:"可調整"})+dimRowHtml("深",D,{chi,adj:"可調整"})+dimRowHtml("高",H,{chi,adj:"可升降"})
     +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
@@ -2866,12 +2870,12 @@ function productSizeHtml(product){
     const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDimsOf(d,specs)})}</div>`:"";
     body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
   }else if(extraHtml)body=extraHtml;
-  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${lineUrl?"這款的實際尺寸，傳 LINE 問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p>${lineUrl?`<a class="lb-dim-line" href="${escapeHTML(lineUrl)}" target="_blank" rel="noopener">${LINE_CHAT_ICON}LINE 詢問尺寸</a>`:""}</div>`;
-  return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,lineUrl)}`;
+  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，按下方「LINE 詢問這件商品」問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;
+  return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,hasLine)}`;
 }
 function getProductDisplayParts(product){
   const cat=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
-  const rawDesc=product.desc||"";
+  const rawDesc=richTextIsEmpty(product.desc)?"":product.desc;
   const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?sanitizeDescHtml(rawDesc):escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
   return {cat,desc,sizeHtml:productSizeHtml(product)};
 }
@@ -2948,9 +2952,9 @@ function lbRender(resetImage){
       ${price?`<div class="lb-product-price">${price}${activeSalePrice(lbProduct)&&lbProduct.saleEnd?`<span class="price-until">特價到 ${saleEndText(lbProduct.saleEnd)}</span>`:""}</div>`:""}
       ${lbProduct.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(lbProduct.leadTime)}</span></div>`:""}
       ${optionsHtml(lbProduct)}
-      ${lineInquireBtnHtml(lbProduct)}
       ${sizeHtml}
       ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
+      ${lineInquireBtnHtml(lbProduct)}
     `;
     updateLbFavoriteBtn();
   }

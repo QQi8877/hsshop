@@ -1184,7 +1184,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <button class="add-spec-btn" type="button" onclick="addOptionRow()">＋ 新增顏色／款式</button>
 
     <div class="form-section-title">尺寸</div>
-    <input type="hidden" id="pSize">
     <div class="dimension-grid">
       <div>
         <label>寬 W（cm）</label>
@@ -1454,8 +1453,8 @@ body.quickcat-mode .quickcat-bar{display:flex}
     <div class="modal-scroll">
     <div class="modal-title">批次上傳照片</div>
     <p class="catmgr-hint">
-      檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張。
-      檔名跟現有商品名稱<strong>完全一致</strong>才會自動比對進去；比對不到的名稱，系統會自動建立一個只有名稱跟照片的新商品，分類、尺寸等資料再請你事後補上。
+      檔名請用「商品名稱-1.jpg、商品名稱-2.jpg…」的格式命名（分隔符號 - _ 空格 皆可），同名的照片會依數字排序放入第 1~5 張，跟單張上傳一樣會傳到圖床。
+      檔名跟現有商品名稱<strong>完全一致</strong>才會自動比對進去（上架中、封存中的都算）；比對不到的名稱，會自動建立一個只有名稱跟照片的新商品，<strong>先放在「已封存」</strong>，分類、尺寸等資料補好後再上架。
     </p>
     <div class="upload-method-row">
       <button class="upload-method-btn active" onclick="setBulkMode('append',this)">附加到空格（不覆蓋）</button>
@@ -1616,9 +1615,15 @@ function categoryLabel(p){
   const main=getMainName(p.mainCat);
   return sub?`${main} / ${sub}`:main;
 }
+// 「尺寸洽詢」「洽詢」這種字不算尺寸（跟前台、尺寸示意圖的認定一樣）
+const isSizeValue=v=>{const t=String(v??"").trim();return !!t&&!/洽詢/.test(t)};
 function hasSize(p){
   const d=p.dimensions||{};
-  return !!(d.width||d.depth||d.height||p.size);
+  if([d.width,d.depth,d.height].some(isSizeValue))return true;
+  // 規格列有填（例如「層板 寬 24 × 深 35」）也算；舊格式的規格列是 {label,value}
+  if((p.specs||[]).some(s=>s&&typeof s==="object"&&("part" in s?[s.w,s.d,s.h].some(isSizeValue):isSizeValue(s.value))))return true;
+  // 很早以前只有一段尺寸文字、沒有寬深高的舊商品
+  return ![d.width,d.depth,d.height].some(v=>String(v??"").trim())&&isSizeValue(p.size);
 }
 const sorters={
   // 「自訂順序」要跟前台的排序邏輯一致：先照主分類筆畫、再照子分類筆畫分組，
@@ -2219,78 +2224,113 @@ function fileToDataUrl(file){
     reader.readAsDataURL(file);
   });
 }
+let bulkBusy=false; // 一批還在處理時又選了檔案：等這批做完，兩批才不會互相蓋掉
 window.openBulkUploadModal=function(){
   document.getElementById("bulkFileInput").value="";
   document.getElementById("bulkFolderInput").value="";
-  document.getElementById("bulkLog").innerHTML="";
+  if(!bulkBusy)document.getElementById("bulkLog").innerHTML=""; // 還在處理的話，進度留著
   openModal("bulkUploadModal");
 };
+// 這件商品現在的完整照片＋對應的原圖（原圖補到跟照片一樣長，位置才對得上）。
+// 讀不到就丟出錯誤、這件先不處理——不能拿不完整的照片去蓋掉原本的
+async function currentGallery(p){
+  let photos=(p.photos||[]).filter(Boolean),originals=[];
+  const snap=await getDoc(galleryDocRef(p.id));
+  if(snap.exists()){
+    const data=snap.data();
+    const full=(data.photos||[]).filter(Boolean);
+    if(full.length){photos=full;originals=data.photoOriginals||[]}
+  }
+  photos=photos.slice(0,MAX_PHOTOS);
+  return{photos,originals:photos.map((_,i)=>originals[i]||"")};
+}
+// 一張照片：跟商品編輯一樣先傳到圖床；圖床失敗才退回存在資料庫（畫質、容量都比較差，會提醒）
+async function uploadBulkPhoto(file){
+  try{
+    const url=await uploadToCloudinary(file);
+    return{photo:url,original:url,local:false};
+  }catch(e){
+    console.warn("批次上傳：圖床上傳失敗，改用本機暫存",file.name,e);
+    const dataUrl=await fileToDataUrl(file);
+    return{photo:await resizeImageToUniform(dataUrl),original:dataUrl,local:true};
+  }
+}
 async function handleBulkFiles(event){
-  const files=event.target.files;
-  if(!files||!files.length)return;
+  const input=event.target;
+  const files=[...(input.files||[])];
+  input.value=""; // 清空，方便下次選同一批檔案也會觸發
+  if(!files.length)return;
+  if(bulkBusy){toast("上一批照片還在處理中，請等它做完再選");return}
   const log=document.getElementById("bulkLog");
   const groups=groupBulkFiles(files);
-  if(!groups.size){log.textContent="沒有找到可用的圖片檔案。";event.target.value="";return}
-  log.textContent="處理中…";
+  if(!groups.size){log.textContent="沒有找到可用的圖片檔案。";return}
+  bulkBusy=true;
   const lines=[];
-  let matchedCount=0,createdCount=0;
-  for(const [name,items] of groups){
-    const photos=[];
-    const rawOriginals=[];
-    for(const {file} of items.slice(0,MAX_PHOTOS)){
-      const dataUrl=await fileToDataUrl(file);
-      rawOriginals.push(dataUrl);
-      photos.push(await resizeImageToUniform(dataUrl));
-    }
-    const existing=products.find(p=>isLive(p)&&(p.name||"").trim()===name);
-    let fullPhotos,fullOriginals,targetId,product;
-    if(existing){
-      targetId=existing.id;
-      if(bulkReplaceMode){
-        fullPhotos=photos;
-        fullOriginals=rawOriginals;
-      }else{
-        const cachedCount=(existing.photos||[]).filter(Boolean).length;
-        const totalCount=existing.photoCount??cachedCount;
-        const galleryData=totalCount>cachedCount?await loadGallery(existing.id):{photos:(existing.photos||[]).filter(Boolean),originals:[]};
-        fullPhotos=galleryData.photos.slice();
-        fullOriginals=galleryData.originals.slice();
-        photos.forEach((photo,idx)=>{
-          if(fullPhotos.length>=MAX_PHOTOS)return;
-          fullPhotos.push(photo);
-          fullOriginals.push(rawOriginals[idx]);
-        });
+  const counts={matched:0,created:0,full:0,failed:0};
+  let done=0;
+  const show=(extra="")=>{log.innerHTML=lines.join("<br>")+extra};
+  try{
+    for(const [name,items] of groups){
+      const safeName=escapeHTML(name);
+      show(`${lines.length?"<br>":""}處理中…（${done+1}/${groups.size}）「${safeName}」`);
+      // 同名商品：上架中的優先，再來是封存的（批次建立的新商品是封存，之後再補照片也要比對得到）
+      const same=products.filter(p=>p.status!=="trashed"&&(p.name||"").trim()===name);
+      const existing=same.find(isLive)||same[0];
+      try{
+        const current=existing&&!bulkReplaceMode?await currentGallery(existing):{photos:[],originals:[]};
+        const room=MAX_PHOTOS-current.photos.length;
+        if(room<=0){
+          counts.full++;
+          lines.push(`－ 「${safeName}」已經有 ${MAX_PHOTOS} 張照片，這次的沒有加進去（要換掉請選「取代該商品所有照片」）`);
+          continue;
+        }
+        const picked=items.slice(0,room);
+        const uploaded=[];
+        for(const {file} of picked)uploaded.push(await uploadBulkPhoto(file));
+        const photos=[...current.photos,...uploaded.map(u=>u.photo)];
+        const originals=[...current.originals,...uploaded.map(u=>u.original)];
+        const notes=[];
+        if(items.length>picked.length)notes.push(`有 ${items.length-picked.length} 張超過 ${MAX_PHOTOS} 張上限，沒有放進去`);
+        if(uploaded.some(u=>u.local))notes.push("有照片沒傳上圖床，先存在資料庫裡，建議之後再上傳一次");
+        const noteText=notes.length?`（${notes.join("；")}）`:"";
+        if(existing){
+          const next={...existing,photos:[await thumbFor(photos[0])],photoCount:photos.length};
+          // 取代後照片可能變少：顏色／款式指到已經沒有的照片，就改成「不換照片」
+          if(bulkReplaceMode&&Array.isArray(existing.options))next.options=existing.options.map(o=>Number.isInteger(o.photo)&&o.photo>=photos.length?{...o,photo:null}:o);
+          await saveGallery(existing.id,photos,originals);
+          await setDoc(doc(productsCol(),existing.id),sanitizeProductForWrite(next));
+          Object.assign(existing,next); // 兩份都存好了才改畫面上的資料
+          counts.matched++;
+          lines.push(`✓ 比對到「${safeName}」${existing.status==="archived"?"（封存中）":""}，已${bulkReplaceMode?"取代成":"補上"} ${uploaded.length} 張照片${noteText}`);
+        }else{
+          // 比對不到就建立新商品，先封存：還沒有分類、尺寸、價格，不要馬上出現在前台
+          const product={
+            id:uid(),status:"archived",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
+            dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
+            photos:[await thumbFor(photos[0])],photoCount:photos.length
+          };
+          await saveGallery(product.id,photos,originals);
+          await setDoc(doc(productsCol(),product.id),product);
+          products.push(product);
+          counts.created++;
+          lines.push(`＋ 找不到「${safeName}」，已建立新商品，先放在「已封存」${noteText}`);
+        }
+      }catch(e){
+        counts.failed++;
+        console.warn("批次上傳失敗",name,e);
+        lines.push(`✗ 「${safeName}」沒有存成功：${escapeHTML(e.message||String(e))}`);
+      }finally{
+        done++;
       }
-      existing.photos=[await thumbFor(fullPhotos[0])];
-      existing.photoCount=fullPhotos.length;
-      product=existing;
-      matchedCount++;
-      lines.push(`✓ 比對到「${escapeHTML(name)}」，已${bulkReplaceMode?"取代":"補上"}照片`);
-    }else{
-      targetId=uid();
-      fullPhotos=photos;
-      fullOriginals=rawOriginals;
-      product={
-        id:targetId,status:"active",sortOrder:nextSortOrder(),mainCat:"",subCat:null,name,size:"",
-        dimensions:{width:"",depth:"",height:""},specs:[],desc:"",
-        photos:[await thumbFor(fullPhotos[0])],photoCount:fullPhotos.length
-      };
-      products.push(product);
-      createdCount++;
-      lines.push(`＋ 找不到「${escapeHTML(name)}」，已建立待補資料的新商品`);
     }
-    try{
-      await setDoc(doc(productsCol(),product.id),product);
-      await saveGallery(targetId,fullPhotos,fullOriginals);
-    }catch(e){
-      console.warn("商品／圖庫寫入失敗",e);
-    }
+  }finally{
+    bulkBusy=false;
   }
+  const summary=[`比對到 ${counts.matched} 件`,counts.created&&`新增 ${counts.created} 件（在「已封存」，分類、尺寸補好後再上架）`,counts.full&&`${counts.full} 件照片已滿`,counts.failed&&`${counts.failed} 件失敗`].filter(Boolean).join("、");
+  show(`<br><br>完成：${summary}。`);
   updateTotalCount();
   renderSidebar();
   renderTable();
-  log.innerHTML=lines.join("<br>")+`<br><br>共比對 ${matchedCount} 個既有商品、新增 ${createdCount} 個待補資料商品。`;
-  event.target.value="";
 }
 document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
 document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
@@ -2727,6 +2767,12 @@ window.rteClear=function(id){
   sel.removeAllRanges();
   editor.focus();
 };
+// 看得到的字都沒有（只剩換行、空白、空的 <div>）就當成沒寫：把說明全選刪掉時，編輯框常會留下一個看不到的 <br>
+function richTextIsEmpty(html){
+  const s=String(html??"");
+  if(/<img\b/i.test(s))return false;
+  return !s.replace(/<[^>]*>/g,"").replace(/&nbsp;|&#160;|&#xa0;/gi,"").replace(/[\s\u200b\ufeff]/g,"");
+}
 function sanitizeRichText(html){
   const div=document.createElement("div");
   div.innerHTML=html;
@@ -2770,9 +2816,11 @@ function autoGenerateDesc(name,catName,subName){
   if(has("鋼管"))traits.push("鋼管骨架穩重紮實，久坐不搖晃");
 
   const isFold=has("摺疊")||has("折疊")||has("立桌")||subName.includes("摺疊")||subName.includes("折疊");
-  const isChair=catName==="椅子"||subName.includes("椅");
-  const isTable=catName==="桌子";
-  const isRack=catName==="收納櫃／架";
+  // 看分類名稱裡的關鍵字，不比對完整名稱：「收納櫃/架」「收納櫃／架」斜線全形半形都認得，分類改名也不會失效。
+  // 先看子分類、再看主分類，順序跟尺寸示意圖的自動判斷一樣（「床架」是床不是置物架、「床邊桌」是桌子）
+  const kindOf=n=>/椅|凳/.test(n)?"chair":/桌|几|台/.test(n)?"table":/床|寢具/.test(n)?"bed":/櫃|架/.test(n)?"rack":"";
+  const kind=kindOf(subName)||kindOf(catName);
+  const isRack=kind==="rack",isTable=kind==="table",isChair=kind==="chair";
   const matText=traits.join("，")||"簡約造型，線條俐落好搭配";
 
   let intro,bullets;
@@ -2795,6 +2843,10 @@ function autoGenerateDesc(name,catName,subName){
       intro=`${matText}，適合居家餐廳日常使用。`;
       bullets=[matText,"穩固耐用，居家日常好搭配"];
     }
+  }else if(traits.length){
+    // 認不出品類時，商品名稱裡看得出的材質、特色還是要寫進去
+    intro=`${matText}，適合居家日常使用。`;
+    bullets=[matText,"居家日常好搭配"];
   }else{
     intro="簡約實用設計，適合居家日常使用。";
     bullets=["簡約實用","居家日常好搭配"];
@@ -2804,7 +2856,7 @@ function autoGenerateDesc(name,catName,subName){
 }
 window.applyAutoDesc=function(){
   const editor=document.getElementById("pDesc");
-  if(editor.textContent.trim()&&!confirm("目前已有商品說明內容，套用自動產生的文案會覆蓋掉，確定要套用嗎？"))return;
+  if(!richTextIsEmpty(editor.innerHTML)&&!confirm("目前已有商品說明內容，套用自動產生的文案會覆蓋掉，確定要套用嗎？"))return;
   const name=document.getElementById("pName").value.trim();
   if(!name){toast("請先填寫商品名稱");return}
   const mainId=document.getElementById("pMainCat").value;
@@ -2815,7 +2867,7 @@ window.applyAutoDesc=function(){
   toast("已自動產生文案，記得檢查一下內容再儲存");
 };
 window.bulkAutoDesc=async function(){
-  const targets=products.filter(p=>isLive(p)&&!p.desc);
+  const targets=products.filter(p=>isLive(p)&&richTextIsEmpty(p.desc));
   if(!targets.length){toast("目前沒有缺說明的商品");return}
   if(!confirm(`將為 ${targets.length} 個缺商品說明的商品自動產生文案並直接儲存，確定要執行嗎？`))return;
   const btn=document.getElementById("bulkAutoDescBtn");
@@ -3871,14 +3923,18 @@ window.openProductModal=async function(id,{copy=false}={}){
     document.getElementById("pLeadTime").value=product.leadTime||"";
     workingOptions=(product.options||[]).map(o=>({name:o.name||"",color:o.color||"#d8cbb8",photo:Number.isInteger(o.photo)?o.photo:null}));
     renderBadgeCheckboxes(product.badges||[]);
-    document.getElementById("pSize").value=product.size||"";
-    document.getElementById("pWidth").value=product.dimensions?.width||"";
-    document.getElementById("pDepth").value=product.dimensions?.depth||"";
-    document.getElementById("pHeight").value=product.dimensions?.height||"";
+    const dims=product.dimensions||{};
+    document.getElementById("pWidth").value=dims.width||"";
+    document.getElementById("pDepth").value=dims.depth||"";
+    document.getElementById("pHeight").value=dims.height||"";
     workingSpecs=(product.specs||[]).map(spec=>{
       if("part" in spec)return {...spec};
       return {part:spec.label||"",w:spec.value||"",d:"",h:""};
     });
+    // 尺寸文字現在一律照寬深高產生；很早以前只有一段尺寸文字的商品，把那段字放進規格列，看得到也改得到，存檔時才不會不見
+    if(!workingSpecs.length&&![dims.width,dims.depth,dims.height].some(v=>String(v??"").trim())&&isSizeValue(product.size)){
+      workingSpecs=[{part:"尺寸備註",w:String(product.size).trim(),d:"",h:""}];
+    }
     workingDimFigure=product.dimFigure||"";
     renderFigurePicker();
     // 商品說明是直接從資料庫讀出來的 HTML，理論上只有存檔時經過這個編輯器
@@ -3902,7 +3958,7 @@ window.openProductModal=async function(id,{copy=false}={}){
   }else{
     document.getElementById("pMainCat").value=catalog[0]?.id||"";
     updateSubSelect();
-    ["pName","pSize","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
+    ["pName","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
     ["pSaleEnd","pLeadTime"].forEach(fid=>document.getElementById(fid).value="");
     setPriceField("pPrice","");
     setPriceField("pSalePrice","");
@@ -3940,7 +3996,9 @@ window.saveProduct=async function(){
     depth:document.getElementById("pDepth").value.trim(),
     height:document.getElementById("pHeight").value.trim()
   };
-  const size=document.getElementById("pSize").value.trim()||getSizeSummary(dimensions,"");
+  // 尺寸文字跟著寬深高走（前台卡片、收藏清單、LINE 訊息用）；寬深高清空就跟著清空，不會留下舊尺寸
+  const size=getSizeSummary(dimensions,"");
+  const rawDesc=document.getElementById("pDesc").innerHTML.trim();
   const data={
     mainCat:document.getElementById("pMainCat").value,
     subCat:document.getElementById("pSubCat").value||null,
@@ -3965,7 +4023,7 @@ window.saveProduct=async function(){
       // 照片格位置 → 存起來的第幾張（照片中間有空格時兩者不一樣）
       photo:Number.isInteger(o.photo)&&workingPhotos[o.photo]?workingPhotos.slice(0,o.photo).filter(Boolean).length:null
     })),
-    desc:sanitizeRichText(document.getElementById("pDesc").innerHTML.trim())
+    desc:richTextIsEmpty(rawDesc)?"":sanitizeRichText(rawDesc)
   };
   // 這裡故意不用 normalizePhotoUrl：那個函式現在會幫 Cloudinary 網址加上
   // f_auto,q_auto 之類的顯示用轉換參數，只適合在「畫面上要顯示」的當下呼叫，
@@ -4075,7 +4133,7 @@ function missingFlags(p){
   return {
     noCat: !p.mainCat,
     noSize: !hasSize(p),
-    noDesc: !p.desc,
+    noDesc: richTextIsEmpty(p.desc),
     noPhoto: !(p.photos||[]).filter(Boolean).length
   };
 }
@@ -4665,8 +4723,8 @@ window.handleCSVImport=async function(event){
     const newHeight=(heightCell||"").trim();
     const dimsChanged=newWidth!==(d.width||"")||newDepth!==(d.depth||"")||newHeight!==(d.height||"");
     if(dimsChanged){
-      const oldSize=getSizeSummary(d,product.size);
-      const newSize=getSizeSummary({width:newWidth,depth:newDepth,height:newHeight},product.size);
+      const oldSize=getSizeSummary(d,product.size)||"（空白）";
+      const newSize=getSizeSummary({width:newWidth,depth:newDepth,height:newHeight},"")||"（空白）";
       fieldChanges.push({key:"dims",label:"尺寸",oldVal:oldSize,newVal:newSize});
     }
 
@@ -4743,6 +4801,7 @@ window.confirmCSVImport=async function(){
         c.product.dimensions.width=c.newWidth;
         c.product.dimensions.depth=c.newDepth;
         c.product.dimensions.height=c.newHeight;
+        c.product.size=getSizeSummary(c.product.dimensions,""); // 跟編輯商品一樣，尺寸文字跟著寬深高走
       }
       if(c.priceChanged)c.product.price=c.newPrice;
       if(c.statusChanged)c.product.status=c.newStatus;

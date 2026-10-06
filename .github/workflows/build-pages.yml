@@ -1,0 +1,58 @@
+# 每件商品一個網址：每小時從 Firebase 讀出上架中的商品，產生 p/商品編號.html、sitemap.xml、data/site.json
+# （說明見 _tools/build-pages.mjs）。有變動才會提交，沒變動什麼都不做。
+# 也可以在 GitHub 的 Actions 分頁手動按「Run workflow」立刻更新一次。
+name: 更新商品頁
+
+on:
+  schedule:
+    - cron: "17 * * * *"   # 每小時的第 17 分（避開整點，GitHub 整點排程常常延遲）
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:   # 網站版型或產生程式改了：馬上重新產生，商品頁才會跟著新版型
+      - index.html
+      - shop-render.js
+      - dim-figures.js
+      - _tools/**
+      - .github/workflows/build-pages.yml
+
+permissions:
+  contents: write   # 提交產生出來的檔案
+  pages: write      # 請 GitHub Pages 重新發佈網站
+
+concurrency:
+  group: build-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 產生商品頁
+        run: node _tools/build-pages.mjs
+      - name: 有變動才提交
+        id: commit
+        run: |
+          git add -A p data sitemap.xml
+          if git diff --cached --quiet; then
+            echo "沒有變動"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -q -m "自動更新商品頁"
+          for i in 1 2 3; do
+            git pull -q --rebase origin main && git push -q origin HEAD:main && echo "pushed=1" >> "$GITHUB_OUTPUT" && exit 0
+            sleep $((i * 5))
+          done
+          exit 1
+      - name: 請 GitHub Pages 重新發佈
+        if: steps.commit.outputs.pushed == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || echo "（不影響：GitHub 收到新的提交也會自己發佈）"

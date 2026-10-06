@@ -11,8 +11,7 @@
 <meta property="og:title" content="信通家俱行｜讓家更有溫度">
 <meta property="og:description" content="用心挑選每一件家具，陪伴您每一個家的日常——溫潤、可靠、實用、美學、安心。">
 <meta property="og:url" content="https://hsintong.cc/">
-<!-- 分享到 LINE／Facebook 時的預覽圖（1200×630）。每件商品自己的網頁（/p/商品編號）會換成那件商品的照片，
-     見 _tools/build-pages.mjs -->
+<!-- 分享到 LINE／Facebook 時的預覽圖（1200×630，店名＋標語，og-image.jpg） -->
 <meta property="og:image" content="https://hsintong.cc/og-image.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -31,8 +30,6 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=1">
-<link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc，
      官方已做好「繁體中文常用字」子集化的 woff2），不透過 Google Fonts CDN（Google 會把中文字
      拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -58,11 +55,11 @@
      成最接近的字重——跟上面講的字體跳動是一模一樣的機制，等於重新把這個問題生出來一次。
      內文用的是裝置內建字型，沒有這個限制。
      後台 manage.html 仍然使用 fonts/ 裡的 Noto Sans TC，那三個檔案不能刪。 -->
-<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <style>
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2')}
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2')}
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-serif-tc-400.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-serif-tc-600.woff2') format('woff2')}
 :root{
   /* Organic redesign tokens — palette/type swap only (Phase 1).
      Old variable names kept so the rest of the stylesheet doesn't need touching;
@@ -1136,7 +1133,7 @@ footer a:hover{color:var(--color-on-dark)}
   backdrop-filter:blur(10px);
 }
 .lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
-.lb-product-title{font-family:var(--font-heading);font-size:28px;font-weight:400;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
+.lb-product-title{font-family:var(--font-heading);font-size:28px;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
 .lb-product-price{font-family:var(--font-heading);font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
 /* 特價期間：特價用紅色、原價劃掉；商品頁多一行特價到哪天 */
 .price-now{color:var(--danger)}
@@ -1171,7 +1168,7 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-spec-title{font-size:12px;color:var(--tan-dark);letter-spacing:.12em;margin:18px 0 8px}
 /* 「商品說明」標題上面一條淺灰線，把上面的尺寸跟商品說明分開 */
 .lb-desc-title{border-top:1px solid var(--line);margin-top:20px;padding-top:16px}
-/* 詳情頁的尺寸區塊（見 shop-render.js 的 productSizeHtml）：左邊線稿（dim-figures.js）標出寬／深／高的方向，
+/* 詳情頁的尺寸區塊（見 productSizeHtml）：左邊線稿（dim-figures.js）標出寬／深／高的方向，
    右邊逐列寫數字，桌子、櫃架、板凳多一行「約幾尺」；椅子的座高那一列用品牌色標出來 */
 .lb-dim{display:grid;grid-template-columns:118px minmax(0,1fr);gap:14px;align-items:center}
 .lb-dim.no-fig{grid-template-columns:minmax(0,1fr)}
@@ -1284,38 +1281,6 @@ footer a:hover{color:var(--color-on-dark)}
 }
 </style>
 <script>
-/* 第一次來的客人（這台瀏覽器還沒存過商品資料）：馬上去抓每小時自動更新的商品資料
-   /data/site.json（跟網站在同一台主機），不用等最下面的程式跟 Firebase 都載完，商品可以早幾秒畫出來。
-   回訪客人用存在瀏覽器裡的資料，不用多抓。 */
-(function(){
-  try{if(localStorage.getItem("xintong_furniture_swr_cache_v1"))return}catch(e){}
-  window.__siteData=fetch("/data/site.json").then(function(r){return r.ok?r.json():null}).catch(function(){return null});
-})();
-/* 流量統計（Google Analytics 4）：GA_ID 填上「評估 ID」（G- 開頭）才會開始統計，空白就完全不載入。
-   店家自己逛網站不想被算進去：用這台裝置打開一次 https://hsintong.cc/?ga=off（之後都不算），
-   ?ga=on 恢復。統計程式等網頁載完才下載，不會拖慢第一次看到畫面的速度。
-   商品頁換網址（/p/商品編號）時 GA 會自動記一次瀏覽；其他事件見最下面程式的 track()。 */
-(function(){
-  var GA_ID="";
-  var off=false;
-  try{
-    var q=new URLSearchParams(location.search).get("ga");
-    if(q==="off")localStorage.setItem("hs_ga_off","1");
-    if(q==="on")localStorage.removeItem("hs_ga_off");
-    off=localStorage.getItem("hs_ga_off")==="1";
-  }catch(e){}
-  window.hsTrack=function(){};
-  if(!GA_ID||off)return;
-  window.dataLayer=window.dataLayer||[];
-  window.gtag=function(){dataLayer.push(arguments)};
-  window.hsTrack=function(name,params){gtag("event",name,params||{})};
-  gtag("js",new Date());
-  gtag("config",GA_ID);
-  function load(){var el=document.createElement("script");el.async=true;el.src="https://www.googletagmanager.com/gtag/js?id="+GA_ID;document.head.appendChild(el)}
-  if(document.readyState==="complete")setTimeout(load,0);else addEventListener("load",function(){setTimeout(load,0)});
-})();
-</script>
-<script>
 /* 首頁大圖文字進場。大標跟副標的 Noto Serif TC 是 font-display:block，載入前本來就看不到，
    所以等這兩個字重到了才播；2.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
    寫在這裡（不放下面的 module script），Firebase 載入失敗也不會讓標題一直藏著。 */
@@ -1378,7 +1343,7 @@ footer a:hover{color:var(--color-on-dark)}
       <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
       <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
       <div class="hero-actions">
-        <a class="hero-line-cta" id="lineFab" href="#" target="_blank" rel="noopener" data-lead="line_friend">
+        <a class="hero-line-cta" id="lineFab" href="#" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24" width="17" height="17" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           LINE 詢問商品
         </a>
@@ -1511,27 +1476,6 @@ footer a:hover{color:var(--color-on-dark)}
     <div class="lb-info" id="lbInfo"></div>
   </div>
 </div>
-<script>
-/* 從商品網址進來的靜態頁（_tools/build-pages.mjs 產生），商品頁一開始就是打開的；最下面的程式要等
-   Firebase 的程式下載完才會開始跑，這段先讓「×」、ESC、點照片旁邊的空白可以關掉，不用等。
-   最下面的程式載入後會換成完整版（window.__shopReady）。 */
-(function(){
-  var lb=document.getElementById("lightbox");
-  if(!lb.classList.contains("open"))return;
-  function close(){
-    if(window.__shopReady||!lb.classList.contains("open"))return;
-    lb.classList.remove("open");
-    lb.setAttribute("aria-hidden","true");
-    document.body.classList.remove("lightbox-open");
-    var t=document.querySelector("title");
-    if(t&&t.getAttribute("data-home-title"))document.title=t.getAttribute("data-home-title");
-    try{history.replaceState(null,"","/")}catch(e){}
-  }
-  window.closeLightbox=close;
-  lb.addEventListener("click",function(e){if(e.target===lb)close()});
-  document.addEventListener("keydown",function(e){if(e.key==="Escape")close()});
-})();
-</script>
 
 
 
@@ -1539,10 +1483,10 @@ footer a:hover{color:var(--color-on-dark)}
 /* ── Firebase Firestore 整合 ────────────────────────────────────── */
 import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
-// 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
-// （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
-// 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml}from"/shop-render.js?v=1";
+// 尺寸示意圖跟尺寸文字的解析規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
+import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=3";
+// 商品說明的過濾、分類的顯示／排序規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
+import{sanitizeRichHtml,isListedProduct,catalogOrderCompare}from"./shop-render.js?v=1";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1654,6 +1598,19 @@ function sampleSvg(title,color1,color2){
   return "data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg);
 }
 function uid(){return Math.random().toString(36).slice(2,10)}
+function escapeHTML(str=""){
+  return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+// 商品說明存的是後台富文本編輯器輸出的 HTML；後台存檔前雖然會過濾一次，但資料庫本身不會檢查
+// 內容——前台顯示時不能假設拿到的 HTML 一定是乾淨的，塞進畫面前一定要再過濾一次。
+// 過濾是白名單：只留後台編輯器做得出來的格式，其他一律拿掉（規則在 shop-render.js，後台用同一份）。
+function sanitizeDescHtml(html){return sanitizeRichHtml(html)}
+// 說明裡看得到的字都沒有（例如後台刪光後只剩一個 <br>）就當成沒寫，不顯示空白的「商品說明」
+function richTextIsEmpty(html){
+  const s=String(html??"");
+  if(/<img\b/i.test(s))return false;
+  return !s.replace(/<[^>]*>/g,"").replace(/&nbsp;|&#160;|&#xa0;/gi,"").replace(/[\s\u200b\ufeff]/g,"");
+}
 const DEFAULT_STATE={
   catalog:structuredClone(DEFAULT_CATALOG),
   activeMain:"全部",
@@ -1677,27 +1634,91 @@ const DEFAULT_STATE={
   tagDefs:[]
 };
 let state=structuredClone(DEFAULT_STATE);
+function normalizeProduct(product){
+  product.photos=product.photos||[product.img,product.img2].filter(Boolean);
+  if(typeof product.photoCount!=="number")product.photoCount=product.photos.filter(Boolean).length;
+  product.dimensions=product.dimensions||{width:"",depth:"",height:""};
+  product.specs=Array.isArray(product.specs)?product.specs:[];
+  product.status=!product.status||product.status==="active"?"active":product.status; // 封存、垃圾桶都不顯示
+  product.badges=Array.isArray(product.badges)?product.badges:[];
+  const hasDims=product.dimensions.width||product.dimensions.depth||product.dimensions.height;
+  if(!product.specs.length&&product.size&&!hasDims){
+    product.specs=[{label:"尺寸備註",value:product.size}];
+  }
+  return product;
+}
 /* ── 商品標籤（左上角徽章）─────────────────────────────────────
    state.tagDefs 的排列順序就是優先順序：一件商品若同時符合多個標籤，
    只顯示排在最前面的那一個，避免卡片被塞太多徽章。標籤本身（改名／
    顏色／新增／刪除）在後台「標籤管理」設定，這裡只負責讀取、顯示。 */
+const DEFAULT_TAG_DEFS=[
+  {key:"sale",label:"特價促銷",color:"#b84236"},
+  {key:"limited",label:"限量",color:"#8c491a"},
+  {key:"preorder",label:"預購",color:"#4d5d6b"},
+  {key:"new",label:"新品",color:"#5b6746"},
+  {key:"bestseller",label:"熱銷",color:"#905229"},
+  {key:"multicolor",label:"多色",color:"#201e1d"},
+  {key:"custom",label:"可客製化",color:"#696255"},
+  {key:"madeintw",label:"台灣製造",color:"#645c50"},
+];
+// 標籤顏色是後台可以自由選的，深淺不一定，固定用白字可能對比不夠（例如淺色標籤）。
+// 這裡依背景色算出相對亮度，太淺就自動改用深色文字，確保不管後台選什麼顏色都看得清楚。
+function tagTextColor(hex){
+  const m=/^#?([0-9a-f]{6})$/i.exec((hex||"").trim());
+  if(!m)return "#fff";
+  const n=parseInt(m[1],16);
+  const toLinear=c=>{c/=255;return c<=0.04045?c/12.92:Math.pow((c+0.055)/1.055,2.4)};
+  const r=toLinear((n>>16)&255),g=toLinear((n>>8)&255),b=toLinear(n&255);
+  const luminance=0.2126*r+0.7152*g+0.0722*b;
+  const contrastWithWhite=1.05/(luminance+0.05);
+  return contrastWithWhite>=4.5?"#fff":"#201e1d";
+}
 function primaryTagBadgeHtml(product){
   const badges=product.badges||[];
-  const def=tagDefsOf(state.tagDefs).find(d=>badges.includes(d.key));
-  return def?tagBadgeHtml(def):"";
+  const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
+  const def=defs.find(d=>badges.includes(d.key));
+  if(!def)return "";
+  return `<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`;
 }
 // 商品總表卡片的標籤列跟本月選品／燈箱不同：這裡要把商品符合的標籤全部顯示出來，
 // 不是只顯示排序最前面那一個。
 function allTagBadgesHtml(product){
   const badges=product.badges||[];
+  const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
   // 最多顯示 3 個，避免商品掛太多標籤時把卡片撐得亂七八糟；手機版欄位較窄，
   // 第 3 個標籤改用 CSS 在窄螢幕隱藏（見 .product-badges-row 的 media query），
   // 不用另外判斷寬度，也不會有 JS 量測寬度、resize 時重新計算的額外負擔。
-  return tagDefsOf(state.tagDefs).filter(d=>badges.includes(d.key)).slice(0,3).map(tagBadgeHtml).join("");
+  const matched=defs.filter(d=>badges.includes(d.key)).slice(0,3);
+  if(!matched.length)return "";
+  return matched.map(def=>`<span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span>`).join("");
 }
 let searchQuery="";
 let productsLoadFailed=false;
 let favoritesRoomFilter="全部";
+function extractGdriveId(url){
+  const patterns=[/\/file\/d\/([a-zA-Z0-9_-]+)/,/[?&]id=([a-zA-Z0-9_-]+)/,/\/d\/([a-zA-Z0-9_-]+)/];
+  for(const pattern of patterns){
+    const match=String(url).match(pattern);
+    if(match)return match[1];
+  }
+  return null;
+}
+function convertGdriveUrl(url,width=1600){
+  const id=extractGdriveId(url);
+  return id?`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w${width}`:url;
+}
+// Cloudinary 網址固定長這樣：.../image/upload/（可以插入轉換參數的地方）/v123/xxx.jpg
+// f_auto 讓 Cloudinary 依瀏覽器自動選最省流量的圖片格式（例如 WebP/AVIF），
+// q_auto 自動抓一個「肉眼看不太出差異、但檔案盡量小」的畫質，
+// w_<width> 只送剛好夠用的尺寸，列表縮圖不用每次都下載完整原圖。
+function convertCloudinaryUrl(url,width){
+  return url.replace(/\/image\/upload\//,`/image/upload/f_auto,q_auto,w_${width}/`);
+}
+function normalizePhotoUrl(url,width=1600){
+  if(/drive\.google\.com/i.test(url))return convertGdriveUrl(url,width);
+  if(/res\.cloudinary\.com/i.test(url))return convertCloudinaryUrl(url,width);
+  return url;
+}
 // 依實際版面大小提供多種寬度，讓瀏覽器依裝置螢幕寬度/DPR自己挑最合適的檔案，
 // 避免手機版小卡片還是抓桌面版用的大尺寸圖（PageSpeed「圖片解析度過大」建議）。
 // 商品卡片（列表封面／滑鼠移過的第二張）跟首頁大圖分別對應兩組不同的顯示尺寸，
@@ -1711,9 +1732,55 @@ function buildSrcset(url,widths){
   return widths.map(w=>`${normalizePhotoUrl(url,w)} ${w}w`).join(", ");
 }
 
-function getMainCat(id){return mainCatOf(state.catalog,id)}
-function getMainName(id){return mainNameOf(state.catalog,id)}
-function getSubName(mainId,subId){return subNameOf(state.catalog,mainId,subId)}
+function getMainCat(id){return state.catalog.find(c=>c.id===id)}
+function getMainName(id){return id==="全部"?"全部":(getMainCat(id)?.name||(id?id:"待分類"))}
+function getSubName(mainId,subId){return (getMainCat(mainId)?.subs||[]).find(s=>s.id===subId)?.name||""}
+function withCm(value){
+  const text=String(value||"").trim();
+  if(!text)return "";
+  if(/[a-zA-Z公分吋尺]/.test(text))return text;
+  if(/^[\d\s.xX×*~\-–—]+$/.test(text))return `${text} cm`;
+  return text;
+}
+function getSizeSummary(product){
+  const d=product.dimensions||{};
+  const parts=[];
+  if(d.width)parts.push(`寬 ${withCm(d.width)}`);
+  if(d.depth)parts.push(`深 ${withCm(d.depth)}`);
+  if(d.height)parts.push(`高 ${withCm(d.height)}`);
+  if(!parts.length)return product.size||"尺寸洽詢";
+  // "x" 前後用不斷行空格（ ）接起來，手機版窄螢幕換行時才不會斷在
+  // "x" 後面、變成下一行開頭孤零零一個 x，讀起來卡卡的。
+  return parts.join(" x ").replace(/ cm(?= x )/g,"");
+}
+// 特價：有填特價、而且沒設結束日或還沒過期（結束日當天整天都算）才生效，過期自動恢復原價
+function activeSalePrice(product){
+  const sale=String(product.salePrice||"").trim();
+  if(!sale)return "";
+  if(product.saleEnd&&!(new Date(`${product.saleEnd}T23:59:59`)>=new Date()))return "";
+  return sale;
+}
+// 特價結束日："2026-01-05" → "1/5"
+function saleEndText(end){const [,m,d]=String(end).split("-");return `${Number(m)}/${Number(d)}`}
+// 卡片、商品頁顯示的價格（HTML）：特價期間顯示特價＋劃掉的原價
+function priceHtml(product){
+  const sale=activeSalePrice(product),base=String(product.price||"").trim();
+  if(sale)return `<span class="price-now">${escapeHTML(formatPrice(sale))}</span>${base?`<s class="price-was">${escapeHTML(formatPrice(base))}</s>`:""}`;
+  return base?escapeHTML(formatPrice(base)):"";
+}
+// 純金額（可以已經有 $／NT$、千分位逗號、空格、全形數字或「元」）→ 只留數字；「洽詢」這類文字 → null
+function priceDigits(text){
+  const t=String(text??"").replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0)).replace(/[\s,，]/g,"");
+  const m=/^(?:NT\$|\$|＄)?(\d+)元?$/i.exec(t);
+  return m?m[1].replace(/^0+(?=\d)/,""):null;
+}
+function formatPrice(price){
+  const text=String(price||"").trim();
+  if(!text)return "";
+  // 金額一律顯示成「$ 3,200」（自動補 $ 和千分位），其他文字（例如「洽詢」）原樣顯示
+  const digits=priceDigits(text);
+  return digits!=null?`$ ${digits.replace(/\B(?=(\d{3})+(?!\d))/g,",")}`:text;
+}
 function toast(msg,dur=2200){
   const el=document.getElementById("toast");
   el.textContent=msg;
@@ -1747,7 +1814,7 @@ function applyLayoutVisibility(){
 }
 
 // 顧客看得到的商品：上架中，而且主分類、子分類都沒有在後台「分類管理」設成隱藏。
-// 隱藏分類的商品不出現在任何列表、搜尋、本月選品、分類磚（直接用商品網址打開還是看得到）
+// 隱藏分類的商品不出現在任何列表、搜尋、本月選品、分類磚、數量（直接用商品連結打開還是看得到）
 function listedProducts(){return state.products.filter(p=>isListedProduct(p,state.catalog))}
 function mainCount(id){return listedProducts().filter(p=>p.mainCat===id).length}
 function subCount(mainId,subId){return listedProducts().filter(p=>p.mainCat===mainId&&p.subCat===subId).length}
@@ -1864,10 +1931,9 @@ function syncTabPills(animate){
 let tabPillResizeTimer=null;
 window.addEventListener("resize",()=>{clearTimeout(tabPillResizeTimer);tabPillResizeTimer=setTimeout(()=>syncTabPills(false),120)});
 document.fonts?.ready.then(()=>syncTabPills(false));
-/* ── 搜尋 ───────────────────────────────────────────────────────── */
+/* ── 批次上傳照片（依檔名比對商品）───────────────────────────── */
 let searchDebounceTimer=null;
 let searchWasEmptyBeforeTyping=true;
-let searchTrackTimer=null,lastTrackedSearch="";
 function handleSearchInput(){
   // 只在「這波輸入的第一下」（還沒有排定中的計時器）記錄輸入前是不是空的，
   // 不然連續打好幾個字時，每次都會被上一個字覆蓋掉，變成永遠讀到「上一個字」
@@ -1883,12 +1949,6 @@ function handleSearchInput(){
     renderProducts();
     if(searchQuery&&searchWasEmptyBeforeTyping)document.getElementById("categories").scrollIntoView({behavior:"smooth"});
   },180);
-  // 停手 1.5 秒才記一次搜尋，打字途中的半個詞不算
-  clearTimeout(searchTrackTimer);
-  searchTrackTimer=setTimeout(()=>{
-    const term=searchQuery.trim();
-    if(term&&term!==lastTrackedSearch){lastTrackedSearch=term;track("search",{search_term:term})}
-  },1500);
 }
 function clearSearch(){
   clearTimeout(searchDebounceTimer);
@@ -1930,7 +1990,7 @@ function renderProducts(animate=true){
     // 搜尋要涵蓋全部商品、全部分類，不受目前選取的分類侷限
     list=list.filter(p=>{
       const cat=`${getMainName(p.mainCat)} ${getSubName(p.mainCat,p.subCat)}`.toLowerCase();
-      const descText=productDescText(p).toLowerCase();
+      const descText=(p.desc||"").replace(/<[^>]*>/g," ").toLowerCase();
       return (p.name||"").toLowerCase().includes(q)||descText.includes(q)||cat.includes(q);
     });
   }else if(state.activeMain!=="全部"){
@@ -2249,7 +2309,7 @@ function renderCategoryTiles(){
       </button>
     `;
   }).join("")+`
-    <a class="cat-tile cat-tile--cta reveal" id="catCta" href="#" target="_blank" rel="noopener" data-lead="line_friend" style="transition-delay:${cats.length*60}ms">
+    <a class="cat-tile cat-tile--cta reveal" id="catCta" href="#" target="_blank" rel="noopener" style="transition-delay:${cats.length*60}ms">
       <span class="cat-tile__name">不確定<br>就問</span>
       <span class="cta-link">LINE 問老闆 →</span>
     </a>
@@ -2415,7 +2475,6 @@ function toggleFavorite(id,sourceBtn){
   }
   saveFavoritesLocal();
   updateFavoriteButtons(id);
-  if(adding){const product=state.products.find(p=>p.id===id);if(product)track("add_to_wishlist",gaItemParams(product))}
   if(sourceBtn){
     popFavoriteButton(sourceBtn,adding);
     if(adding)flyHeartToFab(sourceBtn);
@@ -2542,22 +2601,14 @@ function renderFavorites(){
   });
 }
 
-/* ── 每件商品的網址、手機的「上一頁」───────────────────────────
-   打開商品時網址換成這件商品自己的網址（/p/商品編號）：分享、加書籤、重新整理都會回到這件商品，
-   每小時自動產生的靜態頁（_tools/build-pages.mjs）也讓 Google 能一件一件收錄、LINE／FB 分享時
-   顯示這件商品的照片跟名稱。
-   打開商品頁、收藏清單時各多記一筆瀏覽紀錄，手機按「上一頁」就是把它關掉、不會直接離開網站，
-   按「下一頁」會再打開。從商品網址直接進來的沒有上一筆可以退，關掉時就把網址換回首頁、不多記一筆。 */
+let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
+/* ── 手機的「上一頁」：先關掉商品頁／收藏清單，不會直接離開網站 ─────────
+   打開商品頁、收藏清單時各多記一筆瀏覽紀錄（history.pushState；商品頁的網址還是 #product-商品編號，
+   分享、重新整理都會回到這件商品），手機按「上一頁」就是退回那一筆、把它關掉，按「下一頁」會再打開。
+   從商品連結直接進來的沒有上一筆可以退，關掉時就把網址換回首頁、不多記一筆。 */
 const PAGE_LOAD_ID=Math.random().toString(36).slice(2); // 分辨哪幾筆瀏覽紀錄是這次打開網頁之後自己加的
-const HOME_TITLE=document.querySelector("title")?.dataset.homeTitle||document.title;
 const isLightboxOpen=()=>document.getElementById("lightbox").classList.contains("open");
 const isFavoritesOpen=()=>document.getElementById("favoritesPanel").classList.contains("open");
-// 網址 /p/商品編號（或 /p/商品編號.html）→ 商品編號
-function productIdFromPath(path){
-  const m=/^\/p\/([^/]+?)(?:\.html)?\/?$/.exec(path);
-  if(!m)return null;
-  try{return decodeURIComponent(m[1])}catch(e){return null}
-}
 // 目前畫面要記進瀏覽紀錄的樣子：哪件商品開著、收藏清單開著沒
 function viewState(pushed){return {hs:PAGE_LOAD_ID,pushed,product:isLightboxOpen()&&lbProduct?lbProduct.id:null,fav:isFavoritesOpen()}}
 // 這一筆是這次自己加的：上一筆也還在這個網頁裡，可以直接退回去
@@ -2575,7 +2626,6 @@ window.addEventListener("popstate",event=>{
   }else if(isLightboxOpen())closeLightbox({history:false});
   if(!!s.fav!==isFavoritesOpen())toggleFavoritesPanel(!!s.fav,{history:false});
 });
-let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
 let lbOption=-1; // 商品頁目前選的顏色／款式（-1＝沒選）
 let lbTouchStartX=0,lbTouchStartY=0;
 // ── 點商品卡片時照片從卡片飛進燈箱 ─────────────────────────────
@@ -2677,7 +2727,7 @@ function flyBackToCard(wrap,from,src){
     });
 }
 // options.history："auto"＝點商品打開（多記一筆瀏覽紀錄，商品頁已經開著就換掉那一筆）、
-// "replace"＝從商品網址進來（換掉目前這筆）、false＝上一頁／下一頁造成的（不動瀏覽紀錄）
+// "replace"＝從商品連結進來（換掉目前這筆）、false＝上一頁／下一頁造成的（不動瀏覽紀錄）
 function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
@@ -2695,28 +2745,21 @@ function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   lbCurrent=0;
   if(!wasOpen)lastFocusedElement=document.activeElement;
   const lightbox=document.getElementById("lightbox");
-  // 從商品網址進來的靜態頁（_tools/build-pages.mjs 產生）一開始就畫好了這件商品、照片也是同一張：
-  // 不要先蓋住照片再顯示，不然畫面會閃一下
-  const prerendered=lightbox.dataset.prerendered===id;
-  delete lightbox.dataset.prerendered;
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
   document.body.classList.add("lightbox-open");
   // 換了商品才需要先蓋住畫面：不然新照片還沒下載完之前，畫面會繼續顯示
   // 上一個商品的照片，容易讓人誤以為切換失敗或卡住。
-  lbRender(isProductSwitch&&!prerendered);
+  lbRender(isProductSwitch);
   document.querySelector(".lb-close").focus();
   if(flipPrep)startLbFlipOpen(flipPrep);
-  // 分頁標題先換（瀏覽紀錄、流量統計記的是換網址那一刻的標題），再換網址
-  document.title=`${product.name||"商品"}｜${SITE_NAME}`;
-  if(mode==="replace"||(mode==="auto"&&wasOpen))replaceView(productPath(id));
-  else if(mode==="auto")pushView(productPath(id));
-  track("view_item",gaItemParams(product));
+  if(mode==="replace"||(mode==="auto"&&wasOpen))replaceView(`#product-${id}`);
+  else if(mode==="auto")pushView(`#product-${id}`);
   // 商品文件的封面只是縮圖，燈箱一律要換成 gallery 子文件裡的原始畫質照片
   const totalCount=product.photoCount??cover.length;
   if(totalCount>0){
     Storage.getGallery(id).then(full=>{
-      if(!full.length||lbProduct?.id!==product.id)return;
+      if(!full.length||lbProduct!==product)return;
       const photos=full.map(url=>normalizePhotoUrl(url));
       lbImages=photos;
       lbRender();
@@ -2750,10 +2793,10 @@ function closeLightbox({history:useHistory=true}={}){
   resetZoom();
   if(lastFocusedElement instanceof HTMLElement)lastFocusedElement.focus();
   lastFocusedElement=null;
-  document.title=HOME_TITLE;
   if(useHistory){
+    // 是這次自己加的那一筆：退回去（跟按上一頁一樣）；從商品連結直接進來的：網址換回首頁
     if(canStepBack()&&history.state.product)history.back();
-    else replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?"/":location.href);
+    else replaceView(location.hash.startsWith("#product-")?location.pathname+location.search:location.href);
   }
   // 捲軸回來之後才量卡片的落點
   if(from)flyBackToCard(wrap,from,backSrc);
@@ -2774,9 +2817,98 @@ function toggleLbFavorite(){
   const btn=document.getElementById("lbFavoriteBtn");
   if(btn)popFavoriteButton(btn,adding);
 }
-/* 商品頁右側那一欄（尺寸區塊、款式、說明、LINE 詢問）的內容在 shop-render.js，
-   自動產生的商品靜態頁也用同一份，兩邊畫出來一樣。 */
+/* ── 詳情頁的尺寸區塊 ─────────────────────────────────────────
+   後台的寬深高、規格列（椅面、層板…）都是自由輸入的文字，這裡整理成「線稿示意圖＋
+   逐列的寬／深／高」：桌子、櫃架、板凳的品名習慣用「尺」，多換算約幾台尺；椅子的
+   「椅面」列拿出來變成座高；高度是範圍（例如 81~93）就標「可升降」；完全沒有尺寸
+   就改成請洽詢，不再出現三格「—」；有「可客製化」標籤的提醒可以訂做。
+   示意圖本身在 dim-figures.js（後台也用同一份），每件商品用哪張圖可以在後台指定。 */
+const CM_PER_CHI=30.303; // 1 台尺 = 30.303 公分
+function dimCmText(dim){
+  const n=v=>String(Math.round(v*10)/10);
+  return dim.min===dim.max?n(dim.min):`${n(dim.min)}–${n(dim.max)}`;
+}
+function dimChiText(dim){
+  const chi=cm=>String(Math.round(cm/CM_PER_CHI*10)/10);
+  const a=chi(dim.min),b=chi(dim.max);
+  return a===b?`約 ${a} 尺`:`約 ${a}–${b} 尺`;
+}
+function dimRowHtml(label,dim,{chi=false,key=false,adj=""}={}){
+  if(!dim)return "";
+  const value=dim.text!==undefined?escapeHTML(dim.text)
+    :`${dimCmText(dim)}<small>cm</small>${adj&&dim.min!==dim.max?`<span class="lb-dim-adj">${adj}</span>`:""}${chi?`<span class="lb-dim-chi">${dimChiText(dim)}</span>`:""}`;
+  return `<div class="lb-dim-row${key?" key":""}"><span class="lb-dim-k">${label}</span><span class="lb-dim-v">${value}</span></div>`;
+}
+// 規格列（層板、椅面的寬深…）變成一行補充說明，例如「層板　寬 24 × 深 35 cm」
+function dimExtraHtml(label,spec,axes){
+  const bits=axes.map(([axis,key])=>({axis,key,dim:parseDim(spec[key])})).filter(bit=>bit.dim);
+  if(!bits.length)return "";
+  let body;
+  // 舊格式的「尺寸備註」轉成規格列時，文字都放在寬那一格；只有這段文字就原樣顯示，不加「寬」
+  if(bits.length===1&&bits[0].key==="w"&&bits[0].dim.text!==undefined)body=escapeHTML(bits[0].dim.text);
+  else if(bits.every(bit=>bit.dim.text===undefined))body=`${bits.map(bit=>`${bit.axis} ${dimCmText(bit.dim)}`).join(" × ")} cm`;
+  else body=bits.map(bit=>`${bit.axis} ${bit.dim.text!==undefined?escapeHTML(bit.dim.text):`${dimCmText(bit.dim)} cm`}`).join(" × ");
+  return `<div class="lb-dim-extra"><span>${escapeHTML(label)}</span>${body}</div>`;
+}
+const hasLineContact=()=>!!(state.contact?.line||"").trim();
+function customNoteHtml(product,hasLine){
+  if(!(product.badges||[]).includes("custom"))return "";
+  const defs=state.tagDefs&&state.tagDefs.length?state.tagDefs:DEFAULT_TAG_DEFS;
+  const def=defs.find(d=>d.key==="custom");
+  if(!def)return "";
+  return `<div class="lb-dim-note"><span class="tag-badge" style="background:${escapeHTML(def.color)};color:${tagTextColor(def.color)}">${escapeHTML(def.label)}</span><span>${hasLine?"這款可以依你家的空間訂做尺寸，傳 LINE 告訴老闆需要的寬、深、高。":"這款可以依你家的空間訂做尺寸，歡迎告訴我們需要的寬、深、高。"}</span></div>`;
+}
+function productSizeHtml(product){
+  const d=product.dimensions||{};
+  const subName=getSubName(product.mainCat,product.subCat),mainName=getMainName(product.mainCat);
+  // 後台可以指定這件商品用哪張示意圖、或不顯示（dimFigure 欄位，空白＝依分類自動）；
+  // 「約幾尺」跟著示意圖的種類走，選不顯示時改看依分類自動判斷的種類
+  const figureKey=resolveDimFigureKey(product.dimFigure,subName,mainName);
+  const kind=figureKey||autoDimFigureKey(subName,mainName);
+  const W=parseDim(d.width),D=parseDim(d.depth),H=parseDim(d.height);
+  const specs=(product.specs||[]).filter(spec=>spec&&typeof spec==="object");
+  const seatIndex=findSeatSpecIndex(specs);
+  const seatH=seatIndex>=0?parseDim(specs[seatIndex].h):null;
+  const hasSeatH=!!seatH&&seatH.text===undefined;
+  // 其他規格列變成補充說明；「尺寸洽詢」這種列不是尺寸，parseDim 會略過
+  const extraHtml=specs.map((spec,index)=>{
+    if("part" in spec){
+      const axes=index===seatIndex&&hasSeatH?[["寬","w"],["深","d"]]:[["寬","w"],["深","d"],["高","h"]];
+      return dimExtraHtml(spec.part||"規格",spec,axes);
+    }
+    const value=String(spec.value||"").trim();
+    return value&&!/洽詢/.test(value)?`<div class="lb-dim-extra"><span>${escapeHTML(spec.label||"尺寸備註")}</span>${escapeHTML(withCm(value))}</div>`:"";
+  }).join("");
+  const hasLine=hasLineContact();
+  const chi=kind!=="chair"&&kind!=="armchair";
+  const rows=dimRowHtml("寬",W,{chi,adj:"可調整"})+dimRowHtml("深",D,{chi,adj:"可調整"})+dimRowHtml("高",H,{chi,adj:"可升降"})
+    +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
+  let body;
+  if(rows){
+    // 示意圖照這件商品自己的寬深高比例畫（例如寬 60、深 90 的桌子會畫成比較深）
+    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDimsOf(d,specs)})}</div>`:"";
+    body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
+  }else if(extraHtml)body=extraHtml;
+  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，按下方「LINE 詢問這件商品」問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;
+  return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,hasLine)}`;
+}
+function getProductDisplayParts(product){
+  const cat=getSubName(product.mainCat,product.subCat)||getMainName(product.mainCat);
+  const rawDesc=richTextIsEmpty(product.desc)?"":product.desc;
+  const desc=/<[a-z][\s\S]*>/i.test(rawDesc)?sanitizeDescHtml(rawDesc):escapeHTML(rawDesc).replace(/\r\n|\r|\n/g,"<br>");
+  return {cat,desc,sizeHtml:productSizeHtml(product)};
+}
 // 顏色／款式（後台填的 options）：點了會換到那個款式指定的照片，用 LINE 詢問時也會帶上選的款式
+function productOptions(product){return (Array.isArray(product.options)?product.options:[]).filter(o=>o&&String(o.name||"").trim())}
+function optionsHtml(product){
+  const opts=productOptions(product);
+  if(!opts.length)return "";
+  const chosen=opts[lbOption];
+  return `<div class="lb-opts">
+    <div class="lb-opts-k">顏色／款式${chosen?`<span>：${escapeHTML(chosen.name)}</span>`:""}</div>
+    <div class="lb-opts-list">${opts.map((o,i)=>`<button type="button" class="lb-opt${i===lbOption?" active":""}" data-opt="${i}" aria-pressed="${i===lbOption}"><span class="lb-opt-dot" style="background:${/^#[0-9a-f]{6}$/i.test(o.color||"")?o.color:"#d8cbb8"}"></span>${escapeHTML(o.name)}</button>`).join("")}</div>
+  </div>`;
+}
 // 再按一次同一個款式就取消選取
 document.getElementById("lbInfo").addEventListener("click",e=>{
   const btn=e.target.closest(".lb-opt");
@@ -2828,41 +2960,48 @@ function lbRender(resetImage){
     });
   }
   if(lbProduct){
-    info.innerHTML=productInfoHtml(lbProduct,state,{option:lbOption,productUrl:productUrlOf(lbProduct.id)});
+    const {cat,desc,sizeHtml}=getProductDisplayParts(lbProduct);
+    const price=priceHtml(lbProduct);
+    info.innerHTML=`
+      <div class="lb-cat-row">
+        <div class="lb-product-cat">${escapeHTML(cat)}</div>
+        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+      </div>
+      <div class="lb-product-title">${escapeHTML(lbProduct.name||"")}</div>
+      ${price?`<div class="lb-product-price">${price}${activeSalePrice(lbProduct)&&lbProduct.saleEnd?`<span class="price-until">特價到 ${saleEndText(lbProduct.saleEnd)}</span>`:""}</div>`:""}
+      ${lbProduct.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(lbProduct.leadTime)}</span></div>`:""}
+      ${optionsHtml(lbProduct)}
+      ${sizeHtml}
+      ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
+      ${lineInquireBtnHtml(lbProduct)}
+    `;
     updateLbFavoriteBtn();
   }
 }
-// 這件商品自己的網址（/p/商品編號）：LINE 詢問的訊息裡附這個，老闆點開就是這件商品
-function productUrlOf(id){return location.origin+productPath(id)}
-/* ── 流量統計的事件（Google Analytics 4，設定在 <head> 的 GA_ID；沒設定時 track() 什麼都不做）──
-   view_item 看了哪件商品、add_to_wishlist 收藏、generate_lead 按了詢問（LINE／電話）、
-   search 搜尋了什麼、share 複製收藏清單連結。generate_lead 在 GA 後台設成「重要事件」就是轉換。 */
-function track(name,params){try{window.hsTrack?.(name,params)}catch(e){}}
-function gaItem(product,qty){
-  const price=parsePriceNumber(activeSalePrice(product)||product.price);
-  return {item_id:product.id,item_name:product.name||"",item_category:getMainName(product.mainCat),
-    ...(getSubName(product.mainCat,product.subCat)?{item_category2:getSubName(product.mainCat,product.subCat)}:{}),
-    ...(price!=null?{price}:{}),...(qty?{quantity:qty}:{})};
+function buildLineInquireUrl(product,intro="您好，我想詢問這件商品："){
+  const lineId=(state.contact?.line||"").trim();
+  if(!lineId)return "";
+  // LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
+  const productUrl=`${location.origin}${location.pathname}#product-${product.id}`;
+  const opt=product===lbProduct?productOptions(product)[lbOption]:null;
+  const msg=`${intro}${product.name||""}${opt?`（${opt.name}）`:""}\n${productUrl}`;
+  return `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
 }
-function gaItemParams(product){
-  const item=gaItem(product);
-  return {currency:"TWD",value:item.price||0,items:[item]};
+function lineInquireBtnHtml(product){
+  const url=buildLineInquireUrl(product);
+  if(!url)return "";
+  return `<a class="lb-inquire-btn" href="${escapeHTML(url)}" target="_blank" rel="noopener">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+    LINE 詢問這件商品
+  </a>`;
 }
-// 網頁上有 data-lead 的連結（商品頁的 LINE 詢問、加 LINE 好友、電話）被按：記一次「詢問」
-document.addEventListener("click",event=>{
-  const el=event.target.closest?.("[data-lead]");
-  if(!el)return;
-  const params={method:el.dataset.lead};
-  if(el.dataset.lead==="line"&&lbProduct&&isLightboxOpen())Object.assign(params,gaItemParams(lbProduct));
-  track("generate_lead",params);
-},true);
 async function buildWishlistUrl(ids){
   try{
     const code=await Storage.createWishlist(ids);
-    return `${location.origin}/#w=${code}`;
+    return `${location.origin}${location.pathname}#w=${code}`;
   }catch(e){
     console.warn("心願清單短碼建立失敗，改用完整網址",e);
-    return `${location.origin}/#wishlist=${ids.join(",")}`;
+    return `${location.origin}${location.pathname}#wishlist=${ids.join(",")}`;
   }
 }
 function buildFavoritesMessage(products,wishlistUrl){
@@ -2885,8 +3024,6 @@ async function inquireAllFavorites(){
   const msg=buildFavoritesMessage(products,wishlistUrl);
   const url=`https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(msg)}`;
   if(win)win.location.href=url;else window.open(url,"_blank","noopener");
-  const items=products.map(p=>gaItem(p,p._qty));
-  track("generate_lead",{method:"line_wishlist",currency:"TWD",value:items.reduce((sum,i)=>sum+(i.price||0)*(i.quantity||1),0),items});
   showFavoritesPreview(msg);
 }
 function showFavoritesPreview(msg){
@@ -2906,7 +3043,6 @@ async function copyFavoritesLink(){
   try{
     await navigator.clipboard.writeText(wishlistUrl);
     toast("清單連結已複製");
-    track("share",{method:"copy_link",content_type:"wishlist",item_id:wishlistUrl.split("#")[1]||""});
   }catch(e){
     toast("複製失敗，請手動複製連結");
   }
@@ -3011,8 +3147,7 @@ function renderContact(){
   ].filter(item=>item.val);
   const contactHtml=items.map(item=>{
     const isTel=item.href?.startsWith("tel:");
-    const lead=isTel?"phone":item.label==="LINE"?"line_friend":"";
-    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}${lead?` data-lead="${lead}"`:""}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
+    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
     return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
   }).join('<span class="dot">·</span>');
   // 跟 applyPageText 同一個理由：內容沒變就不要重寫 innerHTML，避免砍掉重建
@@ -3071,79 +3206,51 @@ Object.assign(window,{
   copyFavoritesLink,
   resetFavoritesPreview,
 });
-window.__shopReady=true; // 商品頁的臨時關閉鈕（見 #lightbox 後面那段）交棒給上面的 closeLightbox
-/* ── 啟動：先畫手邊有的資料，再換成 Firebase 的最新資料 ───────────────
-   回訪客人：用上次存在這台瀏覽器的資料（stale-while-revalidate 快取）先畫。
-   第一次來的客人：用 /data/site.json 先畫——每小時自動從 Firebase 匯出一次的商品資料
-   （_tools/build-pages.mjs），放在網站本身的主機上，<head> 一開始就去抓，不用等 Firebase 的
-   程式下載完、連線、查詢，商品通常可以早好幾秒出現。
-   Firebase 的最新資料回來後，用同一套 render 函式原地換新，不會有額外閃爍或版面跳動；任何一步
-   失敗（沒快取、site.json 還沒產生、格式壞掉、瀏覽器擋 localStorage）都直接跳過，照樣等 Firebase。 */
-function paintSnapshot(meta,products){
-  Object.assign(state,meta);
-  applyPageText();
-  applyLayoutVisibility();
-  renderContact();
-  state.products=products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)})).map(normalizeProduct);
-  state.products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
-  state.favorites=loadFavoritesLocal();
-  renderCategories();
-  renderProducts(false);
-  renderPicks();
-  renderCategoryTiles();
-  renderHeroPhoto();
-  renderFavorites();
-}
-// 從商品網址（/p/商品編號，或舊格式的 #product-商品編號）進來：有資料就打開那件商品
-const routeProductId=productIdFromPath(location.pathname)||(location.hash.match(/^#product-(.+)$/)||[])[1]||null;
-let routeHandled=!routeProductId;
-function openRoutedProduct(final){
-  if(routeHandled)return;
-  // 資料到之前客人已經把商品頁關掉了（網址換回首頁）：不要再打開
-  if(productIdFromPath(location.pathname)!==routeProductId&&location.hash!==`#product-${routeProductId}`){routeHandled=true;return}
-  if(state.products.some(p=>p.id===routeProductId)){
-    routeHandled=true;
-    openProductDetail(routeProductId,null,{history:"replace"});
-    return;
-  }
-  if(!final)return;
-  routeHandled=true;
-  // 連不上 Firebase 不代表商品下架了：不要亂提示（商品靜態頁的內容就留著給客人看）
-  if(productsLoadFailed)return;
-  // 商品已下架或網址打錯：跟收藏清單分享連結一樣提示一下，不然看起來像連結壞了
-  closeLightbox({history:false});
-  replaceView("/");
-  toast("這件商品已下架或不存在了");
-}
+/* ── 啟動：從 Firebase 載入資料 ────────────────────────────────── */
 (async()=>{
   // 分享出去的心願清單短碼（例如 LINE 詢問訊息裡帶的網址）提早發出讀取請求，
   // 跟商品資料一起平行載入，不用等商品載完才開始等心願清單。
   const wishlistCodeMatch=location.hash.match(/^#w=(.+)$/);
   const wishlistPromise=wishlistCodeMatch?Storage.getWishlist(wishlistCodeMatch[1]):null;
-  // meta 跟商品清單各自平行發出請求，但分開等待：meta 文件小、通常很快回來，
-  // 不用被商品那個大集合拖住——meta 一到就先把首頁大圖／聯繫資訊等畫面渲染出來。
-  // 最先發出去，下面先畫快取／site.json 的時候它們在背景跑。
-  const metaPromise=Storage.getMeta();
-  const productsPromise=Storage.getActiveProducts();
-  let painted=false;
+
+  // ── 本機快取先畫一次（stale-while-revalidate）──────────────────
+  // 回訪客人不用整頁乾等 Firebase：先用上次存的快取畫面，Firebase 資料回來後
+  // （下面照舊流程）會用同一套 render 函式原地換新，不會有額外閃爍或版面跳動。
+  // 任何一步失敗（沒快取、格式壞掉、瀏覽器擋 localStorage）都直接跳過，
+  // 不影響原本「等 Firebase」的路徑。
   try{
-    const cached=JSON.parse(localStorage.getItem(SWR_CACHE_KEY)||"null");
-    if(cached&&cached.savedAt&&Date.now()-cached.savedAt<SWR_CACHE_MAX_AGE_MS&&cached.meta&&cached.products&&cached.products.length){
-      paintSnapshot(cached.meta,cached.products);
-      painted=true;
+    const cachedRaw=localStorage.getItem(SWR_CACHE_KEY);
+    if(cachedRaw){
+      const cached=JSON.parse(cachedRaw);
+      if(cached&&cached.savedAt&&Date.now()-cached.savedAt<SWR_CACHE_MAX_AGE_MS&&cached.meta&&cached.products&&cached.products.length){
+        Object.assign(state,cached.meta);
+        applyPageText();
+        applyLayoutVisibility();
+        renderContact();
+        state.products=cached.products.map(p=>({...p,photos:p.photos||[p.img,p.img2].filter(Boolean)})).map(normalizeProduct);
+        state.products.forEach((p,i)=>{if(typeof p.sortOrder!=="number")p.sortOrder=i});
+        state.favorites=loadFavoritesLocal();
+        renderCategories();
+        renderProducts(false);
+        renderPicks();
+        renderCategoryTiles();
+        // 快取一次就把 meta／products 都讀完了（不像下面 Firebase 那段中間隔了一次
+        // await，商品資料要晚一步才到），這裡只需要呼叫一次，不用像下面分兩次呼叫。
+        renderHeroPhoto();
+        renderFavorites();
+      }
     }
   }catch(e){}
-  if(!painted&&window.__siteData){
-    // Firebase 比 site.json 先回來就不用 site.json 了
-    const snap=await Promise.race([window.__siteData,productsPromise.then(()=>null)]);
-    try{
-      if(snap&&snap.meta&&Array.isArray(snap.products)&&snap.products.length){
-        paintSnapshot(snap.meta,snap.products);
-        painted=true;
-      }
-    }catch(e){console.warn("site.json 格式不對，略過",e)}
-  }
-  if(painted)openRoutedProduct(false);
+
+  // 注意：不再用全螢幕遮罩擋住整個畫面。導覽列、Hero 大圖本來就是靜態內容，
+  // 不需要等 Firebase 資料回來就能先顯示；只有商品區塊（本來就要靠資料庫）
+  // 顯示「商品載入中…」，其餘頁面可以馬上被看到，加快使用者感受到的載入速度。
+
+  // meta 跟商品清單各自平行發出請求，但分開等待：meta 文件小、通常很快回來，
+  // 不用被商品那個大集合拖住——meta 一到就先把首頁大圖／聯繫資訊等畫面渲染出來，
+  // 不用整頁乾等商品資料才有東西可以畫，直接改善使用者第一眼看到內容的速度。
+  const metaPromise=Storage.getMeta();
+  const productsPromise=Storage.getActiveProducts();
 
   const meta=await metaPromise;
   if(meta)Object.assign(state,meta);
@@ -3176,15 +3283,15 @@ function openRoutedProduct(final){
   renderCategoryTiles();
   renderHeroPhoto(); // 沒設定自訂大圖的話，要等商品資料到齊才找得到可用照片，這裡再跑一次
   renderFavorites();
-  // 商品頁已經用快取／site.json 的資料打開了：換成最新的資料再畫一次（照片、選的款式不動）
-  if(isLightboxOpen()&&lbProduct){
-    const fresh=state.products.find(p=>p.id===lbProduct.id);
-    if(fresh&&fresh!==lbProduct){lbProduct=fresh;lbRender()}
-  }
   // 分享出去的商品連結／收藏清單連結（例如 LINE 詢問訊息裡帶的網址）直接開啟對應畫面
+  const hashMatch=location.hash.match(/^#product-(.+)$/);
   const wishlistMatch=location.hash.match(/^#wishlist=(.+)$/);
-  if(routeProductId){
-    openRoutedProduct(true);
+  if(hashMatch){
+    const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
+    // 商品已下架或 id 打錯時 find 會找不到，跟收藏清單分享連結一樣要提示一下，
+    // 不然使用者會覺得連結是不是壞了（實際上只是靜靜跳回首頁，看起來像連結失效）。
+    if(sharedProduct)openProductDetail(sharedProduct.id,null,{history:"replace"});
+    else toast("這件商品已下架或不存在了");
   }else if(wishlistCodeMatch){
     renderSharedWishlist(await wishlistPromise);
   }else if(wishlistMatch){

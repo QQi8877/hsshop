@@ -1503,8 +1503,8 @@ import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}fr
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"./dim-figures.js?v=3";
-// 商品說明的過濾、分類排序跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{sanitizeRichHtml,richTextIsEmpty,catalogOrderCompare}from"./shop-render.js?v=1";
+// 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
+import{sanitizeRichHtml,catalogOrderCompare}from"./shop-render.js?v=1";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1657,8 +1657,7 @@ const sorters={
   // 同一個子分類內才用 sortOrder 排——不同分類的商品不會在「全部」畫面裡穿插。
   order:(a,b)=>catalogOrderCompare(catalog)(a,b),
   name:(a,b)=>strokeCollator.compare(a.name||"",b.name||""),
-  // 「分類」欄也照「分類管理」的順序，同一個分類裡照品名筆畫
-  cat:(a,b)=>catalogOrderCompare(catalog,{tieBreak:(x,y)=>strokeCollator.compare(x.name||"",y.name||"")})(a,b),
+  cat:(a,b)=>strokeCollator.compare(categoryLabel(a),categoryLabel(b)),
   size:(a,b)=>Number(hasSize(b))-Number(hasSize(a)),
   photos:(a,b)=>(b.photoCount??(b.photos||[]).filter(Boolean).length)-(a.photoCount??(a.photos||[]).filter(Boolean).length),
   status:(a,b)=>(a.status||"").localeCompare(b.status||"")
@@ -2796,9 +2795,14 @@ window.rteClear=function(id){
   sel.removeAllRanges();
   editor.focus();
 };
+// 看得到的字都沒有（只剩換行、空白、空的 <div>）就當成沒寫：把說明全選刪掉時，編輯框常會留下一個看不到的 <br>
+function richTextIsEmpty(html){
+  const s=String(html??"");
+  if(/<img\b/i.test(s))return false;
+  return !s.replace(/<[^>]*>/g,"").replace(/&nbsp;|&#160;|&#xa0;/gi,"").replace(/[\s\u200b\ufeff]/g,"");
+}
 // 商品說明只留編輯器做得出來的格式（粗體、底線、文字大小、顏色、網底、清單、換行），其他一律拿掉；
 // 跟前台顯示時用的是同一個白名單（shop-render.js），後台看到的就是顧客看到的。
-// richTextIsEmpty（看得到的字都沒有就當成沒寫）也在 shop-render.js。
 function sanitizeRichText(html){return sanitizeRichHtml(html)}
 
 /* ── 自動產文案（規則式樣板，依商品名稱關鍵字比對，非真AI生成）─── */

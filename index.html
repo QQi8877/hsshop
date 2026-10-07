@@ -1291,12 +1291,14 @@ footer a:hover{color:var(--color-on-dark)}
   try{if(localStorage.getItem("xintong_furniture_swr_cache_v1"))return}catch(e){}
   window.__siteData=fetch("/data/site.json").then(function(r){return r.ok?r.json():null}).catch(function(){return null});
 })();
-/* 流量統計（Google Analytics 4）：GA_ID 填上「評估 ID」（G- 開頭）才會開始統計，空白就完全不載入。
+/* 流量統計（Google Analytics 4）：GA_ID 是店家 GA 帳號的「評估 ID」（G- 開頭），清空就完全不載入。
+   只統計正式網站（GA_HOSTS）：在自己電腦上測試、預覽的瀏覽不會混進報表。
    店家自己逛網站不想被算進去：用這台裝置打開一次 https://hsintong.cc/?ga=off（之後都不算），
    ?ga=on 恢復。統計程式等網頁載完才下載，不會拖慢第一次看到畫面的速度。
    商品頁換網址（/p/商品編號）時 GA 會自動記一次瀏覽；其他事件見最下面程式的 track()。 */
 (function(){
-  var GA_ID="";
+  var GA_ID="G-8HTVK5Q25X";
+  var GA_HOSTS=["hsintong.cc","www.hsintong.cc"];
   var off=false;
   try{
     var q=new URLSearchParams(location.search).get("ga");
@@ -1305,7 +1307,7 @@ footer a:hover{color:var(--color-on-dark)}
     off=localStorage.getItem("hs_ga_off")==="1";
   }catch(e){}
   window.hsTrack=function(){};
-  if(!GA_ID||off)return;
+  if(!GA_ID||off||GA_HOSTS.indexOf(location.hostname)<0)return;
   window.dataLayer=window.dataLayer||[];
   window.gtag=function(){dataLayer.push(arguments)};
   window.hsTrack=function(name,params){gtag("event",name,params||{})};
@@ -2842,7 +2844,7 @@ function lbRender(resetImage){
 }
 // 這件商品自己的網址（/p/商品編號）：LINE 詢問的訊息裡附這個，老闆點開就是這件商品
 function productUrlOf(id){return location.origin+productPath(id)}
-/* ── 流量統計的事件（Google Analytics 4，設定在 <head> 的 GA_ID；沒設定時 track() 什麼都不做）──
+/* ── 流量統計的事件（Google Analytics 4，設定在 <head> 的 GA_ID；沒設定、或不是正式網站時 track() 什麼都不做）──
    view_item 看了哪件商品、add_to_wishlist 收藏、generate_lead 按了詢問（LINE／電話）、
    search 搜尋了什麼、share 複製收藏清單連結。generate_lead 在 GA 後台設成「重要事件」就是轉換。 */
 function track(name,params){try{window.hsTrack?.(name,params)}catch(e){}}

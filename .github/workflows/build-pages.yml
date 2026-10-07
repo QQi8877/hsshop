@@ -17,8 +17,7 @@ on:
       - .github/workflows/build-pages.yml
 
 permissions:
-  contents: write   # 提交產生出來的檔案
-  pages: write      # 請 GitHub Pages 重新發佈網站
+  contents: write   # 提交產生出來的檔案（推上 main 之後 GitHub Pages 會自己重新發佈網站）
 
 concurrency:
   group: build-pages
@@ -53,8 +52,3 @@ jobs:
             sleep $((i * 5))
           done
           exit 1
-      - name: 請 GitHub Pages 重新發佈
-        if: steps.commit.outputs.pushed == '1'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || echo "（不影響：GitHub 收到新的提交也會自己發佈）"

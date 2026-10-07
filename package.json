@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "信通家俱行網站。網站本身不需要安裝任何東西；這個檔案只是告訴 Node：shop-render.js、dim-figures.js 是 ES module，讓每小時自動產生商品頁的 _tools/build-pages.mjs 可以直接用它們。",
+  "type": "module"
+}

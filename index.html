@@ -10,9 +10,16 @@
 <meta property="og:site_name" content="信通家俱行">
 <meta property="og:title" content="信通家俱行｜讓家更有溫度">
 <meta property="og:description" content="用心挑選每一件家具，陪伴您每一個家的日常——溫潤、可靠、實用、美學、安心。">
-<meta name="twitter:card" content="summary">
+<meta property="og:url" content="https://hsintong.cc/">
+<!-- 分享到 LINE／Facebook 時的預覽圖（1200×630，店名＋標語，og-image.jpg） -->
+<meta property="og:image" content="https://hsintong.cc/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="信通家俱行｜讓家更有溫度">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="信通家俱行｜讓家更有溫度">
 <meta name="twitter:description" content="用心挑選每一件家具，陪伴您每一個家的日常——溫潤、可靠、實用、美學、安心。">
+<meta name="twitter:image" content="https://hsintong.cc/og-image.jpg">
 <link rel="canonical" href="https://hsintong.cc/">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -23,49 +30,36 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<!-- 字型改為自行內嵌（見下方 @font-face），不再透過 Google Fonts CDN 載入。原本用 &text=
-     子集化雖然縮小了檔案，但 Google 會把散布在整個中文字範圍的字元拆成上百個小檔案分批
-     載入，造成 CSS 清單膨脹到 233KB；改成自行內嵌單一檔案後解決了「上百個檔案分批載入」
-     跟 CSS 過大這兩個問題，也不再需要 fonts.googleapis.com / fonts.gstatic.com 的
-     preconnect。400/500/600 三個字重都內嵌（實際 CSS 裡三個字重都真的有用到，內嵌
-     所有用到的字重、不硬是省成兩個，才不會有「CSS 要的字重跟內嵌檔案對不上，瀏覽器自動
-     頂替」的落差），字型檔位於 fonts/ 資料夾，來源是 @fontsource/noto-serif-tc 和
-     @fontsource/noto-sans-tc（官方已做好「繁體中文常用字範圍」子集化的 woff2 檔案）。
+<!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc，
+     官方已做好「繁體中文常用字」子集化的 woff2），不透過 Google Fonts CDN（Google 會把中文字
+     拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
+     內文（--font-body／--font-mono）用各裝置內建的中文字型：蘋果是蘋方 PingFang TC、Windows
+     是微軟正黑體、Android 是 Noto Sans CJK，不用下載。原本內文也是自行內嵌的 Noto Sans TC，
+     加上 6 個字型 preload 一起搶頻寬，第一次開首頁要下載約 6.8MB 字型；實測手機 4G 要將近
+     8 秒才畫出畫面上最大的元素，改成現在這樣約 2.7 秒（慢速 4G 從 33 秒變 3.7 秒）。
+     只 preload 標題最常用的 600 字重（首頁大標、導覽列店名、區塊標題），400／500 用到時才
+     下載（下面的首頁進場動畫一開始就會要 400，等於提早開始下載）。
      用到子集沒收錄的罕見字時會自動改用瀏覽器內建字型顯示（不會壞掉，只是那一兩個字字體
-     不太一樣）；如果要擴大涵蓋範圍，可以請 Claude 換一個更大的子集或自行客製化子集。
-     字體切換閃爍：實測證實瀏覽器第一次下載這個字型檔案時（還沒被快取過），不管
-     font-display 設 swap 還是 optional，只要字型下載完成，畫面上已經顯示的文字都
-     會被換成新字型（規格文件講的「optional 不會換」在這個瀏覽器沒有照做）。改用
-     font-display:block 後實測行為不同：下載完成前文字直接不上色（版面照樣保留空間，
-     不會跳動），下載完成才第一次真正畫出來——不會有「先顯示備援字體、幾秒後又變成
-     Noto」這種畫面上真的變過一次的情形，只有「字打出來的時間點稍微晚一點」，這是
-     一般網站常見、可接受的取捨。注意 block 的「不上色」有時間上限（瀏覽器內部的
-     block period，常見約 3 秒）：如果字型檔案在這段時間內下載完成（一般網速下都是
-     這樣，尤其現在都有 preload），就完全不會閃爍；但真的遇到極慢的連線、3 秒內還
-     沒下載完，還是會退回顯示備援字體、之後再切換——block 只是大幅縮小會閃爍的情況，
-     不是保證任何網速下都絕對不會閃。快取過一次之後的每次重訪則完全不會有這個問題。
+     不太一樣）。
 
-     字重限制（很重要，改 CSS 前務必看這裡）：上面只內嵌了 400/500/600 三個字重，
-     這個檔案裡任何用到 var(--font-heading)／var(--font-body)／var(--font-mono)
-     的地方，font-weight 都只能是 400、500 或 600 其中之一（包括沒寫 font-weight、
-     靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong> 預設是 700）。用到
-     700（或任何不在這三個字重內的數字）就會讓瀏覽器找不到對應的內嵌檔案，只好
-     自動頂替成最接近的字重——而那個「頂替」的動作發生在字型下載完成的那一刻，
-     跟上面講的閃爍是一模一樣的機制，等於重新把這個問題生出來一次。這是這次
-     debug 花了好幾輪才抓出來的地雷，之後改動這份 CSS 時務必留意。 -->
+     font-display:block 的原因：實測瀏覽器第一次下載字型時，不管設 swap 還是 optional，
+     下載完成那一刻畫面上已經顯示的字都會被換成新字型（看得到字體跳一下）；block 則是下載
+     完成前標題先不上色（版面照樣保留空間，不會跳動），下載完成才第一次真正畫出來。block 的
+     「不上色」有時間上限（瀏覽器內部約 3 秒），連線真的很慢、3 秒內還沒下載完，還是會先顯示
+     備援字體、之後再換；快取過一次之後的每次重訪就完全不會有這個問題。
+
+     字重限制（很重要，改 CSS 前務必看這裡）：Noto Serif TC 只內嵌 400/500/600 三個字重，
+     這個檔案裡任何用到 var(--font-heading) 的地方，font-weight 都只能是 400、500 或 600
+     其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong>
+     預設是 700）。用到 700 就會讓瀏覽器找不到對應的內嵌檔案，在字型下載完成那一刻自動頂替
+     成最接近的字重——跟上面講的字體跳動是一模一樣的機制，等於重新把這個問題生出來一次。
+     內文用的是裝置內建字型，沒有這個限制。
+     後台 manage.html 仍然使用 fonts/ 裡的 Noto Sans TC，那三個檔案不能刪。 -->
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-500.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-400.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-500.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-600.woff2" crossorigin>
 <style>
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-serif-tc-400.woff2') format('woff2')}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-serif-tc-500.woff2') format('woff2')}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-serif-tc-600.woff2') format('woff2')}
-@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:400;font-display:block;src:url('./fonts/noto-sans-tc-400.woff2') format('woff2')}
-@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:500;font-display:block;src:url('./fonts/noto-sans-tc-500.woff2') format('woff2')}
-@font-face{font-family:'Noto Sans TC';font-style:normal;font-weight:600;font-display:block;src:url('./fonts/noto-sans-tc-600.woff2') format('woff2')}
 :root{
   /* Organic redesign tokens — palette/type swap only (Phase 1).
      Old variable names kept so the rest of the stylesheet doesn't need touching;
@@ -85,10 +79,11 @@
   --danger:#b84236;
   --shadow:0 12px 32px rgba(46,43,37,.18);
 
-  /* 英數字形照原本站台維持 Noto Serif/Sans TC，不套用新設計稿的 Caprasimo／Figtree／等寬字 */
+  /* 標題用自行內嵌的 Noto Serif TC，內文用裝置內建的中文字型（原因見 <head> 裡的字型說明），
+     不套用新設計稿的 Caprasimo／Figtree／等寬字 */
   --font-heading:"Noto Serif TC",serif;
-  --font-body:"Noto Sans TC",system-ui,sans-serif;
-  --font-mono:"Noto Sans TC",system-ui,sans-serif;
+  --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
 
   --color-surface:#ebddc5;
   --color-line-strong:rgba(32,30,29,.28);
@@ -366,7 +361,7 @@ nav.nav--scrolled .nav-logo{font-size:16px}
    同高的 30px 橫帶裡垂直置中，兩者中心線一致，看起來是同一排 */
 .p-card__badge{position:absolute;top:14px;left:14px;height:30px;display:flex;align-items:center;z-index:6}
 
-.cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:18px;max-width:1200px;margin:0 auto}
+.cat-grid{display:grid;grid-template-columns:repeat(var(--cols,5),minmax(0,1fr));gap:18px;max-width:min(1200px,calc(var(--cols,5)*240px));margin:0 auto}
 .cat-tile{
   display:flex;flex-direction:column;align-items:center;gap:10px;padding:20px 12px;
   border-radius:var(--radius-lg);background:var(--color-surface);text-align:center;
@@ -390,7 +385,8 @@ img.img-fade:not(.is-loaded){opacity:0}
 .cat-tile--cta span.cta-link{font-size:11.5px;font-weight:600;border-bottom:1px solid rgba(255,255,255,.5)}
 @media(max-width:860px){
   .pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .cat-grid{grid-template-columns:repeat(2,1fr)}
+  .cat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cat-grid.odd .cat-tile--cta{grid-column:1/-1} /* 兩欄排不滿時，「不確定就問」那格佔整排，不會落單 */
   #picks,#catTiles{padding-left:18px!important;padding-right:18px!important}
 }
 /* ── 骨架屏佔位（本月選品／分類磚），在資料回來前就先撐好版面高度，避免版面跳動（CLS）── */
@@ -1285,8 +1281,8 @@ footer a:hover{color:var(--color-on-dark)}
 }
 </style>
 <script>
-/* 首頁大圖文字進場。字型是 font-display:block，載入前文字本來就看不到，所以等字型
-   到了才播；2.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
+/* 首頁大圖文字進場。大標跟副標的 Noto Serif TC 是 font-display:block，載入前本來就看不到，
+   所以等這兩個字重到了才播；2.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
    寫在這裡（不放下面的 module script），Firebase 載入失敗也不會讓標題一直藏著。 */
 (function(){
   var root=document.documentElement;
@@ -1302,7 +1298,7 @@ footer a:hover{color:var(--color-on-dark)}
     setTimeout(function(){root.classList.remove("hero-enter")},1600);
   }
   setTimeout(function(){reveal(false)},2500);
-  Promise.all(['400 1em "Noto Sans TC"','600 1em "Noto Sans TC"','400 1em "Noto Serif TC"','600 1em "Noto Serif TC"'].map(function(f){return document.fonts.load(f)}))
+  Promise.all(['400 1em "Noto Serif TC"','600 1em "Noto Serif TC"'].map(function(f){return document.fonts.load(f)}))
     .then(function(){reveal(true)},function(){reveal(false)});
 })();
 </script>
@@ -1489,6 +1485,8 @@ import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app
 import{getFirestore,doc,getDoc,setDoc,collection,getDocs,query,where}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js";
 // 尺寸示意圖跟尺寸文字的解析規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=3";
+// 商品說明的過濾、分類的顯示／排序規則跟後台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
+import{sanitizeRichHtml,isListedProduct,catalogOrderCompare}from"./shop-render.js?v=1";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1580,8 +1578,6 @@ const Storage={
 // 再原地換新，不用整頁乾等。
 const SWR_CACHE_KEY="xintong_furniture_swr_cache_v1";
 const SWR_CACHE_MAX_AGE_MS=7*24*60*60*1000; // 快取超過 7 天就不用，避免久久沒改版的舊資料被誤當最新
-let strokeCollator;
-try{strokeCollator=new Intl.Collator("zh-Hant-u-co-stroke",{numeric:true})}catch(e){strokeCollator=new Intl.Collator("zh-Hant")}
 const DEFAULT_CATALOG=[
   {id:"cat-bed",name:"寢具",subs:[{id:"sub-bed-frame",name:"床架"},{id:"sub-bed-mattress",name:"床墊"},{id:"sub-bed-head",name:"床頭板"},{id:"sub-bed-side",name:"床邊桌"}]},
   {id:"cat-table",name:"桌子",subs:[{id:"sub-tbl-dining",name:"餐桌"},{id:"sub-tbl-coffee",name:"茶几／邊桌"},{id:"sub-tbl-desk",name:"書桌／工作桌"},{id:"sub-tbl-dressing",name:"梳妝台"}]},
@@ -1605,28 +1601,10 @@ function uid(){return Math.random().toString(36).slice(2,10)}
 function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
-// 商品說明存的是後台富文本編輯器輸出的 HTML；後台存檔前雖然會過濾一次，但那個過濾
-// 只在後台自己的瀏覽器端執行，資料庫本身不會強制套用——前台顯示時不能假設拿到的
-// HTML 一定是乾淨的，這裡在真正塞進畫面前再過濾一次，前台才是真正擋得住的那一關。
-function sanitizeDescHtml(html){
-  const div=document.createElement("div");
-  div.innerHTML=html;
-  div.querySelectorAll("script,iframe,object,embed,link,style,form").forEach(el=>el.remove());
-  div.querySelectorAll("*").forEach(el=>{
-    [...el.attributes].forEach(attr=>{
-      const name=attr.name.toLowerCase();
-      // 瀏覽器解析網址時會先把 tab/換行等控制字元整個拿掉才判斷 scheme，
-      // 所以檢查危險網址前也要先做同樣的處理，不然 "java\tscript:" 這種
-      // 藏了控制字元的寫法會繞過純字面比對的規則。
-      const normalizedValue=attr.value.replace(/[\t\n\r]/g,"");
-      const isEventHandler=/^on/i.test(name);
-      const isDangerousStyle=name==="style"&&/expression|javascript:/i.test(normalizedValue);
-      const isDangerousUrl=(name==="href"||name==="src"||name==="formaction")&&/^\s*(javascript:|data:text\/html)/i.test(normalizedValue);
-      if(isEventHandler||isDangerousStyle||isDangerousUrl)el.removeAttribute(attr.name);
-    });
-  });
-  return div.innerHTML;
-}
+// 商品說明存的是後台富文本編輯器輸出的 HTML；後台存檔前雖然會過濾一次，但資料庫本身不會檢查
+// 內容——前台顯示時不能假設拿到的 HTML 一定是乾淨的，塞進畫面前一定要再過濾一次。
+// 過濾是白名單：只留後台編輯器做得出來的格式，其他一律拿掉（規則在 shop-render.js，後台用同一份）。
+function sanitizeDescHtml(html){return sanitizeRichHtml(html)}
 // 說明裡看得到的字都沒有（例如後台刪光後只剩一個 <br>）就當成沒寫，不顯示空白的「商品說明」
 function richTextIsEmpty(html){
   const s=String(html??"");
@@ -1835,9 +1813,11 @@ function applyLayoutVisibility(){
   if(catTiles)catTiles.style.display=state.layout?.showCatTiles===false?"none":"";
 }
 
-function activeProducts(){return state.products.filter(p=>p.status==="active")}
-function mainCount(id){return activeProducts().filter(p=>p.mainCat===id).length}
-function subCount(mainId,subId){return activeProducts().filter(p=>p.mainCat===mainId&&p.subCat===subId).length}
+// 顧客看得到的商品：上架中，而且主分類、子分類都沒有在後台「分類管理」設成隱藏。
+// 隱藏分類的商品不出現在任何列表、搜尋、本月選品、分類磚、數量（直接用商品連結打開還是看得到）
+function listedProducts(){return state.products.filter(p=>isListedProduct(p,state.catalog))}
+function mainCount(id){return listedProducts().filter(p=>p.mainCat===id).length}
+function subCount(mainId,subId){return listedProducts().filter(p=>p.mainCat===mainId&&p.subCat===subId).length}
 function renderCategories(){
   const bar=document.getElementById("categoriesBar");
   const subBar=document.getElementById("subCategoriesBar");
@@ -1845,7 +1825,7 @@ function renderCategories(){
   bar.querySelectorAll(".cat-tab").forEach(el=>el.remove());
   sidebar.innerHTML="";
   ["全部",...state.catalog.map(c=>c.id)].forEach(id=>{
-    const count=id==="全部"?activeProducts().length:mainCount(id);
+    const count=id==="全部"?listedProducts().length:mainCount(id);
     const cat=id==="全部"?null:getMainCat(id);
     const isHidden=!!cat?.hidden;
     // 隱藏「已標記隱藏」或「0 項商品」的主分類
@@ -2004,7 +1984,7 @@ function toggleMobileNav(force){
 function renderProducts(animate=true){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
-  let list=state.products.filter(p=>p.status==="active");
+  let list=listedProducts();
   const q=searchQuery.trim().toLowerCase();
   if(q){
     // 搜尋要涵蓋全部商品、全部分類，不受目前選取的分類侷限
@@ -2017,16 +1997,10 @@ function renderProducts(animate=true){
     list=list.filter(p=>p.mainCat===state.activeMain);
     if(state.activeSub)list=list.filter(p=>p.subCat===state.activeSub);
   }
-  // 全部商品要先照主分類筆畫排、再照子分類筆畫排，同一個子分類內才用後台拖曳出來的
-  // 自訂順序排——這樣不同分類的商品才不會混在一起穿插，子分類裡排好的順序，
-  // 看主分類或「全部」的時候也會照樣套用。
-  list.sort((a,b)=>{
-    const mainCmp=strokeCollator.compare(getMainName(a.mainCat),getMainName(b.mainCat));
-    if(mainCmp)return mainCmp;
-    const subCmp=strokeCollator.compare(getSubName(a.mainCat,a.subCat),getSubName(b.mainCat,b.subCat));
-    if(subCmp)return subCmp;
-    return (a.sortOrder??0)-(b.sortOrder??0);
-  });
+  // 照後台「分類管理」排好的分類順序：先主分類、再子分類，同一個子分類內才用後台拖曳出來的
+  // 自訂順序——不同分類的商品不會混在一起穿插，子分類裡排好的順序，看主分類或「全部」的
+  // 時候也照樣套用。後台商品表格的「前台順序」用的是同一個規則（shop-render.js）。
+  list.sort(catalogOrderCompare(state.catalog));
   renderListingTitle();
   renderAppliedChips();
   if(!list.length){
@@ -2242,10 +2216,10 @@ function renderPicks(){
   const grid=document.getElementById("picksGrid");
   const countEl=document.getElementById("picksTotalCount");
   if(!grid)return;
-  const all=activeProducts().slice().sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
+  const all=listedProducts().sort((a,b)=>(a.sortOrder??0)-(b.sortOrder??0));
   if(countEl)countEl.textContent=all.length;
   // 後台「首頁版面設定」手動挑選的商品優先（照選好的順序顯示）；沒有手動選的話自動抓排序最前面 4 件
-  const pickedIds=(state.layout?.picksProductIds||[]).filter(id=>activeProducts().some(p=>p.id===id));
+  const pickedIds=(state.layout?.picksProductIds||[]).filter(id=>all.some(p=>p.id===id));
   const picks=pickedIds.length?pickedIds.map(id=>state.products.find(p=>p.id===id)).filter(Boolean):all.slice(0,4);
   grid.innerHTML="";
   picks.forEach((product,idx)=>{
@@ -2318,10 +2292,15 @@ function renderPicks(){
 function renderCategoryTiles(){
   const grid=document.getElementById("catTilesGrid");
   if(!grid)return;
-  const cats=state.catalog.slice(0,4);
+  // 照「分類管理」的順序取前 4 個顧客看得到、而且有商品的主分類（隱藏的、空的不放，
+  // 不然點進去是空的）；分類少於 4 個時欄數跟著變少，不會留空格
+  const listed=listedProducts().sort(catalogOrderCompare(state.catalog));
+  const cats=state.catalog.filter(c=>!c.hidden&&listed.some(p=>p.mainCat===c.id)).slice(0,4);
+  grid.style.setProperty("--cols",cats.length+1);
+  grid.classList.toggle("odd",(cats.length+1)%2===1);
   grid.innerHTML=cats.map((cat,i)=>{
     // 後台「首頁版面設定」為這個分類上傳的縮圖優先；沒有的話自動抓分類底下第一件商品的照片
-    const thumbSrc=cat.image||normalizePhotoUrl(activeProducts().find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"",200);
+    const thumbSrc=cat.image||normalizePhotoUrl(listed.find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"",200);
     return `
       <button class="cat-tile reveal" type="button" data-cat="${escapeHTML(cat.id)}" style="transition-delay:${i*60}ms">
         <span class="cat-tile__thumb">${thumbSrc?`<img src="${escapeHTML(thumbSrc)}" alt="">`:""}</span>
@@ -2362,7 +2341,7 @@ function renderHeroPhoto(){
     img.alt="";
     return;
   }
-  const withPhoto=activeProducts().find(p=>(p.photos||[]).length);
+  const withPhoto=listedProducts().sort(catalogOrderCompare(state.catalog)).find(p=>(p.photos||[]).length);
   if(!withPhoto)return;
   img.src=normalizePhotoUrl(withPhoto.photos[0],900);
   img.srcset=buildSrcset(withPhoto.photos[0],HERO_IMG_WIDTHS);
@@ -2526,9 +2505,16 @@ function parsePriceNumber(price){
   const n=parseFloat(String(price||"").replace(/[,，]/g,"").trim());
   return Number.isFinite(n)?n:null;
 }
-function toggleFavoritesPanel(force){
+// history:false 是「上一頁／下一頁」本身造成的開關（見下面 popstate），不再另外記瀏覽紀錄
+function toggleFavoritesPanel(force,{history:useHistory=true}={}){
   const panel=document.getElementById("favoritesPanel");
-  panel.classList.toggle("open",typeof force==="boolean"?force:!panel.classList.contains("open"));
+  const open=typeof force==="boolean"?force:!panel.classList.contains("open");
+  if(open===panel.classList.contains("open"))return;
+  panel.classList.toggle("open",open);
+  if(!useHistory)return;
+  if(open)pushView(location.href);
+  else if(canStepBack()&&history.state.fav&&!history.state.product)history.back();
+  else replaceView(location.href);
 }
 function favoriteProductsWithMeta(){
   return state.favorites.map(f=>{
@@ -2616,6 +2602,30 @@ function renderFavorites(){
 }
 
 let lbImages=[],lbCurrent=0,lbScale=1,lbProduct=null,lastFocusedElement=null;
+/* ── 手機的「上一頁」：先關掉商品頁／收藏清單，不會直接離開網站 ─────────
+   打開商品頁、收藏清單時各多記一筆瀏覽紀錄（history.pushState；商品頁的網址還是 #product-商品編號，
+   分享、重新整理都會回到這件商品），手機按「上一頁」就是退回那一筆、把它關掉，按「下一頁」會再打開。
+   從商品連結直接進來的沒有上一筆可以退，關掉時就把網址換回首頁、不多記一筆。 */
+const PAGE_LOAD_ID=Math.random().toString(36).slice(2); // 分辨哪幾筆瀏覽紀錄是這次打開網頁之後自己加的
+const isLightboxOpen=()=>document.getElementById("lightbox").classList.contains("open");
+const isFavoritesOpen=()=>document.getElementById("favoritesPanel").classList.contains("open");
+// 目前畫面要記進瀏覽紀錄的樣子：哪件商品開著、收藏清單開著沒
+function viewState(pushed){return {hs:PAGE_LOAD_ID,pushed,product:isLightboxOpen()&&lbProduct?lbProduct.id:null,fav:isFavoritesOpen()}}
+// 這一筆是這次自己加的：上一筆也還在這個網頁裡，可以直接退回去
+const canStepBack=()=>history.state?.hs===PAGE_LOAD_ID&&history.state.pushed===true;
+function pushView(url){try{history.pushState(viewState(true),"",url)}catch(e){}}
+function replaceView(url){try{history.replaceState(viewState(canStepBack()),"",url)}catch(e){}}
+window.addEventListener("popstate",event=>{
+  const s=event.state||{};
+  const want=s.product||null;
+  if(want){
+    if(!isLightboxOpen()||lbProduct?.id!==want){
+      if(state.products.some(p=>p.id===want))openProductDetail(want,null,{history:false});
+      else if(isLightboxOpen())closeLightbox({history:false});
+    }
+  }else if(isLightboxOpen())closeLightbox({history:false});
+  if(!!s.fav!==isFavoritesOpen())toggleFavoritesPanel(!!s.fav,{history:false});
+});
 let lbOption=-1; // 商品頁目前選的顏色／款式（-1＝沒選）
 let lbTouchStartX=0,lbTouchStartY=0;
 // ── 點商品卡片時照片從卡片飛進燈箱 ─────────────────────────────
@@ -2716,9 +2726,12 @@ function flyBackToCard(wrap,from,src){
       if(!lightbox.classList.contains("open"))lightbox.classList.remove("lb-flip");
     });
 }
-function openProductDetail(id,sourceWrap){
+// options.history："auto"＝點商品打開（多記一筆瀏覽紀錄，商品頁已經開著就換掉那一筆）、
+// "replace"＝從商品連結進來（換掉目前這筆）、false＝上一頁／下一頁造成的（不動瀏覽紀錄）
+function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
+  const wasOpen=isLightboxOpen();
   finishLbFlipOpen();
   const flipPrep=prepareLbFlip(sourceWrap);
   lbFlipSource=flipPrep?sourceWrap:null;
@@ -2730,7 +2743,7 @@ function openProductDetail(id,sourceWrap){
   const cover=(product.photos||[]).filter(Boolean).map(url=>normalizePhotoUrl(url,600));
   lbImages=cover.length?cover:[sampleSvg(product.name||"商品圖片","#8a7b68","#5b5448")];
   lbCurrent=0;
-  lastFocusedElement=document.activeElement;
+  if(!wasOpen)lastFocusedElement=document.activeElement;
   const lightbox=document.getElementById("lightbox");
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
@@ -2740,7 +2753,8 @@ function openProductDetail(id,sourceWrap){
   lbRender(isProductSwitch);
   document.querySelector(".lb-close").focus();
   if(flipPrep)startLbFlipOpen(flipPrep);
-  history.replaceState(null,"",`#product-${id}`);
+  if(mode==="replace"||(mode==="auto"&&wasOpen))replaceView(`#product-${id}`);
+  else if(mode==="auto")pushView(`#product-${id}`);
   // 商品文件的封面只是縮圖，燈箱一律要換成 gallery 子文件裡的原始畫質照片
   const totalCount=product.photoCount??cover.length;
   if(totalCount>0){
@@ -2752,8 +2766,9 @@ function openProductDetail(id,sourceWrap){
     });
   }
 }
-function closeLightbox(){
+function closeLightbox({history:useHistory=true}={}){
   const lightbox=document.getElementById("lightbox");
+  if(!lightbox.classList.contains("open"))return;
   // 照片飛回卡片的條件：從卡片打開、還停在第一張照片（卡片上顯示的就是這張）、
   // 沒有放大中、卡片還在畫面上。其他情況（例如放大中按 ESC、已經換到第 2 張照片）
   // 維持原本的淡出，照片才不會在落回卡片時突然換成另一張或跳一下。
@@ -2778,7 +2793,11 @@ function closeLightbox(){
   resetZoom();
   if(lastFocusedElement instanceof HTMLElement)lastFocusedElement.focus();
   lastFocusedElement=null;
-  if(location.hash.startsWith("#product-"))history.replaceState(null,"",location.pathname+location.search);
+  if(useHistory){
+    // 是這次自己加的那一筆：退回去（跟按上一頁一樣）；從商品連結直接進來的：網址換回首頁
+    if(canStepBack()&&history.state.product)history.back();
+    else replaceView(location.hash.startsWith("#product-")?location.pathname+location.search:location.href);
+  }
   // 捲軸回來之後才量卡片的落點
   if(from)flyBackToCard(wrap,from,backSrc);
 }
@@ -3271,7 +3290,7 @@ Object.assign(window,{
     const sharedProduct=state.products.find(p=>p.id===hashMatch[1]);
     // 商品已下架或 id 打錯時 find 會找不到，跟收藏清單分享連結一樣要提示一下，
     // 不然使用者會覺得連結是不是壞了（實際上只是靜靜跳回首頁，看起來像連結失效）。
-    if(sharedProduct)openProductDetail(sharedProduct.id);
+    if(sharedProduct)openProductDetail(sharedProduct.id,null,{history:"replace"});
     else toast("這件商品已下架或不存在了");
   }else if(wishlistCodeMatch){
     renderSharedWishlist(await wishlistPromise);

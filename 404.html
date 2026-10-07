@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>找不到這個頁面｜信通家俱行</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
+<script>
+/* GitHub Pages 找不到網址時顯示這一頁。
+   商品網址（/p/商品編號）找不到，通常是剛上架的商品，每小時自動產生的商品頁還沒做好
+   （_tools/build-pages.mjs）：轉到首頁，由首頁的程式直接從資料庫打開這件商品，網址會再換回
+   /p/商品編號。商品真的下架了，首頁會提示「這件商品已下架或不存在了」。 */
+(function(){
+  var m=/^\/p\/([^\/]+?)(?:\.html)?\/?$/.exec(location.pathname);
+  if(m)location.replace("/#product-"+m[1]);
+})();
+</script>
+<style>
+:root{--ink:#201e1d;--muted:#645c50;--cream:#f5ead8;--tan-dark:#8c491a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;display:grid;place-items:center;padding:24px 16px;background:var(--cream);color:var(--ink);
+  font-family:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;line-height:1.75;text-align:center}
+h1{font-size:22px;font-weight:600;margin-bottom:6px}
+p{color:var(--muted);margin-bottom:22px}
+a{display:inline-block;padding:12px 26px;border-radius:999px;background:var(--ink);color:#fff;text-decoration:none;font-weight:600}
+a:focus-visible{outline:3px solid var(--tan-dark);outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <h1>找不到這個頁面</h1>
+  <p>網址可能打錯了，或是這個頁面已經不在了。</p>
+  <a href="/">回信通家俱行首頁</a>
+</main>
+</body>
+</html>

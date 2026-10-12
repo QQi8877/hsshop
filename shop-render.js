@@ -428,7 +428,35 @@ export function lineInquireBtnHtml(url){
 /* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、LINE 詢問）────
    opts：{option:目前選的款式（-1＝沒選）, productUrl:這件商品的網址, now:判斷特價有沒有過期用的時間} */
 const HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
-export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Date()}={}){
+/* ── 購買須知（後台「購買須知」填的問答：運送、安裝、付款、退換貨…）──────
+   [{q:標題,a:內容}]，標題或內容空白的不顯示；內容是純文字，換行照樣換行 */
+export function buyInfoItems(site){
+  return (Array.isArray(site?.buyInfo)?site.buyInfo:[]).filter(i=>i&&String(i.q||"").trim()&&String(i.a||"").trim());
+}
+export function buyInfoListHtml(items){
+  return items.map(i=>`<details class="buy-item"><summary>${escapeHTML(String(i.q).trim())}</summary><div class="buy-a">${escapeHTML(String(i.a).trim()).replace(/\r\n|\r|\n/g,"<br>")}</div></details>`).join("");
+}
+
+/* ── 同類商品：商品頁最下面放幾件同子分類（不夠再補同主分類）的其他商品 ──────
+   照「分類管理」的順序，從這件商品的下一件開始往後取，每件商品推薦的不會都一樣 */
+export function similarProducts(product,listed,catalog,n=4){
+  const cmp=catalogOrderCompare(catalog);
+  const rotate=(list)=>{const i=list.findIndex(p=>p.id===product.id);return i<0?list:[...list.slice(i+1),...list.slice(0,i)]};
+  const same=listed.filter(p=>p.mainCat===product.mainCat&&p.subCat&&p.subCat===product.subCat).sort(cmp);
+  const main=listed.filter(p=>p.mainCat===product.mainCat&&!(p.subCat&&p.subCat===product.subCat)).sort(cmp);
+  return [...rotate(same),...main].filter(p=>p.id!==product.id).slice(0,n);
+}
+export function similarHtml(items,now=new Date()){
+  if(!items.length)return "";
+  return `<div class="lb-spec-title lb-similar-title">同類商品</div><div class="lb-similar">${items.map(p=>{
+    const photo=(p.photos||[]).filter(Boolean)[0];
+    const price=priceHtml(p,now);
+    return `<a class="lb-sim" href="${productPath(p.id)}" data-similar="${escapeHTML(p.id)}"><span class="lb-sim-img">${photo?`<img src="${escapeHTML(normalizePhotoUrl(photo,300))}" alt="" loading="lazy">`:""}</span><span class="lb-sim-name">${escapeHTML(p.name||"")}</span>${price?`<span class="lb-sim-price">${price}</span>`:""}</a>`;
+  }).join("")}</div>`;
+}
+
+// similar：同類商品（similarProducts 算好的），購買須知從 site.buyInfo 拿
+export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Date(),similar=[]}={}){
   const cat=subNameOf(site.catalog,product.mainCat,product.subCat)||mainNameOf(site.catalog,product.mainCat);
   const desc=productDescHtml(product);
   const price=priceHtml(product,now);
@@ -445,5 +473,7 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
       ${productSizeHtml(product,site)}
       ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
       ${lineInquireBtnHtml(lineUrl)}
+      ${(()=>{const items=buyInfoItems(site);return items.length?`<div class="lb-spec-title lb-buy-title">購買須知</div><div class="lb-buy">${buyInfoListHtml(items)}</div>`:""})()}
+      ${similarHtml(similar,now)}
     `;
 }

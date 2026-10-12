@@ -616,6 +616,12 @@ body.quickcat-mode .quickcat-bar{display:flex}
 }
 .helper-text{font-size:11px;color:var(--soft);margin-bottom:8px}
 .catmgr-hint{font-size:12px;color:var(--soft);margin:-4px 0 14px;line-height:1.6}
+.buyinfo-row{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:10px;background:#fff}
+.buyinfo-row input,.buyinfo-row textarea{width:100%;margin:0 0 6px}
+.buyinfo-row textarea{min-height:70px;resize:vertical;font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.buyinfo-row-tools{display:flex;gap:6px;justify-content:flex-end}
+.buyinfo-row-tools button{border:1px solid var(--line);background:transparent;border-radius:6px;padding:3px 9px;font-size:12px;color:var(--muted);cursor:pointer}
+.buyinfo-row-tools button:disabled{opacity:.35;cursor:default}
 .dimension-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .tag-checkbox-grid{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
 .tag-checkbox-item{
@@ -1010,6 +1016,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
           <button onclick="closeHeaderDropdowns();openTagManage()">🏷 標籤管理</button>
           <button onclick="closeHeaderDropdowns();openContactManage()">📇 聯繫資訊</button>
           <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 頁面文字</button>
+          <button onclick="closeHeaderDropdowns();openBuyInfoManage()">🛒 購買須知</button>
           <button onclick="closeHeaderDropdowns();openLayoutSettings()">🎨 首頁版面</button>
         </div></div>
       </div>
@@ -1379,6 +1386,25 @@ body.quickcat-mode .quickcat-bar{display:flex}
   </div>
 </div>
 
+<div class="modal-overlay" id="buyInfoModal">
+  <div class="modal" style="max-width:620px">
+    <button class="modal-close" onclick="closeModal('buyInfoModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">購買須知</div>
+    <p class="catmgr-hint">客人最常問的事（運送、安裝、付款、退換貨…）。首頁「聯繫我們」上面會有一整區，每件商品的「LINE 詢問」按鈕下面也會放一份，點標題展開。標題或內容沒填的那一項不會顯示；全部沒填，前台就不會出現這一區。</p>
+    <div id="buyInfoRows"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+      <button class="add-spec-btn" type="button" onclick="addBuyInfoRow()">＋ 新增一項</button>
+      <button class="add-spec-btn" type="button" id="buyInfoTemplateBtn" onclick="fillBuyInfoTemplate()">放入常見問題（只有標題，內容自己填）</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('buyInfoModal')">取消</button>
+      <button class="btn-primary" onclick="saveBuyInfoManage()">儲存</button>
+    </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="pageTextModal">
   <div class="modal" style="max-width:520px">
     <button class="modal-close" onclick="closeModal('pageTextModal')">×</button>
@@ -1504,7 +1530,7 @@ import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https:
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"./dim-figures.js?v=3";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{sanitizeRichHtml,catalogOrderCompare}from"./shop-render.js?v=2";
+import{sanitizeRichHtml,catalogOrderCompare}from"./shop-render.js?v=3";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2039,6 +2065,61 @@ async function savePageTextManage(){
   toast("頁面文字已更新 ☁️");
 }
 window.savePageTextManage=savePageTextManage;
+
+/* ── 購買須知（存在主文件的 buyInfo：[{q:標題,a:內容}]）─────────────
+   前台首頁一整區＋每件商品頁 LINE 按鈕下面一份；自動產生的商品頁下次更新時跟上 */
+let buyInfoWorking=[];
+const BUY_INFO_TEMPLATE=["運送方式與運費","送貨範圍與時間","安裝、組裝","付款方式","退換貨","可以到門市看實品嗎？"];
+function renderBuyInfoRows(){
+  const wrap=document.getElementById("buyInfoRows");
+  if(!buyInfoWorking.length){wrap.innerHTML='<div class="catmgr-hint">還沒有任何一項，按下面的按鈕新增。</div>';return}
+  wrap.innerHTML=buyInfoWorking.map((it,i)=>`
+    <div class="buyinfo-row">
+      <input type="text" data-k="q" data-i="${i}" placeholder="標題，例如：運送方式與運費" value="${escapeHTML(it.q||"")}">
+      <textarea data-k="a" data-i="${i}" placeholder="內容，例如：台北市區免運，其他地區依距離報價…">${escapeHTML(it.a||"")}</textarea>
+      <div class="buyinfo-row-tools">
+        <button type="button" onclick="moveBuyInfoRow(${i},-1)" ${i===0?"disabled":""}>↑ 上移</button>
+        <button type="button" onclick="moveBuyInfoRow(${i},1)" ${i===buyInfoWorking.length-1?"disabled":""}>↓ 下移</button>
+        <button type="button" onclick="removeBuyInfoRow(${i})">刪除</button>
+      </div>
+    </div>`).join("");
+  wrap.querySelectorAll("[data-k]").forEach(el=>el.addEventListener("input",()=>{buyInfoWorking[Number(el.dataset.i)][el.dataset.k]=el.value}));
+}
+function openBuyInfoManage(){
+  buyInfoWorking=(Array.isArray(metaRaw.buyInfo)?metaRaw.buyInfo:[]).map(it=>({q:String(it?.q||""),a:String(it?.a||"")}));
+  renderBuyInfoRows();
+  openModal("buyInfoModal");
+}
+window.openBuyInfoManage=openBuyInfoManage;
+window.addBuyInfoRow=function(){buyInfoWorking.push({q:"",a:""});renderBuyInfoRows();document.querySelector("#buyInfoRows .buyinfo-row:last-child input")?.focus()};
+window.removeBuyInfoRow=function(i){
+  const it=buyInfoWorking[i];
+  if((it.q.trim()||it.a.trim())&&!confirm(`刪除「${it.q.trim()||"（沒有標題）"}」這一項？`))return;
+  buyInfoWorking.splice(i,1);renderBuyInfoRows();
+};
+window.moveBuyInfoRow=function(i,dir){
+  const j=i+dir;
+  if(j<0||j>=buyInfoWorking.length)return;
+  [buyInfoWorking[i],buyInfoWorking[j]]=[buyInfoWorking[j],buyInfoWorking[i]];
+  renderBuyInfoRows();
+};
+// 只放標題：內容（運費多少、退換貨規則）每家店不一樣，一定要店家自己填，不能幫忙猜
+window.fillBuyInfoTemplate=function(){
+  const have=new Set(buyInfoWorking.map(it=>it.q.trim()));
+  BUY_INFO_TEMPLATE.filter(q=>!have.has(q)).forEach(q=>buyInfoWorking.push({q,a:""}));
+  renderBuyInfoRows();
+};
+async function saveBuyInfoManage(){
+  const next=buyInfoWorking.map(it=>({q:it.q.trim(),a:it.a.trim()})).filter(it=>it.q||it.a);
+  const half=next.filter(it=>!it.q||!it.a).length;
+  if(half&&!confirm(`有 ${half} 項只填了標題或內容，那幾項前台不會顯示。要先存起來嗎？`))return;
+  const prev=metaRaw.buyInfo;
+  metaRaw.buyInfo=next;
+  if(!await saveMeta()){metaRaw.buyInfo=prev;return}
+  closeModal("buyInfoModal");
+  toast("購買須知已更新 ☁️");
+}
+window.saveBuyInfoManage=saveBuyInfoManage;
 
 /* ── 首頁版面設定：顯示/隱藏區塊、首頁大圖、分類磚縮圖、手動挑選本月選品 ───── */
 let layoutHeroImage="";

@@ -4,6 +4,8 @@
      那件商品，Google 可以一件一件收錄；分享到 LINE／Facebook 時顯示那件商品的照片、名稱、介紹。
    - sitemap.xml：告訴 Google 有哪些網址、什麼時候更新過。
    - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 index.html 的啟動流程）。
+   - fonts/heading-chars.txt：網站標題可能用到的所有字（版型裡的字＋分類、頁面文字、商品名稱），
+     _tools/subset-fonts.py 照這份字單把標題字型瘦身成只含這些字的小檔案。
    由 .github/workflows/build-pages.yml 每小時跑一次（index.html 等版型檔案改了也會馬上跑），店家照常在
    後台改商品就好，不用做任何事；網站本身一直是直接讀 Firebase，改了馬上看得到，這裡產生的頁面最晚一小時跟上。
    後台「分類管理」設成隱藏的分類、垃圾桶／封存的商品都不產生頁面，也不放進網站地圖。
@@ -200,6 +202,22 @@ async function writeIfChanged(file,content){
   return true;
 }
 
+/* ── 標題字型要留哪些字 ────────────────────────────────────────
+   版型（index.html、shop-render.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、購買須知、
+   標籤，跟每件商品的名稱。程式註解裡的字不算（只是說明，畫面上不會出現）。多收幾個字沒關係，
+   少收的字前台會自動改用完整字型補上。 */
+const stripComments=src=>src.replace(/<!--[\s\S]*?-->/g,"").replace(/\/\*[\s\S]*?\*\//g,"").replace(/(^|[^:\\"'`])\/\/[^\n]*/g,"$1");
+function headingChars(sources){
+  const set=new Set();
+  for(let c=0x20;c<0x7f;c++)set.add(String.fromCharCode(c));          // 英數字、半形標點
+  for(let c=0x3000;c<=0x303f;c++)set.add(String.fromCharCode(c));     // 中文標點（，。「」…）
+  for(let c=0xff01;c<=0xff5e;c++)set.add(String.fromCharCode(c));     // 全形英數字、標點
+  for(const ch of "—–…·‧•※○●△▲▼◆★☆→←↑↓×÷±°′″℃％")set.add(ch);
+  for(const text of sources)for(const ch of String(text||""))if(ch>" "&&!/\p{Cc}/u.test(ch))set.add(ch);
+  return [...set].sort().join("")+"\n";
+}
+const allStrings=v=>Array.isArray(v)?v.flatMap(allStrings):v&&typeof v==="object"?Object.values(v).flatMap(allStrings):typeof v==="string"?[v]:[];
+
 async function main(){
   const template=await readFile(path.join(ROOT,"index.html"),"utf8");
   const [meta,rows]=await Promise.all([loadMeta(),loadActiveProducts()]);
@@ -234,6 +252,10 @@ async function main(){
     meta:Object.fromEntries(META_FIELDS.filter(k=>k in meta.data).map(k=>[k,meta.data[k]])),
     products:rows.map(r=>r.data).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
   if(await writeIfChanged(path.join(OUT,"data","site.json"),JSON.stringify(sortKeys(siteData))+"\n"))changed++;
+  const shopRender=await readFile(path.join(ROOT,"shop-render.js"),"utf8");
+  const chars=headingChars([stripComments(template),stripComments(shopRender),
+    ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]]))),...products.map(p=>p.name)]);
+  if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),chars))changed++;
   console.log(`上架中 ${rows.length} 件，產生商品頁 ${listed.length} 件；更新 ${changed} 個檔案，移除 ${removed} 個舊頁面`);
 }
 main().catch(e=>{console.error(e.message||e);process.exit(1)});

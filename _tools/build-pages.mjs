@@ -13,7 +13,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,productDescText,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf,getSizeSummary}from"../shop-render.js";
+import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf,getSizeSummary}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -23,7 +23,7 @@ const API_KEY="AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw"; // 跟 index.html 的 f
 const BASE=(process.env.FIRESTORE_BASE||"https://firestore.googleapis.com").replace(/\/$/,"");
 const DOCS=`${BASE}/v1/projects/${PROJECT}/databases/(default)/documents`;
 // 首頁先用的資料只放前台用得到的設定欄位
-const META_FIELDS=["catalog","contact","pageText","layout","tagDefs"];
+const META_FIELDS=["catalog","contact","pageText","layout","tagDefs","buyInfo"];
 
 /* ── 讀 Firebase（REST，不用登入，讀的是本來就公開的資料）─────────── */
 const withKey=url=>`${url}${url.includes("?")?"&":"?"}key=${API_KEY}`;
@@ -116,7 +116,7 @@ function flatten(text){
   return String(text||"").split(/\n+/).map(t=>t.replace(/\s+/g," ").trim()).filter(Boolean)
     .reduce((acc,line)=>acc+(acc&&!/[。！？；，、：.!?,;:]$/.test(acc)?"，":"")+line,"");
 }
-function productPage(template,product,site,gallery){
+function productPage(template,product,site,gallery,listed){
   const id=product.id;
   const url=`${SITE_ORIGIN}${productPath(id)}`;
   const mainName=mainNameOf(site.catalog,product.mainCat),subName=subNameOf(site.catalog,product.mainCat,product.subCat);
@@ -176,7 +176,7 @@ function productPage(template,product,site,gallery){
   html=replaceOnce(html,`<img id="lbImg" src="" alt="">`,
     `<img id="lbImg" src="${escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):"")}" alt="${escapeHTML(`${name} 商品照片 1`)}" fetchpriority="high">`,"#lbImg");
   html=replaceOnce(html,`<div class="lb-info" id="lbInfo"></div>`,
-    `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{productUrl:url})}</div>`,"#lbInfo");
+    `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{productUrl:url,similar:similarProducts(product,listed,site.catalog)})}</div>`,"#lbInfo");
   return html;
 }
 
@@ -205,7 +205,7 @@ async function main(){
   const [meta,rows]=await Promise.all([loadMeta(),loadActiveProducts()]);
   // 一件商品都沒拿到幾乎一定是讀取出了問題：停下來，不要把現有的商品頁全部刪掉
   if(!rows.length)throw new Error("沒有讀到任何上架中的商品，這次不更新");
-  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{}};
+  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{},buyInfo:meta.data.buyInfo||[]};
   const updated=new Map(rows.map(r=>[r.data.id,r.updateTime]));
   const products=rows.map(r=>normalizeProduct({...r.data}));
   const listed=products.filter(p=>isSafeProductId(p.id)&&isListedProduct(p,site.catalog)).sort(catalogOrderCompare(site.catalog));
@@ -217,7 +217,7 @@ async function main(){
   for(const [i,product] of listed.entries()){
     const file=`${product.id}.html`;
     keep.add(file);
-    if(await writeIfChanged(path.join(pagesDir,file),productPage(template,product,site,galleries[i])))changed++;
+    if(await writeIfChanged(path.join(pagesDir,file),productPage(template,product,site,galleries[i],listed)))changed++;
   }
   // 下架、刪除、移到隱藏分類的商品：頁面拿掉（舊網址會轉回首頁，提示商品已下架）
   let removed=0;

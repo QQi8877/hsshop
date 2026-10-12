@@ -1164,7 +1164,7 @@ footer a:hover{color:var(--color-on-dark)}
 }
 .lb-inquire-btn:hover{background:#05a648}
 .lb-inquire-btn svg{flex-shrink:0}
-/* 購買須知（後台「購買須知」填的問答）：首頁聯繫區上面一整區，商品頁 LINE 按鈕下面也放一份，點標題展開 */
+/* 購買須知（後台「購買須知」填的問答）：首頁聯繫區上面一整區（選單也有連結），點標題展開；商品頁不放 */
 #buyInfo{padding:46px 40px 54px}
 .buyinfo-inner{max-width:760px;margin:0 auto}
 .buyinfo-title{font-family:var(--font-heading);font-size:20px;font-weight:600;color:var(--charcoal);margin-bottom:14px;text-align:center}
@@ -1175,9 +1175,11 @@ footer a:hover{color:var(--color-on-dark)}
 .buy-item[open] summary::after{transform:rotate(45deg)}
 .buy-item summary:focus-visible{outline:2px solid var(--tan);outline-offset:2px;border-radius:4px}
 .buy-a{padding:0 2px 14px;color:var(--muted);line-height:1.8}
-.lb-buy{border-top:1px solid var(--line)}
-.lb-buy .buy-item summary{font-size:14px;padding:11px 2px}
-.lb-buy .buy-a{font-size:13.5px}
+.buyinfo-ask{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px;color:var(--muted);font-size:14px;text-align:center}
+.buyinfo-ask[hidden]{display:none}
+.buyinfo-ask a{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:999px;background:#06c755;color:#fff;text-decoration:none;font-weight:600;font-size:15px}
+.buyinfo-ask a:hover{background:#05a648}
+.buyinfo-ask a:focus-visible{outline:3px solid var(--tan-dark);outline-offset:3px}
 /* 同類商品：商品頁最下面，點了換成那件商品（上一頁會回到原本這件） */
 .lb-similar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .lb-sim{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit}
@@ -1376,6 +1378,7 @@ footer a:hover{color:var(--color-on-dark)}
     <ul class="nav-links">
       <li><a href="#hero">首頁</a></li>
       <li><a href="#categories">商品</a></li>
+      <li class="nav-buy" hidden><a href="#buyInfo">購買須知</a></li>
       <li><a href="#contact">聯繫</a></li>
     </ul>
     <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
@@ -1391,6 +1394,7 @@ footer a:hover{color:var(--color-on-dark)}
 <ul class="nav-links-mobile" id="navLinksMobile">
   <li><a href="#hero" onclick="toggleMobileNav(false)">首頁</a></li>
   <li><a href="#categories" onclick="toggleMobileNav(false)">商品</a></li>
+  <li class="nav-buy" hidden><a href="#buyInfo" onclick="toggleMobileNav(false)">購買須知</a></li>
   <li><a href="#contact" onclick="toggleMobileNav(false)">聯繫</a></li>
 </ul>
 
@@ -1466,6 +1470,10 @@ footer a:hover{color:var(--color-on-dark)}
   <div class="buyinfo-inner">
     <h2 class="buyinfo-title">購買須知</h2>
     <div class="buyinfo-list" id="buyInfoList"></div>
+    <div class="buyinfo-ask" id="buyInfoAsk" hidden>
+      <span>運費、送貨或其他問題，歡迎直接問我們</span>
+      <a id="buyInfoLine" href="#" target="_blank" rel="noopener" data-lead="line_friend">LINE 直接問我們</a>
+    </div>
   </div>
 </section>
 
@@ -3066,6 +3074,10 @@ function renderBuyInfo(){
   const list=document.getElementById("buyInfoList");
   if(list.innerHTML!==html)list.innerHTML=html; // 內容沒變就不重畫，展開中的不會被收起來
   section.hidden=!items.length;
+  document.querySelectorAll(".nav-buy").forEach(li=>{li.hidden=!items.length}); // 選單的「購買須知」跟著這一區
+  const lineUrl=state.contact?.lineUrl;
+  document.getElementById("buyInfoAsk").hidden=!lineUrl;
+  document.getElementById("buyInfoLine").href=lineUrl||"#";
 }
 function renderContact(){
   renderBuyInfo();

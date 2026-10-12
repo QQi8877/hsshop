@@ -455,7 +455,7 @@ export function similarHtml(items,now=new Date()){
   }).join("")}</div>`;
 }
 
-// similar：同類商品（similarProducts 算好的），購買須知從 site.buyInfo 拿
+// similar：同類商品（similarProducts 算好的）
 export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Date(),similar=[]}={}){
   const cat=subNameOf(site.catalog,product.mainCat,product.subCat)||mainNameOf(site.catalog,product.mainCat);
   const desc=productDescHtml(product);
@@ -473,7 +473,6 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
       ${productSizeHtml(product,site)}
       ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
       ${lineInquireBtnHtml(lineUrl)}
-      ${(()=>{const items=buyInfoItems(site);return items.length?`<div class="lb-spec-title lb-buy-title">購買須知</div><div class="lb-buy">${buyInfoListHtml(items)}</div>`:""})()}
       ${similarHtml(similar,now)}
     `;
 }

@@ -17,7 +17,8 @@ on:
       - .github/workflows/build-pages.yml
 
 permissions:
-  contents: write   # 提交產生出來的檔案（推上 main 之後 GitHub Pages 會自己重新發佈網站）
+  contents: write   # 提交產生出來的檔案
+  pages: write      # 推上去之後 GitHub Pages 沒有自己重新發佈時，主動請它發佈（見最後一步）
 
 concurrency:
   group: build-pages
@@ -25,30 +26,54 @@ concurrency:
 
 jobs:
   build:
+    # 只處理 main：手動執行時就算選了別的分支，也不會把那個分支的修改推上正式版
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0   # 完整紀錄：提交前要先把這段時間別人推上去的更新拉下來接好
+          ref: main
       - uses: actions/setup-node@v5
         with:
           node-version: 24
-      - name: 產生商品頁
-        run: node _tools/build-pages.mjs
-      - name: 有變動才提交
+      - name: 產生並提交商品頁（有變動才提交）
         id: commit
         run: |
-          git add -A p data sitemap.xml
-          if git diff --cached --quiet; then
-            echo "沒有變動"
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -q -m "自動更新商品頁"
+          # 推送失敗（這段時間 main 有別的更新）：整個重來——拿最新的 main 重新產生再推，
+          # 不用處理合併衝突，產生出來的一定是最新資料
           for i in 1 2 3; do
-            git pull -q --rebase origin main && git push -q origin HEAD:main && echo "pushed=1" >> "$GITHUB_OUTPUT" && exit 0
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            node _tools/build-pages.mjs
+            git add -A p data sitemap.xml
+            if git diff --cached --quiet; then
+              echo "沒有變動"
+              exit 0
+            fi
+            git commit -q -m "自動更新商品頁"
+            if git push -q origin HEAD:main; then
+              echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
             sleep $((i * 5))
           done
           exit 1
+      # 網站設定成「從 main 分支發佈」時，機器人推上去 GitHub Pages 會自己重新發佈（實際觀察到的情況）。
+      # 保險起見：等一下確認 Pages 有在處理這次的提交，沒有才主動請它發佈，不會重複發佈。
+      - name: 確認 GitHub Pages 有重新發佈
+        if: steps.commit.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          sleep 45
+          latest=$(gh api "repos/${{ github.repository }}/pages/builds/latest" --jq .commit 2>/dev/null || true)
+          if [ "$latest" = "$SHA" ]; then
+            echo "GitHub Pages 已經在發佈這次的提交"
+          else
+            echo "沒看到這次的發佈（目前是 ${latest:-未知}），主動請 GitHub Pages 發佈"
+            gh api -X POST "repos/${{ github.repository }}/pages/builds" --silent || echo "請求失敗；下次排程會再更新"
+          fi

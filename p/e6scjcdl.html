@@ -33,36 +33,39 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
 <link rel="modulepreload" href="/shop-render.js?v=3">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
-<!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc，
-     官方已做好「繁體中文常用字」子集化的 woff2），不透過 Google Fonts CDN（Google 會把中文字
-     拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
+<!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
+     不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
      內文（--font-body／--font-mono）用各裝置內建的中文字型：蘋果是蘋方 PingFang TC、Windows
-     是微軟正黑體、Android 是 Noto Sans CJK，不用下載。原本內文也是自行內嵌的 Noto Sans TC，
-     加上 6 個字型 preload 一起搶頻寬，第一次開首頁要下載約 6.8MB 字型；實測手機 4G 要將近
-     8 秒才畫出畫面上最大的元素，改成現在這樣約 2.7 秒（慢速 4G 從 33 秒變 3.7 秒）。
-     只 preload 標題最常用的 600 字重（首頁大標、導覽列店名、區塊標題），400／500 用到時才
-     下載（下面的首頁進場動畫一開始就會要 400，等於提早開始下載）。
-     用到子集沒收錄的罕見字時會自動改用瀏覽器內建字型顯示（不會壞掉，只是那一兩個字字體
-     不太一樣）。
+     是微軟正黑體、Android 是 Noto Sans CJK，不用下載。
 
-     font-display:block 的原因：實測瀏覽器第一次下載字型時，不管設 swap 還是 optional，
-     下載完成那一刻畫面上已經顯示的字都會被換成新字型（看得到字體跳一下）；block 則是下載
-     完成前標題先不上色（版面照樣保留空間，不會跳動），下載完成才第一次真正畫出來。block 的
-     「不上色」有時間上限（瀏覽器內部約 3 秒），連線真的很慢、3 秒內還沒下載完，還是會先顯示
-     備援字體、之後再換；快取過一次之後的每次重訪就完全不會有這個問題。
+     標題字型瘦身：完整的繁體中文字型每個字重約 1.3MB（三個字重將近 4MB），但網站標題、商品名稱、
+     分類名稱實際只用到幾百個字。每小時自動更新商品頁時（_tools/build-pages.mjs），會把網站上所有
+     標題可能出現的字列成 fonts/heading-chars.txt，再由 _tools/subset-fonts.py 從完整字型裡只取出
+     這些字，存成 fonts/noto-serif-tc-*-sub.woff2（每個約 90KB）。
+     - "HS Serif"：瘦身後的小檔案，平常只下載這個（400／600 先 preload，500 用到才下載）。
+     - "Noto Serif TC"：完整字型，排在 "HS Serif" 後面當備援。後台剛新增的商品名稱用到小檔案裡沒有
+       的字時，瀏覽器才會自動下載完整字型補那幾個字；下一次每小時更新就會把新字補進小檔案。
+       平常所有字小檔案都有，完整字型完全不會下載。完整字型的 unicode-range 只列中文字（漢字）：
+       全形標點（，（）等）兩個檔案本來就都沒有，會直接用裝置內建的字，不要為了它們白白下載完整字型。
+
+     font-display:swap：字型還沒下載完先用裝置內建的字顯示，下載完再換上（中文字每個字一樣寬，
+     換字型時版面幾乎不會動）。檔案很小、又有 preload，大多在畫面出來前就已經到了。
 
      字重限制（很重要，改 CSS 前務必看這裡）：Noto Serif TC 只內嵌 400/500/600 三個字重，
      這個檔案裡任何用到 var(--font-heading) 的地方，font-weight 都只能是 400、500 或 600
      其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong>
-     預設是 700）。用到 700 就會讓瀏覽器找不到對應的內嵌檔案，在字型下載完成那一刻自動頂替
-     成最接近的字重——跟上面講的字體跳動是一模一樣的機制，等於重新把這個問題生出來一次。
+     預設是 700）。用到 700 瀏覽器找不到對應的檔案，會改用最接近的字重或自己加粗，字體看起來不一樣。
      內文用的是裝置內建字型，沒有這個限制。
-     後台 manage.html 仍然使用 fonts/ 裡的 Noto Sans TC，那三個檔案不能刪。 -->
-<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600.woff2" crossorigin>
+     後台 manage.html 仍然使用 fonts/ 裡的完整字型（Noto Serif TC、Noto Sans TC），那些檔案不能刪。 -->
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-400-sub.woff2" crossorigin>
 <style>
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2')}
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2')}
-@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600-sub.woff2') format('woff2')}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
+@font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 :root{
   /* Organic redesign tokens — palette/type swap only (Phase 1).
      Old variable names kept so the rest of the stylesheet doesn't need touching;
@@ -82,9 +85,9 @@
   --danger:#b84236;
   --shadow:0 12px 32px rgba(46,43,37,.18);
 
-  /* 標題用自行內嵌的 Noto Serif TC，內文用裝置內建的中文字型（原因見 <head> 裡的字型說明），
+  /* 標題用自行內嵌的 Noto Serif TC（瘦身版 HS Serif 優先），內文用裝置內建的中文字型（原因見 <head> 裡的字型說明），
      不套用新設計稿的 Caprasimo／Figtree／等寬字 */
-  --font-heading:"Noto Serif TC",serif;
+  --font-heading:"HS Serif","Noto Serif TC",serif;
   --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
   --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
 
@@ -214,16 +217,15 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .hero-photo{
   aspect-ratio:1/1;
   border-radius:var(--radius-pill);
-  background:linear-gradient(90deg,#eee2ce 25%,#f7efe1 37%,#eee2ce 63%);
-  background-size:400% 100%;
-  animation:sk-shimmer 1.6s ease-in-out infinite;
+  background:#eee2ce;
+  animation:sk-breathe 1.6s ease-in-out infinite;
   box-shadow:var(--shadow);
   display:grid;
   place-items:center;
   overflow:hidden;
 }
-/* 圖片真的載入之後，圓圈改回原本的米白底色、停止閃爍——跟商品卡片、分類磚
-   用的是同一套 sk-shimmer 骨架屏效果，避免圖片還沒到之前圓圈只是死白一片 */
+/* 圖片真的載入之後，圓圈改回原本的米白底色、停止呼吸——跟商品卡片、分類磚
+   用的是同一套 sk-breathe 骨架屏效果，避免圖片還沒到之前圓圈只是死白一片 */
 .hero-photo:has(img[src]:not([src=""])){
   background:var(--paper);
   animation:none;
@@ -392,12 +394,13 @@ img.img-fade:not(.is-loaded){opacity:0}
   .cat-grid.odd .cat-tile--cta{grid-column:1/-1} /* 兩欄排不滿時，「不確定就問」那格佔整排，不會落單 */
   #picks,#catTiles{padding-left:18px!important;padding-right:18px!important}
 }
-/* ── 骨架屏佔位（本月選品／分類磚），在資料回來前就先撐好版面高度，避免版面跳動（CLS）── */
+/* ── 骨架屏佔位（本月選品／分類磚），在資料回來前就先撐好版面高度，避免版面跳動（CLS）──
+   呼吸效果只動 opacity：顯示卡可以直接處理，不用每一格都重新繪製（原本是移動漸層背景
+   background-position，每一幀都要重畫，PageSpeed 會列為「非合成的動畫」） */
 .sk-line{
   height:11px;border-radius:5px;margin-top:9px;
-  background:linear-gradient(90deg,#eee2ce 25%,#f7efe1 37%,#eee2ce 63%);
-  background-size:400% 100%;
-  animation:sk-shimmer 1.6s ease-in-out infinite;
+  background:#eee2ce;
+  animation:sk-breathe 1.6s ease-in-out infinite;
 }
 .sk-line--tile{width:70%;margin:0 auto;height:22px}
 .sk-line--tile2{width:40%;height:17px;margin:0 auto}
@@ -407,14 +410,10 @@ img.img-fade:not(.is-loaded){opacity:0}
 .sk-line--title{height:21px;margin-top:0;width:80%}
 .sk-line--foot{height:56px;margin-top:0;width:100%}
 .p-card.skeleton .p-card__media,.cat-tile.skeleton .cat-tile__thumb{
-  background:linear-gradient(90deg,#eee2ce 25%,#f7efe1 37%,#eee2ce 63%);
-  background-size:400% 100%;
-  animation:sk-shimmer 1.6s ease-in-out infinite;
+  background:#eee2ce;
+  animation:sk-breathe 1.6s ease-in-out infinite;
 }
-@keyframes sk-shimmer{
-  0%{background-position:100% 0}
-  100%{background-position:0 0}
-}
+@keyframes sk-breathe{50%{opacity:.55}}
 @media(prefers-reduced-motion:reduce){
   .sk-line,.p-card.skeleton .p-card__media,.cat-tile.skeleton .cat-tile__thumb{animation:none;opacity:.7}
 }
@@ -481,6 +480,7 @@ img.img-fade:not(.is-loaded){opacity:0}
 .tab-pill{position:absolute;left:0;top:0;z-index:1;pointer-events:none;background:var(--charcoal)}
 .sub-categories-bar>.tab-pill{background:var(--sage)}
 .has-pill>.cat-tab.active,.has-pill>.sub-tab.active,.has-pill>.cat-side-btn.active{z-index:2;background:transparent;border-color:transparent}
+.grid-more{flex:0 0 100%;height:1px}
 .products-grid{
   display:flex;
   flex-wrap:wrap;
@@ -1339,13 +1339,23 @@ footer a:hover{color:var(--color-on-dark)}
   window.hsTrack=function(name,params){gtag("event",name,params||{})};
   gtag("js",new Date());
   gtag("config",GA_ID);
-  function load(){var el=document.createElement("script");el.async=true;el.src="https://www.googletagmanager.com/gtag/js?id="+GA_ID;document.head.appendChild(el)}
-  if(document.readyState==="complete")setTimeout(load,0);else addEventListener("load",function(){setTimeout(load,0)});
+  /* gtag.js 很大（下載加執行要佔手機好幾百毫秒），不跟網站搶開頁時間：等客人第一次捲動、點擊、
+     按鍵，或網頁載完後再過 4 秒（先到的那個）才下載。在那之前記下的瀏覽、點擊事件都排在
+     dataLayer 裡，載入後會一起送出，不會漏掉。代價：開了網頁 4 秒內、什麼都沒動就離開的訪客不會被記到。 */
+  var loaded=false,EVENTS=["scroll","pointerdown","keydown","touchstart"];
+  function load(){
+    if(loaded)return;loaded=true;
+    EVENTS.forEach(function(t){removeEventListener(t,load,true)});
+    var el=document.createElement("script");el.async=true;el.src="https://www.googletagmanager.com/gtag/js?id="+GA_ID;document.head.appendChild(el);
+  }
+  EVENTS.forEach(function(t){addEventListener(t,load,{capture:true,passive:true,once:true})});
+  function later(){setTimeout(load,4000)}
+  if(document.readyState==="complete")later();else addEventListener("load",later);
 })();
 </script>
 <script>
-/* 首頁大圖文字進場。大標跟副標的 Noto Serif TC 是 font-display:block，載入前本來就看不到，
-   所以等這兩個字重到了才播；2.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
+/* 首頁大圖文字進場。等大標跟副標的字型（瘦身版，很小又有 preload）到了才播，播的時候就是正確的
+   字體，不會先顯示內建字體再換；1.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
    寫在這裡（不放下面的 module script），Firebase 載入失敗也不會讓標題一直藏著。 */
 (function(){
   var root=document.documentElement;
@@ -1360,8 +1370,8 @@ footer a:hover{color:var(--color-on-dark)}
     root.classList.add("hero-enter");
     setTimeout(function(){root.classList.remove("hero-enter")},1600);
   }
-  setTimeout(function(){reveal(false)},2500);
-  Promise.all(['400 1em "Noto Serif TC"','600 1em "Noto Serif TC"'].map(function(f){return document.fonts.load(f)}))
+  setTimeout(function(){reveal(false)},1500);
+  Promise.all(['400 1em "HS Serif"','600 1em "HS Serif"'].map(function(f){return document.fonts.load(f)}))
     .then(function(){reveal(true)},function(){reveal(false)});
 })();
 </script>
@@ -1771,8 +1781,17 @@ let favoritesRoomFilter="全部";
 // 避免手機版小卡片還是抓桌面版用的大尺寸圖（PageSpeed「圖片解析度過大」建議）。
 // 商品卡片（列表封面／滑鼠移過的第二張）跟首頁大圖分別對應兩組不同的顯示尺寸，
 // 各自的呼叫點共用同一份陣列，之後要調整最小寬度只要改這裡一個地方。
-const GRID_IMG_WIDTHS=[200,280,400,600,800];
-const HERO_IMG_WIDTHS=[200,300,500,700,900];
+// sizes：照片在畫面上實際顯示的寬度（實測各種螢幕寬度量出來的），瀏覽器依這個加上螢幕解析度挑剛好夠用的尺寸，
+// 寫太大會下載用不到的大圖（PageSpeed「圖片大小適中」）。版面改了寬度要跟著改。
+const GRID_IMG_WIDTHS=[200,280,400,500,600,800];
+const GRID_IMG_SIZES="(max-width:760px) 46vw, 16vw";
+const PICK_IMG_WIDTHS=[200,300,450,600,800];
+const PICK_IMG_SIZES="(max-width:760px) 32vw, (max-width:860px) 38vw, 17vw";
+const HERO_IMG_SIZES="(max-width:760px) 53vw, min(30vw, 360px)";
+// 有滑鼠的裝置才先下載商品卡片的第二張照片（滑鼠移過去才看得到）；手機沒有「移過去」，
+// 不先下載，省一半的照片流量
+const CAN_HOVER=window.matchMedia("(hover:hover)").matches;
+const HERO_IMG_WIDTHS=[200,300,400,500,700,900];
 function buildSrcset(url,widths){
   // 只有 http(s) 連結（Cloudinary／Drive）才需要多尺寸版本；base64 舊資料本來就
   // 是同一份資料，硬產生 4 份一樣的字串只會浪費記憶體，直接跳過。
@@ -1990,9 +2009,16 @@ function toggleMobileNav(force){
     requestAnimationFrame(update);
   },{passive:true});
 })();
+/* 商品格分批畫：一次只先畫前 GRID_FIRST_BATCH 件，捲到接近最後一件時（還差約兩個畫面高）再畫下
+   一批。全部 58 件一次畫出來有一千多個網頁元素，手機光是算版面就要花上半秒以上；客人通常只會看
+   前面幾排，後面的等快捲到再畫，看起來一樣是一路接著出現。 */
+const GRID_FIRST_BATCH=20,GRID_NEXT_BATCH=24;
+let gridMoreObserver=null;
 function renderProducts(animate=true){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
+  gridMoreObserver?.disconnect();
+  gridMoreObserver=null;
   let list=listedProducts();
   const q=searchQuery.trim().toLowerCase();
   if(q){
@@ -2024,7 +2050,7 @@ function renderProducts(animate=true){
   // 有搜尋或已經篩選到單一分類時，畫面上只有一組商品，不需要再多一層標題。
   const showSections=state.activeMain==="全部"&&!q;
   let lastSectionMain=null;
-  list.forEach((product,idx)=>{
+  const addCard=(product,idx)=>{
     if(showSections&&product.mainCat!==lastSectionMain){
       lastSectionMain=product.mainCat;
       const head=document.createElement("div");
@@ -2051,11 +2077,11 @@ function renderProducts(animate=true){
     const totalCount=product.photoCount??photos.length;
     if(photos.length){
       const cover=document.createElement("img");
+      cover.loading="lazy"; // 要在設定 src 之前：先給 src 的話瀏覽器會馬上下載，lazy 就沒作用了
       cover.src=normalizePhotoUrl(photos[0],600);
       cover.srcset=buildSrcset(photos[0],GRID_IMG_WIDTHS);
-      cover.sizes="(max-width:760px) 50vw, 20vw";
+      cover.sizes=GRID_IMG_SIZES;
       cover.alt=product.name;
-      cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
       fadeInOnLoad(cover,wrap);
       cover.onerror=()=>showBrokenImage(wrap,cover);
@@ -2064,21 +2090,22 @@ function renderProducts(animate=true){
         let hoverImg=null,galleryLoading=false;
         const showHover=src=>{
           hoverImg=document.createElement("img");
+          hoverImg.loading="lazy"; // 要在設定 src 之前：先給 src 的話瀏覽器會馬上下載，lazy 就沒作用了
           hoverImg.src=normalizePhotoUrl(src,600);
           hoverImg.srcset=buildSrcset(src,GRID_IMG_WIDTHS);
-          hoverImg.sizes="(max-width:760px) 50vw, 20vw";
+          hoverImg.sizes=GRID_IMG_SIZES;
           hoverImg.alt=product.name+" hover";
-          hoverImg.loading="lazy";
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
           wrap.appendChild(hoverImg);
         };
-        if(photos.length>1){
+        if(photos.length>1&&CAN_HOVER){
           showHover(photos[1]);
         }else{
           // 首頁列表只讀封面照，第二張以後的照片要滑鼠移過去才抓，避免一次載入太多照片
           wrap.addEventListener("mouseenter",async()=>{
             if(hoverImg||galleryLoading)return;
+            if(photos.length>1){showHover(photos[1]);return}
             galleryLoading=true;
             const full=await Storage.getGallery(product.id);
             galleryLoading=false;
@@ -2115,7 +2142,26 @@ function renderProducts(animate=true){
     card.appendChild(info);
     card.addEventListener("click",()=>openProductDetail(product.id,wrap));
     grid.appendChild(card);
-  });
+  };
+  let next=0;
+  const sentinel=document.createElement("div");
+  sentinel.className="grid-more";
+  sentinel.setAttribute("aria-hidden","true");
+  const renderMore=()=>{
+    const end=Math.min(list.length,next+(next?GRID_NEXT_BATCH:GRID_FIRST_BATCH));
+    for(;next<end;next++)addCard(list[next],next);
+    if(next<list.length)grid.appendChild(sentinel); // 移到最後面，捲到它附近再畫下一批
+    else{sentinel.remove();gridMoreObserver?.disconnect();gridMoreObserver=null}
+  };
+  renderMore();
+  if(next<list.length){
+    if("IntersectionObserver" in window){
+      gridMoreObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting))renderMore()},{rootMargin:"0px 0px 1600px 0px"});
+      gridMoreObserver.observe(sentinel);
+    }else{
+      while(next<list.length)renderMore();
+    }
+  }
   // 切換分類／搜尋時，整個商品區塊淡入＋輕微上移一下，讓「內容換了」這件事
   // 更明顯，比整頁瞬間換掉生硬。強制重排（offsetWidth）是刻意的，用來讓瀏覽器
   // 重新套用動畫，不然拿掉又馬上加回同一個 class，瀏覽器會當作沒變化而不重播。
@@ -2255,32 +2301,33 @@ function renderPicks(){
     const totalCount=product.photoCount??photos.length;
     if(photos.length){
       const cover=document.createElement("img");
+      cover.loading="lazy"; // 要在設定 src 之前：先給 src 的話瀏覽器會馬上下載，lazy 就沒作用了
       cover.src=normalizePhotoUrl(photos[0],500);
-      cover.srcset=buildSrcset(photos[0],[200,300,450,600,800]);
-      cover.sizes="(max-width:760px) 50vw, 25vw";
+      cover.srcset=buildSrcset(photos[0],PICK_IMG_WIDTHS);
+      cover.sizes=PICK_IMG_SIZES;
       cover.alt=product.name;
-      cover.loading="lazy";
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
       fadeInOnLoad(cover,media);
       media.appendChild(cover);
       if(totalCount>1){
         const showHover=src=>{
           const hoverImg=document.createElement("img");
+          hoverImg.loading="lazy"; // 要在設定 src 之前：先給 src 的話瀏覽器會馬上下載，lazy 就沒作用了
           hoverImg.src=normalizePhotoUrl(src,500);
-          hoverImg.srcset=buildSrcset(src,[200,300,450,600,800]);
-          hoverImg.sizes="(max-width:760px) 50vw, 25vw";
+          hoverImg.srcset=buildSrcset(src,PICK_IMG_WIDTHS);
+          hoverImg.sizes=PICK_IMG_SIZES;
           hoverImg.alt=product.name+" hover";
-          hoverImg.loading="lazy";
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
           media.appendChild(hoverImg);
         };
-        if(photos.length>1){
+        if(photos.length>1&&CAN_HOVER){
           showHover(photos[1]);
         }else{
           let galleryLoading=false,loaded=false;
           media.addEventListener("mouseenter",async()=>{
             if(loaded||galleryLoading)return;
+            if(photos.length>1){loaded=true;showHover(photos[1]);return}
             galleryLoading=true;
             const full=await Storage.getGallery(product.id);
             galleryLoading=false;loaded=true;
@@ -2309,10 +2356,13 @@ function renderCategoryTiles(){
   grid.classList.toggle("odd",(cats.length+1)%2===1);
   grid.innerHTML=cats.map((cat,i)=>{
     // 後台「首頁版面設定」為這個分類上傳的縮圖優先；沒有的話自動抓分類底下第一件商品的照片
-    const thumbSrc=cat.image||normalizePhotoUrl(listed.find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"",200);
+    // 縮圖實際只顯示約 56px 寬：給 120／200 兩種尺寸讓瀏覽器依螢幕解析度挑，不要每台都下載 200px
+    const thumbUrl=cat.image||listed.find(p=>p.mainCat===cat.id&&(p.photos||[]).length)?.photos?.[0]||"";
+    const thumbSrc=thumbUrl&&normalizePhotoUrl(thumbUrl,200);
+    const thumbSet=buildSrcset(thumbUrl,[120,200]);
     return `
       <button class="cat-tile reveal" type="button" data-cat="${escapeHTML(cat.id)}" style="transition-delay:${i*60}ms">
-        <span class="cat-tile__thumb">${thumbSrc?`<img src="${escapeHTML(thumbSrc)}" alt="">`:""}</span>
+        <span class="cat-tile__thumb">${thumbSrc?`<img loading="lazy" decoding="async" src="${escapeHTML(thumbSrc)}"${thumbSet?` srcset="${escapeHTML(thumbSet)}" sizes="56px"`:""} alt="">`:""}</span>
         <span class="cat-tile__name">${escapeHTML(cat.name)}</span>
         <span class="cat-tile__count">${mainCount(cat.id)} 件</span>
       </button>
@@ -2346,7 +2396,7 @@ function renderHeroPhoto(){
   if(customImage){
     img.src=normalizePhotoUrl(customImage,900);
     img.srcset=buildSrcset(customImage,HERO_IMG_WIDTHS);
-    img.sizes="(max-width:760px) 45vw, 360px";
+    img.sizes=HERO_IMG_SIZES;
     img.alt="";
     return;
   }
@@ -2354,7 +2404,7 @@ function renderHeroPhoto(){
   if(!withPhoto)return;
   img.src=normalizePhotoUrl(withPhoto.photos[0],900);
   img.srcset=buildSrcset(withPhoto.photos[0],HERO_IMG_WIDTHS);
-  img.sizes="(max-width:760px) 45vw, 360px";
+  img.sizes=HERO_IMG_SIZES;
   img.alt=withPhoto.name;
 }
 const FAVORITES_KEY="xintong_favorites_v1";

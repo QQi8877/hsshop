@@ -1,5 +1,6 @@
 # 每件商品一個網址：每小時從 Firebase 讀出上架中的商品，產生 p/商品編號.html、sitemap.xml、data/site.json
-# （說明見 _tools/build-pages.mjs）。有變動才會提交，沒變動什麼都不做。
+# （說明見 _tools/build-pages.mjs），並把標題字型瘦身成只含網站用到的字（_tools/subset-fonts.py）。
+# 有變動才會提交，沒變動什麼都不做。
 # 也可以在 GitHub 的 Actions 分頁手動按「Run workflow」立刻更新一次。
 name: 更新商品頁
 
@@ -37,6 +38,14 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 24
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # 標題字型瘦身用的工具。裝不起來也沒關係：商品頁照樣更新，字型沿用上一次做好的小檔案
+      - name: 安裝字型瘦身工具
+        id: fonttools
+        continue-on-error: true
+        run: pip install --disable-pip-version-check -q fonttools==4.66.1 brotli==1.2.0
       - name: 產生並提交商品頁（有變動才提交）
         id: commit
         run: |
@@ -48,7 +57,10 @@ jobs:
             git fetch -q origin main
             git reset -q --hard origin/main
             node _tools/build-pages.mjs
-            git add -A p data sitemap.xml
+            if [ "${{ steps.fonttools.outcome }}" = "success" ]; then
+              python _tools/subset-fonts.py || echo "字型瘦身失敗，沿用上一次的小檔案"
+            fi
+            git add -A p data sitemap.xml fonts
             if git diff --cached --quiet; then
               echo "沒有變動"
               exit 0

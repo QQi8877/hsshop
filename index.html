@@ -720,14 +720,14 @@ img.img-fade:not(.is-loaded){opacity:0}
 /* 標籤／金額誰排在卡片最後面，就由誰把剩餘高度往下撐，讓不同商品的卡片
    （不管有沒有標籤、有沒有金額）底部還是能對齊。 */
 .product-badges-row:last-child,.product-price:last-child{margin-top:auto}
+/* 桌面版也是尺寸一行、金額另起一行靠右（跟手機版一樣）：放同一行時尺寸會被金額擠成好幾行。
+   商品名稱、尺寸、金額依序往下排，標籤固定在卡片最底下，同一排卡片底部對齊。 */
 @media(min-width:761px){
-  .product-info{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr auto;column-gap:10px}
-  .product-name{grid-column:1/-1}
-  .product-meta-row{grid-column:1;grid-row:2;margin-bottom:0}
-  .product-price{grid-column:2;grid-row:2;align-self:end;margin-top:0}
-  /* 特價時原價疊在特價下面，金額欄才不會太寬、把左邊的尺寸擠成好幾行 */
-  .product-price .price-was{display:block;margin-left:0;font-size:.7em;line-height:1.3}
-  .product-badges-row{grid-column:1/-1;grid-row:4;padding-top:5px}
+  .product-info{display:grid;grid-template-columns:1fr;grid-template-rows:auto auto auto 1fr auto}
+  .product-name{grid-row:1}
+  .product-meta-row{grid-row:2;margin-bottom:0}
+  .product-price{grid-row:3;margin-top:2px}
+  .product-badges-row{grid-row:5;padding-top:5px}
   .product-badges-row .tag-badge:nth-child(3){display:inline-block}
 }
 .favorite-btn{
@@ -1183,8 +1183,9 @@ footer a:hover{color:var(--color-on-dark)}
 /* 同類商品：商品頁最下面，點了換成那件商品（上一頁會回到原本這件） */
 .lb-similar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .lb-sim{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit}
-.lb-sim-img{aspect-ratio:1;border-radius:12px;background:var(--paper);overflow:hidden;display:grid;place-items:center}
-.lb-sim-img img{width:100%;height:100%;object-fit:contain}
+/* 照片整張縮進框裡、置中，四周留一點空（跟商品卡片一樣）：直式、橫式照片都不會被裁掉 */
+.lb-sim-img{position:relative;aspect-ratio:1;border-radius:12px;background:var(--paper);overflow:hidden}
+.lb-sim-img img{position:absolute;inset:6%;width:88%;height:88%;object-fit:contain}
 .lb-sim-name{font-size:13px;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lb-sim-price{font-size:12.5px;font-weight:600;color:var(--tan-dark)}
 .lb-sim:hover .lb-sim-name{color:var(--tan-dark)}

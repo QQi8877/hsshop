@@ -315,7 +315,8 @@ export function formatPrice(price){
 // 卡片、商品頁顯示的價格（HTML）：特價期間顯示特價＋劃掉的原價
 export function priceHtml(product,now=new Date()){
   const sale=activeSalePrice(product,now),base=String(product.price||"").trim();
-  if(sale)return `<span class="price-now">${escapeHTML(formatPrice(sale))}</span>${base?`<s class="price-was">${escapeHTML(formatPrice(base))}</s>`:""}`;
+  // 特價：前面標「特價」兩個字，原價加刪除線（商品卡片上原價另起一行，見 index.html 的 .price-was）
+  if(sale)return `<span class="price-label">特價</span><span class="price-now">${escapeHTML(formatPrice(sale))}</span>${base?`<s class="price-was">${escapeHTML(formatPrice(base))}</s>`:""}`;
   return base?escapeHTML(formatPrice(base)):"";
 }
 

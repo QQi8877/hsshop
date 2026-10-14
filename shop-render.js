@@ -456,6 +456,12 @@ export function similarHtml(items,now=new Date()){
   }).join("")}</div>`;
 }
 
+// 商品的標籤（可客製化、台製…）只在商品頁顯示，商品列表的卡片上不放；順序照後台「標籤管理」
+function lbBadgesHtml(product,site){
+  const badges=product.badges||[];
+  const html=tagDefsOf(site.tagDefs).filter(d=>badges.includes(d.key)).map(tagBadgeHtml).join("");
+  return html?`<div class="lb-badges">${html}</div>`:"";
+}
 // similar：同類商品（similarProducts 算好的）
 export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Date(),similar=[]}={}){
   const cat=subNameOf(site.catalog,product.mainCat,product.subCat)||mainNameOf(site.catalog,product.mainCat);
@@ -469,6 +475,7 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
       </div>
       <h2 class="lb-product-title" id="lbTitle">${escapeHTML(product.name||"")}</h2>
       ${price?`<div class="lb-product-price">${price}${activeSalePrice(product,now)&&product.saleEnd?`<span class="price-until">特價到 ${saleEndText(product.saleEnd)}</span>`:""}</div>`:""}
+      ${lbBadgesHtml(product,site)}
       ${product.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(product.leadTime)}</span></div>`:""}
       ${optionsHtml(product,option)}
       ${productSizeHtml(product,site)}

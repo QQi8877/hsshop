@@ -564,8 +564,12 @@ img.img-fade:not(.is-loaded){opacity:0}
   .products-grid.grid-transition-in{animation:none}
 }
 @media(min-width:761px){
-  :root{--cat-sidebar-w:165px;--cat-gap:34px}
-  .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:22px}
+  /* 間距（桌面版）：標題上方 19px、篩選標籤到商品 9+11px、側欄左邊 19px、側欄到商品 17px。
+     標題列跟商品區左邊用同一個 19px，標題才會跟商品格對齊 */
+  :root{--cat-sidebar-w:165px;--cat-gap:17px}
+  .cat-toolbar{padding:19px 38px 0 19px}
+  .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:11px;padding:0 38px 0 19px}
+  #categories .applied-chips{padding-bottom:9px} /* 基本樣式寫在後面，這裡加 #categories 才蓋得過 */
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
     display:flex;

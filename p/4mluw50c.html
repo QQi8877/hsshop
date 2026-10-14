@@ -31,7 +31,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=3">
+<link rel="modulepreload" href="/shop-render.js?v=5">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -347,13 +347,14 @@ nav.nav--scrolled .nav-logo{font-size:16px}
 .p-card:hover .p-card__media .img-primary.has-secondary{opacity:0}
 .p-card:hover .p-card__media .img-secondary{opacity:1;transform:translate(-50%,-50%) scale(1.03)}
 .p-card:hover .p-card__media .img-primary:not(.has-secondary){transform:translate(-50%,-50%) scale(1.04)}
-.p-card__title{font-size:15px;color:var(--charcoal);line-height:1.4}
+/* 本月選品卡片的字型跟下面全部商品列表的卡片一致：名稱用標題字型、尺寸用咖啡色小字、金額用標題字型（見 .product-name／.product-size／.product-price） */
+.p-card__title{font-family:var(--font-heading);font-size:14.5px;font-weight:500;color:var(--charcoal);line-height:1.4}
 /* 尺寸一行、金額另起一行靠右：擠同一行時窄卡片會把「$」跟數字拆到兩行。
    分隔線＋尺寸緊接商品名稱，金額推到卡片最底下，同一排卡片不管有沒有金額，
    分隔線跟尺寸都在同一高度（跟 #productsGrid 手機版 .product-price 同一套做法）。 */
 .p-card__foot{display:flex;flex-direction:column;gap:2px;flex-grow:1;padding-top:9px;border-top:1px solid var(--line)}
-.p-card__foot .mono{font-size:11.5px;color:var(--muted)}
-.p-card__foot .price{margin-top:auto;text-align:right;font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--tan-dark)}
+.p-card__foot .mono{font-size:11px;line-height:1.35;color:var(--tan-dark)}
+.p-card__foot .price{margin-top:auto;text-align:right;font-family:var(--font-heading);font-weight:600;font-size:16px;line-height:1.2;color:var(--tan-dark)}
 .p-card__fav{
   position:absolute;top:14px;right:14px;width:30px;height:30px;border:none;
   border-radius:var(--radius-pill);background:rgba(249,244,237,.92);color:var(--tan-dark);
@@ -705,31 +706,12 @@ img.img-fade:not(.is-loaded){opacity:0}
   font-weight:500;
   margin-bottom:3px;
 }
-/* 手機版：名稱 → 尺寸 → 標籤（如果有）→ 金額，金額固定放在標籤下一行，
-   不會因為有沒有標籤而跑到不同位置。桌面版欄位夠寬，尺寸跟金額改回同一列
-   （用 Grid 讓兩者共用一列，不佔額外高度），標籤還是維持在最下面一行
-   （見下面 761px 那個 media query）。 */
+/* 手機、桌面都是：名稱 → 尺寸 → 金額（另起一行靠右）。標籤不放卡片上，點開商品頁才看得到。 */
 .product-meta-row{margin-bottom:1px}
 .product-size{display:block;font-size:11px;line-height:1.35;color:var(--tan-dark)}
 .product-price{display:block;text-align:right;font-family:var(--font-heading);font-size:16px;line-height:1.2;color:var(--tan-dark);font-weight:600;margin-top:2px}
-.product-badges-row{display:flex;flex-wrap:wrap;gap:4px;padding-top:3px}
-.product-badges-row .tag-badge{font-size:9px;padding:2px 7px;box-shadow:none}
-/* 標籤最多顯示 3 個（JS 已經先限制），手機版欄位窄，超過 2 個容易跟金額擠在一起
-   或換行讓卡片變太高，這裡在窄螢幕只留前 2 個，寬螢幕（桌面 5 欄）才顯示第 3 個。 */
-.product-badges-row .tag-badge:nth-child(3){display:none}
-/* 標籤／金額誰排在卡片最後面，就由誰把剩餘高度往下撐，讓不同商品的卡片
-   （不管有沒有標籤、有沒有金額）底部還是能對齊。 */
-.product-badges-row:last-child,.product-price:last-child{margin-top:auto}
-@media(min-width:761px){
-  .product-info{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr auto;column-gap:10px}
-  .product-name{grid-column:1/-1}
-  .product-meta-row{grid-column:1;grid-row:2;margin-bottom:0}
-  .product-price{grid-column:2;grid-row:2;align-self:end;margin-top:0}
-  /* 特價時原價疊在特價下面，金額欄才不會太寬、把左邊的尺寸擠成好幾行 */
-  .product-price .price-was{display:block;margin-left:0;font-size:.7em;line-height:1.3}
-  .product-badges-row{grid-column:1/-1;grid-row:4;padding-top:5px}
-  .product-badges-row .tag-badge:nth-child(3){display:inline-block}
-}
+/* 金額推到卡片最底下：同一排卡片不管有沒有金額、名稱幾行，金額都對齊在底部 */
+.product-price:last-child{margin-top:auto}
 .favorite-btn{
   position:absolute;
   top:8px;
@@ -1140,9 +1122,14 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-product-price{font-family:var(--font-heading);font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
 /* 特價期間：特價用紅色、原價劃掉；商品頁多一行特價到哪天 */
 .price-now{color:var(--danger)}
-.price-was{margin-left:6px;font-size:.78em;font-weight:400;color:var(--soft)}
+/* 特價時原價跟特價排在同一行，原價加刪除線、字比較小（卡片上 16px 的金額配 10px 原價，最小 10px）；
+   兩個金額各自不拆行，窄卡片放不下時原價整個換到下一行 */
+.price-now,.price-was{white-space:nowrap}
+.price-was{margin-left:6px;font-size:max(10px,calc(.75em - 4px));font-weight:400;color:var(--soft)}
 .price-until{display:block;margin-top:2px;font-family:var(--font-body);font-size:12px;font-weight:400;color:var(--soft)}
 /* 商品頁的交期、顏色／款式（卡片上不顯示） */
+.lb-badges{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 14px}
+.lb-badges .tag-badge{box-shadow:none}
 .lb-lead{display:flex;align-items:baseline;gap:10px;margin:0 0 14px;font-size:14px;color:var(--ink)}
 .lb-product-price+.lb-lead{margin-top:-8px}
 .lb-lead-k,.lb-opts-k{flex:none;font-size:12px;color:var(--tan-dark);letter-spacing:.12em}
@@ -1183,8 +1170,9 @@ footer a:hover{color:var(--color-on-dark)}
 /* 同類商品：商品頁最下面，點了換成那件商品（上一頁會回到原本這件） */
 .lb-similar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .lb-sim{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:inherit}
-.lb-sim-img{aspect-ratio:1;border-radius:12px;background:var(--paper);overflow:hidden;display:grid;place-items:center}
-.lb-sim-img img{width:100%;height:100%;object-fit:contain}
+/* 照片整張縮進框裡、置中，四周留一點空（跟商品卡片一樣）：直式、橫式照片都不會被裁掉 */
+.lb-sim-img{position:relative;aspect-ratio:1;border-radius:12px;background:var(--paper);overflow:hidden}
+.lb-sim-img img{position:absolute;inset:6%;width:88%;height:88%;object-fit:contain}
 .lb-sim-name{font-size:13px;line-height:1.4;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .lb-sim-price{font-size:12.5px;font-weight:600;color:var(--tan-dark)}
 .lb-sim:hover .lb-sim-name{color:var(--tan-dark)}
@@ -1570,6 +1558,7 @@ footer a:hover{color:var(--color-on-dark)}
       
       
       
+      
       <div class="lb-spec-title">尺寸</div><div class="lb-dim"><div class="lb-dim-fig"><svg data-figure="rack" viewBox="-29 -88.4 140 130" width="140" height="130" aria-hidden="true" focusable="false"><line x1="21.2" y1="-11.9" x2="21.2" y2="-46.2" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="81" y1="-11.9" x2="81" y2="-46.2" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><polygon points="0,-2.1 61,-2.1 61,-2.9 0,-2.9" fill="#fffaf3" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="61,-2.1 82,-14.3 82,-15.1 61,-2.9" fill="#ece1ce" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-2.9 61,-2.9 82,-15.1 21,-15.1" fill="#f5ecdd" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-12.7 61,-12.7 61,-13.5 0,-13.5" fill="#fffaf3" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="61,-12.7 82,-24.9 82,-25.7 61,-13.5" fill="#ece1ce" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-13.5 61,-13.5 82,-25.7 21,-25.7" fill="#f5ecdd" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-23.3 61,-23.3 61,-24.2 0,-24.2" fill="#fffaf3" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="61,-23.3 82,-35.5 82,-36.4 61,-24.2" fill="#ece1ce" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-24.2 61,-24.2 82,-36.4 21,-36.4" fill="#f5ecdd" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-33.4 61,-33.4 61,-34.3 0,-34.3" fill="#fffaf3" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="61,-33.4 82,-45.6 82,-46.5 61,-34.3" fill="#ece1ce" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-34.3 61,-34.3 82,-46.5 21,-46.5" fill="#f5ecdd" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><line x1="1" y1="-0.2" x2="1" y2="-34.5" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="60.8" y1="-0.2" x2="60.8" y2="-34.5" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="-5.5" y1="3.2" x2="55.4" y2="3.2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="-7.6" y1="4.4" x2="-3.4" y2="2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="53.4" y1="4.4" x2="57.5" y2="2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="25" y="17.2" text-anchor="middle" fill="#8c491a" font-size="13" font-weight="600">寬</text><line x1="69" y1="0" x2="90" y2="-12.2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="66" y1="0" x2="72" y2="0" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="87" y1="-12.2" x2="93" y2="-12.2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="85.5" y="3.4" text-anchor="start" fill="#8c491a" font-size="13" font-weight="600">深</text><line x1="90" y1="-12.2" x2="90" y2="-46.5" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="87" y1="-46.5" x2="93" y2="-46.5" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="96" y="-23.8" text-anchor="start" fill="#8c491a" font-size="13" font-weight="600">高</text></svg></div><div class="lb-dim-rows"><div class="lb-dim-row"><span class="lb-dim-k">寬</span><span class="lb-dim-v">80<small>cm</small><span class="lb-dim-chi">約 2.6 尺</span></span></div><div class="lb-dim-row"><span class="lb-dim-k">深</span><span class="lb-dim-v">40<small>cm</small><span class="lb-dim-chi">約 1.3 尺</span></span></div><div class="lb-dim-row"><span class="lb-dim-k">高</span><span class="lb-dim-v">45<small>cm</small><span class="lb-dim-chi">約 1.5 尺</span></span></div></div></div>
       <div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note"><ul><li>可坐於櫃體上方便穿鞋，節省空間，高齡友善。</li><li>適合放置於玄關或是陽台</li><li>底部旋鈕可微調高低，避免地板高低差。</li><li>另有其他色</li></ul><div></div></div>
       <a class="lb-inquire-btn" href="https://line.me/R/oaMessage/%40833pzizi/?%E6%82%A8%E5%A5%BD%EF%BC%8C%E6%88%91%E6%83%B3%E8%A9%A2%E5%95%8F%E9%80%99%E4%BB%B6%E5%95%86%E5%93%81%EF%BC%9A%E5%9D%90%E9%9E%8B%E6%AB%83%0Ahttps%3A%2F%2Fhsintong.cc%2Fp%2F4mluw50c" target="_blank" rel="noopener" data-lead="line">
@@ -1608,7 +1597,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts}from"/shop-render.js?v=3";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts}from"/shop-render.js?v=5";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1762,15 +1751,6 @@ function primaryTagBadgeHtml(product){
   const badges=product.badges||[];
   const def=tagDefsOf(state.tagDefs).find(d=>badges.includes(d.key));
   return def?tagBadgeHtml(def):"";
-}
-// 商品總表卡片的標籤列跟本月選品／燈箱不同：這裡要把商品符合的標籤全部顯示出來，
-// 不是只顯示排序最前面那一個。
-function allTagBadgesHtml(product){
-  const badges=product.badges||[];
-  // 最多顯示 3 個，避免商品掛太多標籤時把卡片撐得亂七八糟；手機版欄位較窄，
-  // 第 3 個標籤改用 CSS 在窄螢幕隱藏（見 .product-badges-row 的 media query），
-  // 不用另外判斷寬度，也不會有 JS 量測寬度、resize 時重新計算的額外負擔。
-  return tagDefsOf(state.tagDefs).filter(d=>badges.includes(d.key)).slice(0,3).map(tagBadgeHtml).join("");
 }
 let searchQuery="";
 let productsLoadFailed=false;
@@ -2127,14 +2107,12 @@ function renderProducts(animate=true){
     card.appendChild(wrap);
     const info=document.createElement("div");
     info.className="product-info";
-    const badgesHtml=allTagBadgesHtml(product);
     const price=priceHtml(product);
     info.innerHTML=`
       <div class="product-name">${escapeHTML(product.name)}</div>
       <div class="product-meta-row">
         <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
       </div>
-      ${badgesHtml?`<div class="product-badges-row">${badgesHtml}</div>`:""}
       ${price?`<span class="product-price">${price}</span>`:""}
     `;
     card.appendChild(info);

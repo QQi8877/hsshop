@@ -564,11 +564,16 @@ img.img-fade:not(.is-loaded){opacity:0}
   .products-grid.grid-transition-in{animation:none}
 }
 @media(min-width:761px){
-  /* 間距（桌面版）：標題上方 19px、篩選標籤到商品 9+11px、側欄左邊 19px、側欄到商品 17px。
-     標題列跟商品區左邊用同一個 19px，標題才會跟商品格對齊 */
+  /* 桌面版排成兩欄：左邊分類選單從最上面（跟標題同一高度）開始，右邊依序是標題、篩選標籤、商品格，
+     左上角不會空一塊。.cat-toolbar／.cat-layout 是手機版用的外框，這裡用 display:contents 拆開，
+     讓選單、標題列、商品格直接排進 #categories 這個兩欄的格子裡。
+     間距：上方 19px、篩選標籤到商品 9+11px、選單左邊 19px、選單到商品 17px */
   :root{--cat-sidebar-w:165px;--cat-gap:17px}
-  .cat-toolbar{padding:19px 38px 0 19px}
-  .cat-layout{display:grid;grid-template-columns:var(--cat-sidebar-w) 1fr;gap:var(--cat-gap);align-items:start;margin-top:11px;padding:0 38px 0 19px}
+  #categories{display:grid;grid-template-columns:var(--cat-sidebar-w) minmax(0,1fr);column-gap:var(--cat-gap);align-items:start;padding:19px 38px 64px 19px;border-top:1px solid var(--line)}
+  .cat-toolbar{grid-column:2;grid-row:1;padding:0;border-top:0}
+  .cat-layout{display:contents}
+  .cat-sidebar{grid-column:1;grid-row:1/span 2}
+  #categories .products-grid{grid-column:2;grid-row:2;margin-top:11px}
   #categories .applied-chips{padding-bottom:9px} /* 基本樣式寫在後面，這裡加 #categories 才蓋得過 */
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-sidebar{
@@ -620,7 +625,6 @@ img.img-fade:not(.is-loaded){opacity:0}
   .cat-sub-btn .mono{font-family:var(--font-mono);font-size:10.5px;color:var(--soft)}
   .cat-sub-btn:hover{color:var(--tan-dark)}
   .cat-sub-btn.active{color:var(--sage);font-weight:600}
-  .listing-head,.applied-chips{margin-left:calc(var(--cat-sidebar-w) + var(--cat-gap))}
 }
 .listing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0 0 14px}
 .listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}

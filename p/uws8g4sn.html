@@ -43,6 +43,10 @@
      標題可能出現的字列成 fonts/heading-chars.txt，再由 _tools/subset-fonts.py 從完整字型裡只取出
      這些字，存成 fonts/noto-serif-tc-*-sub.woff2（每個約 90KB）。
      - "HS Serif"：瘦身後的小檔案，平常只下載這個（400／600 先 preload，500 用到才下載）。
+     - "HS Serif" 的標點檔（fonts/noto-serif-tc-*-punct.woff2，每個約 11KB）：上面的完整字型是 @fontsource
+       的「繁體中文常用字」版本，裡面沒有全形標點（，（）！？：…）跟幾個符號，標題裡的這些字原本會變成
+       裝置內建的黑體、跟旁邊的字不一樣。這三個小檔是從同一套字型的完整版取出這些標點做成的，
+       unicode-range 只列這些字，標題裡出現這些標點時才下載。這份不用每小時重做，字不會變。
      - "Noto Serif TC"：完整字型，排在 "HS Serif" 後面當備援。後台剛新增的商品名稱用到小檔案裡沒有
        的字時，瀏覽器才會自動下載完整字型補那幾個字；下一次每小時更新就會把新字補進小檔案。
        平常所有字小檔案都有，完整字型完全不會下載。完整字型的 unicode-range 只列中文字（漢字）：
@@ -63,6 +67,9 @@
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
@@ -87,6 +94,10 @@
 
   /* 標題用自行內嵌的 Noto Serif TC（瘦身版 HS Serif 優先），內文用裝置內建的中文字型（原因見 <head> 裡的字型說明），
      不套用新設計稿的 Caprasimo／Figtree／等寬字 */
+  /* 粗細規則（整個前台一致）：
+     標題字型 → 區塊標題、價格、店名 600；商品名稱 500；副標等次要標題 400。
+     內文字型 → 一般 400、強調 600，不用 500：Windows 的微軟正黑體只有一般跟粗體兩種，
+     500 在 Windows 上會變成一般字，跟蘋果裝置看起來不一樣。 */
   --font-heading:"HS Serif","Noto Serif TC",serif;
   --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
   --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
@@ -604,7 +615,7 @@ img.img-fade:not(.is-loaded){opacity:0}
   }
   .cat-side-btn .mono{font-family:var(--font-mono);font-size:11px;color:var(--soft)}
   .cat-side-btn:hover{background:rgba(185,146,99,.12);color:var(--tan-dark)}
-  .cat-side-btn.active{background:var(--charcoal);color:var(--white);font-weight:500}
+  .cat-side-btn.active{background:var(--charcoal);color:var(--white);font-weight:600}
   .cat-side-btn.active .mono{color:var(--white);opacity:.85}
   .cat-subs{display:flex;flex-direction:column;gap:1px;margin:2px 0 10px;padding-left:14px;border-left:2px solid var(--tan)}
   .cat-sub-btn{
@@ -631,7 +642,7 @@ img.img-fade:not(.is-loaded){opacity:0}
 .applied-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-bottom:18px}
 .chip-applied{
   display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 13px;border-radius:var(--radius-pill);
-  background:var(--charcoal);color:#fff;font-size:12px;font-weight:500;flex:none;white-space:nowrap;border:0;cursor:pointer;
+  background:var(--charcoal);color:#fff;font-size:12px;font-weight:600;flex:none;white-space:nowrap;border:0;cursor:pointer;
 }
 .chip-applied svg{width:12px;height:12px;flex:none}
 .chip-clear-all{font-size:12px;color:var(--tan-dark);background:none;border:0;cursor:pointer;text-decoration:underline;flex:none;white-space:nowrap}
@@ -815,7 +826,7 @@ img.img-fade:not(.is-loaded){opacity:0}
   padding:22px 22px 16px;
   border-bottom:1px solid var(--line);
 }
-.favorites-title{font-family:var(--font-heading);font-size:22px;color:var(--charcoal)}
+.favorites-title{font-family:var(--font-heading);font-size:22px;font-weight:600;color:var(--charcoal)}
 .favorites-subtitle{font-size:12.5px;color:var(--muted);margin-top:4px}
 .favorites-close{border:0;background:#ece3d8;color:var(--muted);border-radius:50%;width:34px;height:34px;display:grid;place-items:center;flex:none}
 .favorites-room-tabs{display:flex;flex-wrap:wrap;gap:7px;padding:14px 22px;border-bottom:1px solid var(--line)}
@@ -893,7 +904,7 @@ img.img-fade:not(.is-loaded){opacity:0}
   font-family:var(--font-heading);
   color:var(--white);
   font-size:27px;
-  font-weight:500;
+  font-weight:600;
 }
 .contact-sub{color:rgba(255,255,255,.48);font-size:13px;letter-spacing:.08em;margin:6px 0 32px}
 .contact-line{
@@ -906,7 +917,7 @@ img.img-fade:not(.is-loaded){opacity:0}
   font-size:14px;
 }
 .contact-line .item{white-space:nowrap}
-.contact-line b{color:var(--tan-on-dark);font-weight:500;letter-spacing:.04em;margin-right:6px}
+.contact-line b{color:var(--tan-on-dark);font-weight:600;letter-spacing:.04em;margin-right:6px}
 .contact-line a{color:rgba(255,255,255,.82);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.32);transition:color .15s,border-color .15s}
 .contact-line a:hover{color:var(--tan-on-dark);border-color:var(--tan-on-dark)}
 .contact-line .dot{color:rgba(255,255,255,.28);margin:0 14px;font-size:12px}
@@ -1126,7 +1137,7 @@ footer a:hover{color:var(--color-on-dark)}
   backdrop-filter:blur(10px);
 }
 .lb-product-cat{font-size:12px;color:var(--tan-dark);letter-spacing:.1em;margin-bottom:8px}
-.lb-product-title{font-family:var(--font-heading);font-size:28px;font-weight:400;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
+.lb-product-title{font-family:var(--font-heading);font-size:28px;font-weight:500;color:var(--charcoal);line-height:1.25;margin-bottom:10px}
 .lb-product-price{font-family:var(--font-heading);font-size:20px;color:var(--tan-dark);font-weight:600;margin-bottom:16px}
 /* 特價期間：特價用紅色、原價劃掉；商品頁多一行特價到哪天 */
 .price-now{color:var(--danger)}
@@ -1154,7 +1165,7 @@ footer a:hover{color:var(--color-on-dark)}
   display:flex;align-items:center;justify-content:center;gap:8px;
   width:100%;padding:13px 16px;margin-top:24px;
   background:#06c755;color:#fff;border:0;border-radius:8px;
-  font-size:15px;font-weight:500;text-decoration:none;
+  font-size:15px;font-weight:600;text-decoration:none;
   transition:background .18s ease;
 }
 .lb-inquire-btn:hover{background:#05a648}
@@ -1187,6 +1198,7 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-sim:focus-visible{outline:2px solid var(--tan);outline-offset:3px;border-radius:12px}
 @media(max-width:760px){#buyInfo{padding:38px 18px 44px}}
 .lb-product-note{font-size:14px;color:var(--muted)}
+.lb-product-note b,.lb-product-note strong{font-weight:600} /* 後台說明裡的粗體跟網站其他強調字一樣用 600 */
 .lb-product-note ul{margin:4px 0;padding-left:22px;list-style:disc}
 .lb-product-note ol{margin:4px 0;padding-left:22px;list-style:decimal}
 .lb-product-note li{margin:2px 0}
@@ -1202,7 +1214,7 @@ footer a:hover{color:var(--color-on-dark)}
 .lb-dim-row{display:grid;grid-template-columns:2.2em minmax(0,1fr);column-gap:8px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
 .lb-dim-row:last-child{border-bottom:0}
 .lb-dim-k{font-size:12.5px;color:var(--soft)}
-.lb-dim-v{font-size:17px;color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums;line-height:1.35}
+.lb-dim-v{font-size:17px;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;line-height:1.35}
 .lb-dim-v small{font-size:12px;color:var(--soft);font-weight:400;margin-left:2px}
 .lb-dim-chi{display:block;font-size:12px;color:var(--muted);font-weight:400;line-height:1.3}
 .lb-dim-row.key .lb-dim-k,.lb-dim-row.key .lb-dim-v{color:var(--tan-dark);font-weight:600}
@@ -1367,7 +1379,8 @@ footer a:hover{color:var(--color-on-dark)}
     setTimeout(function(){root.classList.remove("hero-enter")},1600);
   }
   setTimeout(function(){reveal(false)},1500);
-  Promise.all(['400 1em "HS Serif"','600 1em "HS Serif"'].map(function(f){return document.fonts.load(f)}))
+  // 帶上「，」：副標常有全形逗號，標點檔也要一起等到（只給字型名稱的話只會載入沒有限定字範圍的那個檔）
+  Promise.all(['400 1em "HS Serif"','600 1em "HS Serif"'].map(function(f){return document.fonts.load(f,"信通家俱行，")}))
     .then(function(){reveal(true)},function(){reveal(false)});
 })();
 </script>

@@ -184,10 +184,7 @@ async function syncOrderToFrontend(){
   try{
     const all=[...sorted,...archived];
     all.forEach((p,i)=>p.sortOrder=i);
-    const productsCol=collection(db,"sitedata",SITE_DOC,"products");
-    const batch=writeBatch(db);
-    all.forEach(p=>batch.set(doc(productsCol,p.id),sanitizeProductForWrite(p)));
-    await batch.commit();
+    await patchProducts(all,["sortOrder"]);
     toast("已套用到前台，前台重新整理後就會是這個順序 ☁️");
   }catch(e){
     toast("同步失敗："+(e.message||String(e)),4000);
@@ -204,11 +201,21 @@ async function saveMeta(){
   metaRaw.pageText=pageText;
   metaRaw.layout=layout;
   metaRaw.tagDefs=tagDefs;
+  const ref=doc(db,"sitedata",SITE_DOC);
   try{
-    await setDoc(doc(db,"sitedata",SITE_DOC),metaRaw);
+    // 網站設定也一樣：別的裝置剛存過（分類、聯繫資訊、首頁版面…），先問再蓋
+    let remote=null;
+    try{remote=await getDoc(ref)}catch(e){console.warn("沒辦法先檢查網站設定有沒有被別的裝置改過",e)}
+    if(remote?.exists()&&(remote.data().updatedAt??null)!==(metaRaw.updatedAt??null)){
+      const when=remote.data().updatedAt?`（${clockText(remote.data().updatedAt)}）`:"";
+      if(!confirm(`網站設定（分類、標籤、聯繫資訊、頁面文字、購買須知、首頁版面）剛剛在別的裝置或別的分頁被修改過${when}，這個畫面上的還是舊的內容。\n\n按「確定」：用你現在的版本蓋掉。\n按「取消」：先不要存，重新整理頁面看最新的內容。`))throw new SaveCancelled();
+    }
+    const stamp=Date.now();
+    await setDoc(ref,{...metaRaw,updatedAt:stamp});
+    metaRaw.updatedAt=stamp;
     return true;
   }catch(e){
-    toast("儲存失敗："+(e.message||String(e)),4000);
+    toast(saveErrorText(e,"儲存失敗"),e.cancelled?7000:4000);
     return false;
   }
 }
@@ -317,6 +324,7 @@ function confirmCatDelete(){
   if(!pendingCatDelete)return;
   const action=document.querySelector('input[name="catDelAction"]:checked').value;
   const targetId=document.getElementById("catDelTarget").value;
+  let catAffected=[];
   if(pendingCatDelete.kind==="main"){
     const {mainId}=pendingCatDelete;
     const affected=products.filter(p=>p.mainCat===mainId);
@@ -326,6 +334,7 @@ function confirmCatDelete(){
     }else{
       affected.forEach(archiveForDeletedCategory);
     }
+    catAffected=affected;
     catalog=catalog.filter(c=>c.id!==mainId);
   }else{
     const {mainId,subId}=pendingCatDelete;
@@ -336,15 +345,14 @@ function confirmCatDelete(){
     }else{
       affected.forEach(archiveForDeletedCategory);
     }
+    catAffected=affected;
     if(main)main.subs=main.subs.filter(s=>s.id!==subId);
   }
   // 受影響商品需要同步寫回 Firestore（分類異動／封存）
   (async()=>{
     try{
-      const batch=writeBatch(db);
-      // 直接把目前記憶體中所有商品狀態全部寫回，資料量不大，避免遺漏受影響商品
-      products.forEach(p=>batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p)));
-      await batch.commit();
+      // 只寫受影響商品的分類／狀態欄位，不會蓋到別的裝置剛改的其他內容
+      if(catAffected.length)await patchProducts(catAffected,["mainCat","subCat","status","trashedFrom"]);
     }catch(e){
       toast("商品分類更新寫入失敗："+(e.message||String(e)),4000);
     }
@@ -890,8 +898,9 @@ async function handleBulkFiles(event){
           const next={...existing,photos:[await thumbFor(photos[0])],photoCount:photos.length};
           // 取代後照片可能變少：顏色／款式指到已經沒有的照片，就改成「不換照片」
           if(bulkReplaceMode&&Array.isArray(existing.options))next.options=existing.options.map(o=>Number.isInteger(o.photo)&&o.photo>=photos.length?{...o,photo:null}:o);
+          await ensureNoConflict([existing]);
           await saveGallery(existing.id,photos,originals);
-          await setDoc(doc(productsCol(),existing.id),sanitizeProductForWrite(next));
+          await writeProducts([next],{check:false});
           Object.assign(existing,next); // 兩份都存好了才改畫面上的資料
           counts.matched++;
           lines.push(`✓ 比對到「${safeName}」${existing.status==="archived"?"（封存中）":""}，已${bulkReplaceMode?"取代成":"補上"} ${uploaded.length} 張照片${noteText}`);
@@ -903,7 +912,7 @@ async function handleBulkFiles(event){
             photos:[await thumbFor(photos[0])],photoCount:photos.length
           };
           await saveGallery(product.id,photos,originals);
-          await setDoc(doc(productsCol(),product.id),product);
+          await writeProducts([product],{check:false});
           products.push(product);
           counts.created++;
           lines.push(`＋ 找不到「${safeName}」，已建立新商品，先放在「已封存」${noteText}`);
@@ -1012,14 +1021,13 @@ function renderBulkFigures(){
 // 改好幾件商品：先寫進資料庫，寫不進去就把畫面上的改動還原，資料庫跟畫面才不會對不上
 async function saveProductsChange(list,mutate){
   const before=list.map(p=>JSON.parse(JSON.stringify(p)));
-  list.forEach(mutate);
   let saved=0;
   try{
+    await ensureNoConflict(list);
+    list.forEach(mutate);
     while(saved<list.length){
-      const chunk=list.slice(saved,saved+400); // 一次批次寫入最多 500 筆
-      const batch=writeBatch(db);
-      chunk.forEach(p=>batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p)));
-      await batch.commit();
+      const chunk=list.slice(saved,saved+400);
+      await writeProducts(chunk,{check:false});
       saved+=chunk.length;
     }
     return true;
@@ -1029,7 +1037,7 @@ async function saveProductsChange(list,mutate){
       Object.keys(p).forEach(k=>delete p[k]);
       Object.assign(p,before[i]);
     });
-    toast("儲存失敗："+(e.message||String(e)),4000);
+    toast(saveErrorText(e,"儲存失敗"),e.cancelled?6000:4000);
     return false;
   }finally{
     updateTotalCount();
@@ -1167,9 +1175,7 @@ async function reorderProductRow(srcId,targetId){
   list.forEach((p,i)=>p.sortOrder=orderSlots[i]);
   renderTable();
   try{
-    const batch=writeBatch(db);
-    list.forEach(p=>batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p)));
-    await batch.commit();
+    await patchProducts(list,["sortOrder"]);
   }catch(e){
     toast("排序更新失敗："+(e.message||String(e)),4000);
   }
@@ -1201,6 +1207,67 @@ function sanitizeProductForWrite(p){
   if(typeof p.status!=="string")p.status="active";
   if(typeof p.sortOrder!=="number")p.sortOrder=nextSortOrder();
   return p;
+}
+
+/* ── 兩台裝置（或兩個分頁）同時編輯的保護 ─────────────────────────
+   每次寫入商品都記下 updatedAt（存檔當下的時間）。整筆商品存檔前，先去資料庫看一眼：
+   資料庫裡的 updatedAt 跟這個畫面當初讀到的不一樣，就代表別的裝置在這段時間改過，
+   先問要不要蓋掉，不會悄悄把別人剛改好的內容蓋回舊的。
+   只改其中幾個欄位的操作（排序、標籤、分類…）用 patchProducts，只寫那幾個欄位，
+   本來就不會蓋到別的內容，不用問。 */
+class SaveCancelled extends Error{
+  constructor(){super("已取消，沒有儲存。請重新整理頁面（F5）載入最新內容後再改一次");this.cancelled=true}
+}
+const saveErrorText=(e,prefix)=>e?.cancelled?e.message:`${prefix}：${e?.message||String(e)}`;
+const clockText=t=>{const d=new Date(t);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`};
+async function ensureNoConflict(list){
+  const existing=list.filter(p=>p&&p.id);
+  if(!existing.length)return;
+  const remote=new Map();
+  try{
+    if(existing.length<=3){
+      const snaps=await Promise.all(existing.map(p=>getDoc(doc(productsCol(),p.id))));
+      snaps.forEach((s,i)=>{if(s.exists())remote.set(existing[i].id,s.data())});
+    }else{
+      (await getDocs(productsCol())).forEach(s=>remote.set(s.id,s.data()));
+    }
+  }catch(e){
+    console.warn("沒辦法先檢查別的裝置有沒有改過，直接儲存",e);
+    return;
+  }
+  const changed=existing.filter(p=>remote.has(p.id)&&(remote.get(p.id).updatedAt??null)!==(p.updatedAt??null));
+  if(!changed.length)return;
+  const names=changed.slice(0,3).map(p=>`「${p.name||"未命名商品"}」`).join("、")+(changed.length>3?` 等 ${changed.length} 個商品`:"");
+  const latest=Math.max(...changed.map(p=>remote.get(p.id).updatedAt||0));
+  const when=latest?`（${clockText(latest)}）`:"";
+  if(!confirm(`${names} 剛剛在別的裝置或別的分頁被修改過${when}，這個畫面上的還是舊的內容。\n\n按「確定」：用你現在的版本蓋掉。\n按「取消」：先不要存，重新整理頁面看最新的內容。`))throw new SaveCancelled();
+}
+// 整筆寫入（存檔前先檢查有沒有被別的裝置改過）
+async function writeProducts(list,{check=true}={}){
+  if(check)await ensureNoConflict(list);
+  for(let i=0;i<list.length;i+=400){ // 一次批次寫入最多 500 筆
+    const chunk=list.slice(i,i+400);
+    const stamp=Date.now();
+    const batch=writeBatch(db);
+    chunk.forEach(p=>batch.set(doc(productsCol(),p.id),{...sanitizeProductForWrite(p),updatedAt:stamp}));
+    await batch.commit();
+    chunk.forEach(p=>p.updatedAt=stamp);
+  }
+}
+// 只寫指定的幾個欄位（沒有值的欄位略過），其他欄位維持資料庫裡的樣子
+async function patchProducts(list,fields){
+  for(let i=0;i<list.length;i+=400){
+    const chunk=list.slice(i,i+400);
+    const stamp=Date.now();
+    const batch=writeBatch(db);
+    chunk.forEach(p=>{
+      const data={updatedAt:stamp};
+      fields.forEach(k=>{if(p[k]!==undefined)data[k]=p[k]});
+      batch.set(doc(productsCol(),p.id),data,{merge:true});
+    });
+    await batch.commit();
+    chunk.forEach(p=>p.updatedAt=stamp);
+  }
 }
 // 商品文件只存封面照＋photoCount，完整多張照片存在 products/{id}/gallery/full 子文件，
 // 編輯商品時才讀取，前台清單／表格讀取才不會把所有照片都抓下來。
@@ -1439,14 +1506,12 @@ window.bulkAutoDesc=async function(){
   btn.disabled=true;
   btn.textContent="產生中…";
   try{
-    const batch=writeBatch(db);
     targets.forEach(p=>{
       const catName=getMainName(p.mainCat);
       const subName=getSubName(p.mainCat,p.subCat);
       p.desc=autoGenerateDesc(p.name,catName,subName);
-      batch.set(doc(productsCol(),p.id),sanitizeProductForWrite(p));
     });
-    await batch.commit();
+    await patchProducts(targets,["desc"]);
     toast(`已為 ${targets.length} 個商品產生文案並儲存 ☁️`);
   }catch(e){
     toast("批次產生失敗："+(e.message||String(e)),4000);
@@ -2286,9 +2351,7 @@ function deleteTagRequest(key){
     affected.forEach(p=>{p.badges=(p.badges||[]).filter(b=>b!==key)});
     (async()=>{
       try{
-        const batch=writeBatch(db);
-        affected.forEach(p=>batch.set(doc(productsCol(),p.id),p));
-        await batch.commit();
+        await patchProducts(affected,["badges"]);
       }catch(e){
         toast("商品標籤更新寫入失敗："+(e.message||String(e)),4000);
       }
@@ -2454,14 +2517,14 @@ window.saveProduct=async function(){
     let product;
     if(index>=0){
       const prev=products[index];
-      product={id:editingProductId,status:prev.status,sortOrder:prev.sortOrder,...data};
+      product={id:editingProductId,status:prev.status,sortOrder:prev.sortOrder,updatedAt:prev.updatedAt,...data};
       // 在垃圾桶裡改內容也要記得是什麼時候丟的，30 天到期一樣會自動清掉
       if(prev.status==="trashed")Object.assign(product,{trashedAt:prev.trashedAt??Date.now(),trashedFrom:prev.trashedFrom||"active"});
     }else{
       product={id:uid(),status:"active",sortOrder:nextSortOrder(),...data};
     }
     try{
-      await setDoc(doc(productsCol(),product.id),product);
+      await writeProducts([product],{check:index>=0});
     }catch(e){
       // 沒存進去：畫面跟表格都不動，編輯視窗留著，改好的內容還在，可以再按一次
       showProductSaveError(e,"儲存失敗");
@@ -2493,6 +2556,7 @@ window.saveProduct=async function(){
   }
 };
 function showProductSaveError(e,prefix){
+  if(e?.cancelled){toast(e.message+"（編輯視窗還開著，改好的內容還在）",7000);return}
   const msg=e.message||String(e);
   if(/exceeds the maximum allowed size/i.test(msg))toast(`${prefix}：這個商品的照片加起來太大了，請減少照片張數，或用「調整照片位置與縮放」裁切掉不必要的部分後再試一次`,6000);
   else toast(`${prefix}：${msg}（編輯視窗還開著，可以再按一次「儲存商品」）`,6000);
@@ -2791,7 +2855,8 @@ window.confirmRestore=async function(){
     step="商品";
     for(let i=0;i<data.products.length;i+=400){
       const batch=writeBatch(db);
-      data.products.slice(i,i+400).forEach(p=>batch.set(doc(productsCol(),p.id),p));
+      const stamp=Date.now();
+      data.products.slice(i,i+400).forEach(p=>batch.set(doc(productsCol(),p.id),{...p,updatedAt:stamp}));
       await batch.commit();
     }
     step="照片";
@@ -3161,7 +3226,7 @@ window.confirmCSVImport=async function(){
   btn.disabled=true;
   btn.textContent="套用中…";
   try{
-    const batch=writeBatch(db);
+    await ensureNoConflict(pendingCSVChanges.map(c=>c.product));
     pendingCSVChanges.forEach(c=>{
       if(c.mainCatChanged)c.product.mainCat=c.newMainCat;
       if(c.subCatChanged)c.product.subCat=c.newSubCat;
@@ -3174,12 +3239,11 @@ window.confirmCSVImport=async function(){
       }
       if(c.priceChanged)c.product.price=c.newPrice;
       if(c.statusChanged)c.product.status=c.newStatus;
-      batch.set(doc(productsCol(),c.product.id),sanitizeProductForWrite(c.product));
     });
-    await batch.commit();
+    await writeProducts(pendingCSVChanges.map(c=>c.product),{check:false});
     toast(`已套用 ${pendingCSVChanges.length} 筆變更 ☁️`);
   }catch(e){
-    toast("套用失敗："+(e.message||String(e)),4000);
+    toast(saveErrorText(e,"套用失敗"),e.cancelled?6000:4000);
   }
   btn.disabled=false;
   btn.textContent="確認套用變更";

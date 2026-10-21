@@ -31,7 +31,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=5">
+<link rel="modulepreload" href="/shop-render.js?v=6">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -1721,7 +1721,7 @@ footer a:hover{color:var(--color-on-dark)}
   <button class="lb-arrow" id="lbNext" style="display:none" onclick="lbNav(1)" aria-label="下一張">›</button>
   <div class="lb-layout">
     <div class="lb-left">
-      <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1789458371/cpylpqjfkzdxlbffqk6t.jpg" alt="塑膠抽 商品照片 1" fetchpriority="high"></div>
+      <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1789458371/cpylpqjfkzdxlbffqk6t.jpg" alt="塑膠抽（麻將桌） 商品照片 1" fetchpriority="high"></div>
       <div class="lb-thumbs" id="lbThumbs"></div>
       <div class="lb-counter" id="lbCounter"></div>
       <div class="lb-hint">滑鼠移到圖片上會局部放大；縮圖、方向鍵可切換照片，ESC 關閉。</div>
@@ -1774,7 +1774,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts}from"/shop-render.js?v=5";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt}from"/shop-render.js?v=6";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2236,7 +2236,7 @@ function renderProducts(animate=true){
       cover.src=normalizePhotoUrl(photos[0],600);
       cover.srcset=buildSrcset(photos[0],GRID_IMG_WIDTHS);
       cover.sizes=GRID_IMG_SIZES;
-      cover.alt=product.name;
+      cover.alt=photoAlt(product,state.catalog);
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
       fadeInOnLoad(cover,wrap);
       cover.onerror=()=>showBrokenImage(wrap,cover);
@@ -2249,7 +2249,7 @@ function renderProducts(animate=true){
           hoverImg.src=normalizePhotoUrl(src,600);
           hoverImg.srcset=buildSrcset(src,GRID_IMG_WIDTHS);
           hoverImg.sizes=GRID_IMG_SIZES;
-          hoverImg.alt=product.name+" hover";
+          hoverImg.alt=""; // 滑過去才出現的第二張照片，跟封面是同一件商品，不用再念一次
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
           wrap.appendChild(hoverImg);
@@ -2458,7 +2458,7 @@ function renderPicks(){
       cover.src=normalizePhotoUrl(photos[0],500);
       cover.srcset=buildSrcset(photos[0],PICK_IMG_WIDTHS);
       cover.sizes=PICK_IMG_SIZES;
-      cover.alt=product.name;
+      cover.alt=photoAlt(product,state.catalog);
       cover.className="img-primary"+(totalCount>1?" has-secondary":"");
       fadeInOnLoad(cover,media);
       media.appendChild(cover);
@@ -2469,7 +2469,7 @@ function renderPicks(){
           hoverImg.src=normalizePhotoUrl(src,500);
           hoverImg.srcset=buildSrcset(src,PICK_IMG_WIDTHS);
           hoverImg.sizes=PICK_IMG_SIZES;
-          hoverImg.alt=product.name+" hover";
+          hoverImg.alt=""; // 滑過去才出現的第二張照片，跟封面是同一件商品，不用再念一次
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
           media.appendChild(hoverImg);
@@ -2558,7 +2558,7 @@ function renderHeroPhoto(){
   img.src=normalizePhotoUrl(withPhoto.photos[0],900);
   img.srcset=buildSrcset(withPhoto.photos[0],HERO_IMG_WIDTHS);
   img.sizes=HERO_IMG_SIZES;
-  img.alt=withPhoto.name;
+  img.alt=photoAlt(withPhoto,state.catalog);
 }
 const FAVORITES_KEY="xintong_favorites_v1";
 const FAVORITES_TTL_MS=4*60*60*1000; // 收藏清單超過 4 小時沒更新就視為過期
@@ -3104,7 +3104,7 @@ function lbRender(resetImage){
     img.src="";
     img.classList.remove("lb-img-loading");
   }
-  img.alt=lbProduct?.name?`${lbProduct.name} 商品照片 ${lbCurrent+1}`:"商品照片";
+  img.alt=lbProduct?photoAlt(lbProduct,state.catalog,lbCurrent+1):"商品照片";
   resetZoom();
   document.getElementById("lbPrev").style.display=lbImages.length>1?"grid":"none";
   document.getElementById("lbNext").style.display=lbImages.length>1?"grid":"none";
@@ -3115,7 +3115,7 @@ function lbRender(resetImage){
       const thumb=document.createElement("img");
       thumb.className="lb-thumb"+(index===lbCurrent?" active":"");
       thumb.src=src;
-      thumb.alt="";
+      thumb.alt=`第 ${index+1} 張照片`;
       thumb.onclick=()=>{lbCurrent=index;lbRender()};
       thumbs.appendChild(thumb);
     });

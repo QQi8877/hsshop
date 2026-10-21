@@ -15,7 +15,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf,getSizeSummary}from"../shop-render.js";
+import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,clipText,flattenLines,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -100,10 +100,6 @@ async function mapLimit(items,limit,fn){
 
 /* ── 商品頁 ─────────────────────────────────────────────────────── */
 const isWebUrl=url=>/^https?:\/\//i.test(url||"");
-function clip(text,max){
-  const chars=[...String(text||"")];
-  return chars.length>max?chars.slice(0,max-1).join("").trimEnd()+"…":chars.join("");
-}
 // JSON 放進 <script> 裡：把 < 換掉，內容裡就算有 </script> 也不會提早結束
 const jsonForScript=data=>JSON.stringify(data).replace(/</g,"\\u003c");
 // 在版型裡找到剛好一處符合的地方換掉；找不到（index.html 改過了）就停下來，不要產生壞掉的頁面
@@ -113,21 +109,15 @@ function replaceOnce(html,pattern,replacement,label){
   if(!hits||hits.length!==1)throw new Error(`index.html 裡找不到（或不只一處）：${label}`);
   return html.replace(re,()=>replacement);
 }
-// 說明的每一行（清單的每一項）接成一段：行尾沒有標點的補一個逗號
-function flatten(text){
-  return String(text||"").split(/\n+/).map(t=>t.replace(/\s+/g," ").trim()).filter(Boolean)
-    .reduce((acc,line)=>acc+(acc&&!/[。！？；，、：.!?,;:]$/.test(acc)?"，":"")+line,"");
-}
 function productPage(template,product,site,gallery,listed){
   const id=product.id;
   const url=`${SITE_ORIGIN}${productPath(id)}`;
   const mainName=mainNameOf(site.catalog,product.mainCat),subName=subNameOf(site.catalog,product.mainCat,product.subCat);
   const name=String(product.name||"商品");
-  const catLabel=subName||mainName;
-  const title=`${name}${catLabel&&!name.includes(catLabel)?`｜${catLabel}`:""}｜${SITE_NAME}`;
-  const descText=flatten(productDescText(product));
+  const title=productPageTitle(product,site.catalog);
+  const descText=flattenLines(productDescText(product));
   const sale=activeSalePrice(product),priceNumber=priceDigits(sale||product.price);
-  const description=clip(descText||`${catLabel?`${catLabel}：`:""}${name}，${getSizeSummary(product)}。台北市大安區文昌街信通家俱行，歡迎 LINE 詢問。`,150);
+  const description=productSearchDesc(product,site.catalog);
   const photos=(gallery.length?gallery:(product.photos||[])).filter(isWebUrl);
   const cover=photos[0]||"";
   const image=shareImageUrl(cover)||`${SITE_ORIGIN}/og-image.jpg`;
@@ -153,7 +143,7 @@ function productPage(template,product,site,gallery,listed){
     seller:{"@type":"Organization",name:SITE_NAME}}:undefined;
   const productData={"@context":"https://schema.org","@type":"Product",name,url,
     ...(photos.length?{image:photos.slice(0,6).map(p=>normalizePhotoUrl(p))}:{}),
-    ...(descText?{description:clip(descText,500)}:{}),
+    ...(descText?{description:clipText(descText,500)}:{}),
     sku:String(product.sku||id),
     category:[mainName,subName].filter(Boolean).join(" > "),
     brand:{"@type":"Brand",name:SITE_NAME},

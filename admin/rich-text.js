@@ -1,6 +1,6 @@
 // 商品說明的簡易富文本編輯器（貼上整理、文字樣式、清單）
 import{escapeHTML}from"./util.js?v=1";
-import{sanitizeRichHtml}from"../shop-render.js?v=5";
+import{sanitizeRichHtml,richTextIsEmpty}from"../shop-render.js?v=6";
 
 /* ── 商品說明簡易富文本編輯器（底線／文字大小／文字顏色／網底）─── */
 // AI 聊天複製出來的文字常帶 Markdown 符號（**粗體**、# 標題、- 清單、--- 分隔線），貼進說明時整理成網站用的格式
@@ -85,12 +85,7 @@ window.rteClear=function(id){
   sel.removeAllRanges();
   editor.focus();
 };
-// 看得到的字都沒有（只剩換行、空白、空的 <div>）就當成沒寫：把說明全選刪掉時，編輯框常會留下一個看不到的 <br>
-function richTextIsEmpty(html){
-  const s=String(html??"");
-  if(/<img\b/i.test(s))return false;
-  return !s.replace(/<[^>]*>/g,"").replace(/&nbsp;|&#160;|&#xa0;/gi,"").replace(/[\s\u200b\ufeff]/g,"");
-}
+// 「看得到的字都沒有就當成沒寫」跟前台用同一份判斷（shop-render.js）
 // 商品說明只留編輯器做得出來的格式（粗體、底線、文字大小、顏色、網底、清單、換行），其他一律拿掉；
 // 跟前台顯示時用的是同一個白名單（shop-render.js），後台看到的就是顧客看到的。
 function sanitizeRichText(html){return sanitizeRichHtml(html)}

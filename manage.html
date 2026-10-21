@@ -17,7 +17,7 @@
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="admin/manage.css?v=1">
+<link rel="stylesheet" href="admin/manage.css?v=2">
 </head>
 <body>
 
@@ -286,6 +286,16 @@
       <details class="ai-helper-prompt"><summary>看／修改提示詞內容</summary><textarea id="aiPromptText" aria-label="提示詞內容"></textarea><button type="button" onclick="copyAiPrompt(true)">複製修改後的提示詞</button></details>
     </div>
     <div class="rte-editor" id="pDesc" contenteditable="true" data-placeholder="材質、特色說明"></div>
+    <label for="pSeoDesc">Google 搜尋說明（選填，留空就自動用商品說明的前幾句）</label>
+    <textarea id="pSeoDesc" rows="2" maxlength="150" placeholder="例：台灣製鋁合金三層架，寬 39 公分，防鏽好清潔，適合廚房、浴室收納。"></textarea>
+    <div class="seo-preview">
+      <div class="seo-preview-head"><span>Google 搜尋結果大概會長這樣</span><span id="pSeoCount"></span></div>
+      <div class="seo-card" aria-hidden="true">
+        <div class="seo-url">hsintong.cc › p › <span id="pSeoId">商品編號</span></div>
+        <div class="seo-title" id="pSeoTitle"></div>
+        <div class="seo-desc" id="pSeoPreview"></div>
+      </div>
+    </div>
     </div>
     <div class="modal-footer">
       <button class="btn-secondary" type="button" onclick="requestCloseProductModal()">取消</button>
@@ -554,6 +564,6 @@
   </div>
 </div>
 
-<script type="module" src="admin/manage.js?v=2"></script>
+<script type="module" src="admin/manage.js?v=3"></script>
 </body>
 </html>

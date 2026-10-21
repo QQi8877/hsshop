@@ -172,6 +172,14 @@ export function flattenLines(text){
   return String(text||"").split(/\n+/).map(t=>t.replace(/\s+/g," ").trim()).filter(Boolean)
     .reduce((acc,line)=>acc+(acc&&!/[。！？；，、：.!?,;:]$/.test(acc)?"，":"")+line,"");
 }
+// 照片的替代文字（alt）：Google 圖片搜尋、讀螢幕軟體靠它知道照片裡是什麼。
+// 不用另外填，自動用「商品名稱（分類）」；商品頁的大圖再加上第幾張。
+export function photoAlt(product,catalog,n){
+  const name=String(product?.name||"商品");
+  const cat=subNameOf(catalog,product?.mainCat,product?.subCat)||(product?.mainCat?mainNameOf(catalog,product.mainCat):"");
+  const base=cat&&!name.includes(cat)?`${name}（${cat}）`:name;
+  return n?`${base} 商品照片 ${n}`:base;
+}
 export function productPageTitle(product,catalog){
   const name=String(product.name||"商品");
   const catLabel=subNameOf(catalog,product.mainCat,product.subCat)||mainNameOf(catalog,product.mainCat);

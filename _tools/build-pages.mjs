@@ -15,7 +15,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,clipText,flattenLines,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -166,7 +166,7 @@ function productPage(template,product,site,gallery,listed){
   // 跟前台打開商品時第一張照片用的網址一樣（600 寬），前台接手時不用重新下載
   const coverUrl=(product.photos||[]).filter(Boolean)[0];
   html=replaceOnce(html,`<img id="lbImg" src="" alt="">`,
-    `<img id="lbImg" src="${escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):"")}" alt="${escapeHTML(`${name} 商品照片 1`)}" fetchpriority="high">`,"#lbImg");
+    `<img id="lbImg" src="${escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):"")}" alt="${escapeHTML(photoAlt(product,site.catalog,1))}" fetchpriority="high">`,"#lbImg");
   html=replaceOnce(html,`<div class="lb-info" id="lbInfo"></div>`,
     `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{productUrl:url,similar:similarProducts(product,listed,site.catalog)})}</div>`,"#lbInfo");
   return html;

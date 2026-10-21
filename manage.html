@@ -63,9 +63,10 @@
           <button onclick="closeHeaderDropdowns();openHeatReport()">📊 詢價熱度</button>
           <button onclick="closeHeaderDropdowns();downloadFullBackup()">💾 下載完整備份</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('backupFileInput').click()">📂 從備份還原</button>
-          <div class="menu-label">舊照片搬到圖床</div>
-          <button onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
-          <button onclick="closeHeaderDropdowns();undoMigratePhotosToCloudinary()">↩ 復原上次搬遷</button>
+          <div id="migrateMenu" hidden>
+            <div class="menu-label">照片圖床</div>
+            <button id="migrateMenuBtn" onclick="closeHeaderDropdowns();migratePhotosToCloudinary()">☁️ 搬遷照片到圖床</button>
+          </div>
         </div></div>
       </div>
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVImport(event)">
@@ -110,7 +111,7 @@
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="sync-btn" id="bulkAutoDescBtn" onclick="bulkAutoDesc()">🪄 批次產生缺說明商品文案</button>
-          <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()">套用目前排序到前台 →</button>
+          <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()" title="拖曳調整的順序會自動存好；這顆按鈕是把前台順序一次改成表格目前的排法">依「商品名稱（筆畫）」重排前台順序 →</button>
         </div>
       </div>
       <div class="quickcat-bar" id="quickCatBar">

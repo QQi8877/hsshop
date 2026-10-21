@@ -14,7 +14,7 @@ import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https:
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=3";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{sanitizeRichHtml,catalogOrderCompare}from"../shop-render.js?v=5";
+import{catalogOrderCompare}from"../shop-render.js?v=5";
 import{escapeHTML}from"./util.js?v=1";
 import{uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=1";
 import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=1";
@@ -178,7 +178,7 @@ async function syncOrderToFrontend(){
   const active=products.filter(isLive);
   const archived=products.filter(p=>p.status==="archived"); // 垃圾桶裡的商品不參與排序
   const sorted=active.slice().sort((a,b)=>sortDir*sortCompare(a,b));
-  if(!confirm(`將以目前排序方式（${document.querySelector("thead th.sorted")?.textContent.trim()||"商品名稱・筆畫"}）覆蓋前台商品的顯示順序，共 ${sorted.length} 個商品。確定要套用嗎？`))return;
+  if(!confirm(`將依「${sortLabel()}」重新排列前台商品的顯示順序（每個分類裡面照這個順序排），共 ${sorted.length} 個商品。確定要套用嗎？`))return;
   btn.disabled=true;
   btn.textContent="同步中…";
   try{
@@ -190,7 +190,19 @@ async function syncOrderToFrontend(){
     toast("同步失敗："+(e.message||String(e)),4000);
   }
   btn.disabled=false;
-  btn.textContent="套用目前排序到前台 →";
+  renderTable();
+}
+// 目前表格照哪一欄排（給「依○○重排前台順序」按鈕用）
+function sortLabel(){
+  const th=document.querySelector(`thead th[data-sort="${sortKey}"]`);
+  return (th?.textContent||"商品名稱").replace(/[▲▼↑↓]/g,"").trim();
+}
+// 拖曳調整順序是拖完就存好；這顆按鈕是「照目前排序欄位一次重排」，表格本身就是自訂順序時不用顯示
+function updateSyncBtn(){
+  const btn=document.getElementById("syncBtn");
+  if(!btn||btn.disabled)return;
+  btn.style.display=sortKey==="order"?"none":"";
+  btn.textContent=`依「${sortLabel()}」重排前台順序 →`;
 }
 window.syncOrderToFrontend=syncOrderToFrontend;
 
@@ -1176,6 +1188,7 @@ async function reorderProductRow(srcId,targetId){
   renderTable();
   try{
     await patchProducts(list,["sortOrder"]);
+    toast("前台順序已更新 ☁️");
   }catch(e){
     toast("排序更新失敗："+(e.message||String(e)),4000);
   }
@@ -1275,16 +1288,15 @@ async function patchProducts(list,fields){
 async function loadGallery(id){
   try{
     const snap=await getDoc(galleryDocRef(id));
-    if(!snap.exists())return{photos:[],originals:[],backup:null};
+    if(!snap.exists())return{photos:[],originals:[]};
     const data=snap.data();
     return{
       photos:(data.photos||[]).filter(Boolean),
-      originals:data.photoOriginals||[],
-      backup:data.batchBackup||null
+      originals:data.photoOriginals||[]
     };
   }catch(e){
     console.warn("圖庫讀取失敗",e);
-    return{photos:[],originals:[],backup:null};
+    return{photos:[],originals:[]};
   }
 }
 // Firestore 單一文件硬性上限 1,048,576 bytes；抓保守一點的安全值，
@@ -1293,10 +1305,9 @@ const GALLERY_SIZE_BUDGET=950000;
 function galleryPayloadSize(photos,originals,batchBackup){
   return JSON.stringify({photos,photoOriginals:originals,batchBackup}).length;
 }
-async function saveGallery(id,photos,originals,batchBackup=null){
-  // batchBackup 預設清空：一般編輯商品照片（不是跑批次工具）本來就該把舊的批次備份
-  // 作廢，不然之後按「復原上次批次」會把已經手動改過的照片蓋回更舊的批次備份，
-  // 造成資料倒退。只有 migratePhotosToCloudinary／undoMigratePhotosToCloudinary 會明確傳值進來。
+async function saveGallery(id,photos,originals){
+  // batchBackup 是以前「復原上次搬遷」用的備份，那個功能拿掉了，存檔時順便清掉、空出文件空間
+  const batchBackup=null;
   const cleanPhotos=(photos||[]).filter(Boolean);
   const rawOriginals=originals||[];
   // 原圖畫質/尺寸階梯式往下調，直到整包資料在安全範圍內為止：多數情況第一階
@@ -1524,15 +1535,24 @@ window.bulkAutoDesc=async function(){
 // 把還是 base64 的商品照片（通常是這個 Cloudinary 機制上線前留下的舊資料）
 // 上傳到 Cloudinary、換成網址存起來。已經是網址的（http 開頭，不管是本來就
 // 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
+// 還沒搬到圖床的照片（圖床上傳失敗時暫存在資料庫裡的 base64）：有才在「商品工具」選單顯示搬遷按鈕
+const isLocalPhoto=src=>/^data:/i.test(src||"");
+function updateMigrateMenu(){
+  const n=products.filter(p=>isLive(p)&&(p.photos||[]).some(isLocalPhoto)).length
+    +(isLocalPhoto(layout.heroImage)?1:0)+catalog.filter(c=>isLocalPhoto(c.image)).length;
+  const wrap=document.getElementById("migrateMenu");
+  if(!wrap)return;
+  wrap.hidden=!n;
+  document.getElementById("migrateMenuBtn").textContent=`☁️ 有 ${n} 處照片還沒搬到圖床`;
+}
 window.migratePhotosToCloudinary=async function(){
   const targets=products.filter(p=>isLive(p)&&(p.photos||[]).length);
   const heroIsBase64=/^data:/i.test(layout.heroImage||"");
   const catImagesBase64=catalog.filter(c=>/^data:/i.test(c.image||"")).length;
   if(!targets.length&&!heroIsBase64&&!catImagesBase64){toast("目前沒有可以搬遷的照片");return}
-  if(!confirm(`將把還沒搬過去的照片（base64 格式：商品照片、首頁大圖、分類磚圖）上傳到 Cloudinary、換成網址儲存，最多會檢查 ${targets.length} 個商品（已經是網址的會自動跳過）。\n\n執行前會先備份每個商品目前的照片，如果有問題可以用「↩ 復原上次搬遷」整批復原（只保留最近一次的備份，復原後備份就會清空；首頁大圖／分類磚圖不在這個備份範圍內）。確定要執行嗎？`))return;
+  if(!confirm(`將把還沒搬過去的照片（之前圖床上傳失敗、暫存在資料庫裡的商品照片、首頁大圖、分類磚圖）上傳到 Cloudinary、換成網址儲存，最多會檢查 ${targets.length} 個商品（已經是網址的會自動跳過）。確定要執行嗎？`))return;
   toast(`開始搬遷照片到圖床，共檢查 ${targets.length} 個商品…`,4000);
   let done=0,skipped=0,failed=0;
-  const isUrl=src=>/^https?:\/\//i.test(src||"");
   // 只有 Cloudinary（已經搬過）跟 Google Drive（本來就選擇留在 Drive、不搬）
   // 才算「不用再處理」；其他 http(s) 網址通常是之前 Cloudinary 上傳失敗、
   // 退回直接存原始連結的情況，這次還是要再嘗試搬到 Cloudinary。
@@ -1559,17 +1579,10 @@ window.migratePhotosToCloudinary=async function(){
         newOriginals.push(origSrc===sourcePhotos[i]?uploaded:await migrateOne(origSrc));
       }
       if(!newFullPhotos.length)continue;
-      // 蓋掉之前的照片以前，先把「這次搬遷前」的狀態存成備份，
-      // 讓 undoMigratePhotosToCloudinary 之後可以整批復原回去。這裡連原圖
-      // （sourceOriginals）也要一起備份——跟原本的「統一比例」工具不同，
-      // 這個工具連原圖也會被搬去 Cloudinary、一起換成網址，復原時兩邊都要還原。
-      const backup={thumb:p.photos[0]||"",fullPhotos:sourcePhotos,originals:sourceOriginals};
-      // 先寫圖庫子文件（含備份），確定成功以後才更新商品文件的縮圖——
-      // 這樣萬一圖庫寫入失敗，商品文件完全沒被動到，不會留下「縮圖已換新、
-      // 但備份沒存到」這種復原工具找不到、卻已經半搬遷的狀態。
-      await saveGallery(p.id,newFullPhotos,newOriginals,backup);
+      // 先寫圖庫子文件，確定成功以後才更新商品文件的封面縮圖（只寫封面那個欄位）
+      await saveGallery(p.id,newFullPhotos,newOriginals);
       p.photos=[isUrl(newFullPhotos[0])?newFullPhotos[0]:await resizeToThumb(newFullPhotos[0])];
-      await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
+      await patchProducts([p],["photos"]);
       done++;
     }catch(e){
       console.warn("搬遷照片失敗："+p.name,e);
@@ -1600,32 +1613,8 @@ window.migratePhotosToCloudinary=async function(){
     }
   }
   if(metaChanged)await saveMeta();
+  updateMigrateMenu();
   toast(failed?`完成 ${done} 個，跳過 ${skipped} 個，${failed} 個失敗`:`已搬遷 ${done} 個商品的照片，跳過 ${skipped} 個（本來就是網址）☁️`,4500);
-  renderTable();
-};
-
-window.undoMigratePhotosToCloudinary=async function(){
-  toast("檢查備份中…",2000);
-  const withBackup=[];
-  for(const p of products){
-    const gallery=await loadGallery(p.id);
-    if(gallery.backup)withBackup.push({p,gallery});
-  }
-  if(!withBackup.length){toast("沒有可以復原的搬遷紀錄");return}
-  if(!confirm(`找到 ${withBackup.length} 個商品有上次「搬遷照片到圖床」的備份，確定要整批復原嗎？復原後這份備份就會清空，無法再復原第二次。`))return;
-  let done=0,failed=0;
-  for(const {p,gallery} of withBackup){
-    try{
-      p.photos=[gallery.backup.thumb||""];
-      await setDoc(doc(productsCol(),p.id),sanitizeProductForWrite(p));
-      await saveGallery(p.id,gallery.backup.fullPhotos,gallery.backup.originals||gallery.originals,null);
-      done++;
-    }catch(e){
-      console.warn("復原失敗："+p.name,e);
-      failed++;
-    }
-  }
-  toast(failed?`復原 ${done} 個，${failed} 個失敗`:`已復原 ${done} 個商品的照片 ☁️`,4500);
   renderTable();
 };
 
@@ -2507,6 +2496,7 @@ window.saveProduct=async function(){
   saveBtn.disabled=true;
   saveBtn.textContent="儲存中…";
   try{
+    await retryLocalPhotos();
     const fullPhotos=workingPhotos.filter(Boolean).map(url=>/drive\.google\.com/i.test(url)?convertGdriveUrl(url):url);
     // 原圖陣列要跟 fullPhotos 用同一套「哪些欄位有值」規則過濾，位置才會對得上
     const fullOriginals=workingPhotos.map((p,i)=>p?(workingPhotosOriginal[i]||""):null).filter(v=>v!==null);
@@ -2555,6 +2545,21 @@ window.saveProduct=async function(){
     saveBtn.textContent="儲存商品";
   }
 };
+// 之前圖床上傳失敗、暫存成 base64 的照片，存檔時再試一次搬到圖床；還是失敗就照舊先存在資料庫
+async function retryLocalPhotos(){
+  const upload=async src=>uploadToCloudinary(await(await fetch(src)).blob());
+  for(let i=0;i<workingPhotos.length;i++){
+    const photo=workingPhotos[i],original=workingPhotosOriginal[i];
+    if(!isLocalPhoto(photo)&&!isLocalPhoto(original))continue;
+    try{
+      const url=isLocalPhoto(photo)?await upload(photo):photo;
+      workingPhotos[i]=url;
+      if(isLocalPhoto(original))workingPhotosOriginal[i]=original===photo?url:await upload(original);
+    }catch(e){
+      console.warn("暫存照片補傳圖床失敗，先照舊存在資料庫",e);
+    }
+  }
+}
 function showProductSaveError(e,prefix){
   if(e?.cancelled){toast(e.message+"（編輯視窗還開著，改好的內容還在）",7000);return}
   const msg=e.message||String(e);
@@ -3316,6 +3321,8 @@ window.renderTable=function(){
     if(m.noPhoto)counts.noPhoto++;
   });
   Object.keys(counts).forEach(k=>{const el=document.getElementById("fc-"+k);if(el)el.textContent=counts[k]});
+  updateSyncBtn();
+  updateMigrateMenu();
   const list=filterAndSort(catFiltered);
 
   // 篩選條件（搜尋／狀態篩選／分類／排序欄位）只要有任何一項變動，分頁就跳回第 1 頁，

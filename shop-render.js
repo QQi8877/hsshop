@@ -160,6 +160,41 @@ export function productDescText(product){
   return decodeEntities(html.replace(/<br>|<\/(?:p|div|li|h[3-6]|blockquote)>/g,"\n").replace(/<[^>]*>/g,"")).replace(/[ \t ]+/g," ").replace(/\s*\n\s*/g,"\n").trim();
 }
 
+/* ── Google 搜尋結果顯示的標題、說明 ─────────────────────────────
+   每小時產生商品頁（_tools/build-pages.mjs）時用，後台商品視窗的「Google 搜尋預覽」也用同一份，
+   後台看到的就是 Google 會拿到的。 */
+export function clipText(text,max){
+  const chars=[...String(text||"")];
+  return chars.length>max?chars.slice(0,max-1).join("").trimEnd()+"…":chars.join("");
+}
+// 說明的每一行（清單的每一項）接成一段：行尾沒有標點的補一個逗號
+export function flattenLines(text){
+  return String(text||"").split(/\n+/).map(t=>t.replace(/\s+/g," ").trim()).filter(Boolean)
+    .reduce((acc,line)=>acc+(acc&&!/[。！？；，、：.!?,;:]$/.test(acc)?"，":"")+line,"");
+}
+// 照片的替代文字（alt）：Google 圖片搜尋、讀螢幕軟體靠它知道照片裡是什麼。
+// 不用另外填，自動用「商品名稱（分類）」；商品頁的大圖再加上第幾張。
+export function photoAlt(product,catalog,n){
+  const name=String(product?.name||"商品");
+  const cat=subNameOf(catalog,product?.mainCat,product?.subCat)||(product?.mainCat?mainNameOf(catalog,product.mainCat):"");
+  const base=cat&&!name.includes(cat)?`${name}（${cat}）`:name;
+  return n?`${base} 商品照片 ${n}`:base;
+}
+export function productPageTitle(product,catalog){
+  const name=String(product.name||"商品");
+  const catLabel=subNameOf(catalog,product.mainCat,product.subCat)||mainNameOf(catalog,product.mainCat);
+  return `${name}${catLabel&&!name.includes(catLabel)?`｜${catLabel}`:""}｜${SITE_NAME}`;
+}
+// 後台有填「Google 搜尋說明」就用那段；沒填就用商品說明的前幾句；說明也沒寫就用分類、名稱、尺寸湊一段
+export function productSearchDesc(product,catalog){
+  const custom=String(product.seoDesc||"").replace(/\s+/g," ").trim();
+  if(custom)return clipText(custom,150);
+  const descText=flattenLines(productDescText(product));
+  const name=String(product.name||"商品");
+  const catLabel=subNameOf(catalog,product.mainCat,product.subCat)||mainNameOf(catalog,product.mainCat);
+  return clipText(descText||`${catLabel?`${catLabel}：`:""}${name}，${getSizeSummary(product)}。台北市大安區文昌街信通家俱行，歡迎 LINE 詢問。`,150);
+}
+
 /* ── 商品資料 ───────────────────────────────────────────────────── */
 export function normalizeProduct(product){
   product.photos=product.photos||[product.img,product.img2].filter(Boolean);

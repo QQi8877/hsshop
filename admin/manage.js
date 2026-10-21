@@ -1533,9 +1533,6 @@ window.bulkAutoDesc=async function(){
   renderTable();
 };
 
-// 把還是 base64 的商品照片（通常是這個 Cloudinary 機制上線前留下的舊資料）
-// 上傳到 Cloudinary、換成網址存起來。已經是網址的（http 開頭，不管是本來就
-// 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
 // 還沒搬到圖床的照片（圖床上傳失敗時暫存在資料庫裡的 base64）：有才在「商品工具」選單顯示搬遷按鈕
 const isLocalPhoto=src=>/^data:/i.test(src||"");
 function updateMigrateMenu(){
@@ -1546,6 +1543,9 @@ function updateMigrateMenu(){
   wrap.hidden=!n;
   document.getElementById("migrateMenuBtn").textContent=`☁️ 有 ${n} 處照片還沒搬到圖床`;
 }
+// 把還是 base64 的商品照片（通常是這個 Cloudinary 機制上線前留下的舊資料）
+// 上傳到 Cloudinary、換成網址存起來。已經是網址的（http 開頭，不管是本來就
+// 貼連結、還是之前已經搬過的）直接跳過，這個工具可以放心重複執行。
 window.migratePhotosToCloudinary=async function(){
   const targets=products.filter(p=>isLive(p)&&(p.photos||[]).length);
   const heroIsBase64=/^data:/i.test(layout.heroImage||"");

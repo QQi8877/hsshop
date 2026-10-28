@@ -1,4 +1,5 @@
-# 每件商品一個網址：每小時從 Firebase 讀出上架中的商品，產生 p/商品編號.html、sitemap.xml、data/site.json
+# 每件商品一個網址：每小時從 Firebase 讀出上架中的商品，產生 p/商品編號.html、c/分類編號.html、sitemap.xml、
+# data/site.json、llms.txt，並把店家資料、聯繫資訊、分類按鈕填進 index.html
 # （說明見 _tools/build-pages.mjs），並把標題字型瘦身成只含網站用到的字（_tools/subset-fonts.py）。
 # 有變動才會提交，沒變動什麼都不做。
 # 也可以在 GitHub 的 Actions 分頁手動按「Run workflow」立刻更新一次。
@@ -60,7 +61,7 @@ jobs:
             if [ "${{ steps.fonttools.outcome }}" = "success" ]; then
               python _tools/subset-fonts.py || echo "字型瘦身失敗，沿用上一次的小檔案"
             fi
-            git add -A p data sitemap.xml fonts
+            git add -A p c data sitemap.xml fonts index.html llms.txt
             if git diff --cached --quiet; then
               echo "沒有變動"
               exit 0

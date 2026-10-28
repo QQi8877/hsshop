@@ -14,6 +14,9 @@
 (function(){
   var m=/^\/p\/([^\/]+?)(?:\.html)?\/?$/.exec(location.pathname);
   if(m)location.replace("/#product-"+m[1]);
+  // 分類網址（/c/分類編號）找不到：通常是剛新增的分類，分類頁還沒產生好。轉到首頁、直接選好那個分類
+  var c=/^\/c\/([^\/]+?)(?:\.html)?\/?$/.exec(location.pathname);
+  if(c)location.replace("/#cat-"+c[1]);
 })();
 </script>
 <style>

@@ -2,6 +2,12 @@
    從 Firebase 讀出上架中的商品（跟前台讀的是同一份公開資料），產生：
    - p/<商品編號>.html：每件商品自己的網頁（https://hsintong.cc/p/商品編號）。內容就是首頁＋已經打開的
      那件商品，Google 可以一件一件收錄；分享到 LINE／Facebook 時顯示那件商品的照片、名稱、介紹。
+   - c/<分類編號>.html：每個有商品的主分類、子分類一頁（https://hsintong.cc/c/分類編號）。內容是首頁＋選好
+     那個分類的商品，「摺疊桌」「藤椅」這類搜尋才有頁面可以排上去。
+   - index.html 裡標了 id 的幾個地方：給 Google 看的店家資料（structuredData）、聯繫資訊（contactItems）、
+     分類按鈕（categoriesBar、catSidebar）照後台的資料填好，不用等網頁的程式跑完 Google 就讀得到。
+     其他地方不動，所以改版型照常直接改 index.html。
+   - llms.txt：給 AI 搜尋（ChatGPT、Perplexity…）看的網站簡介、分類、商品清單。
    - sitemap.xml：告訴 Google 有哪些網址、什麼時候更新過。
    - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 index.html 的啟動流程）。
    - fonts/heading-chars.txt：網站標題可能用到的所有字（版型裡的字＋分類、頁面文字、商品名稱），
@@ -15,7 +21,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -107,8 +113,102 @@ function replaceOnce(html,pattern,replacement,label){
   const re=pattern instanceof RegExp?pattern:new RegExp(pattern.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"));
   const hits=html.match(new RegExp(re.source,"g"));
   if(!hits||hits.length!==1)throw new Error(`index.html 裡找不到（或不只一處）：${label}`);
-  return html.replace(re,()=>replacement);
+  return html.replace(re,typeof replacement==="function"?replacement:()=>replacement);
 }
+// 麵包屑（Google 搜尋結果網址那一行會顯示成「信通家俱行 › 桌子 › 摺疊桌」）
+function breadcrumbs(items){
+  return {"@context":"https://schema.org","@type":"BreadcrumbList",
+    itemListElement:items.map(([name,item],i)=>({"@type":"ListItem",position:i+1,name,item}))};
+}
+// 商品、分類的上層分類（有分類頁的才放）
+function categoryCrumbs(mainId,subId,catalog,listed){
+  const pages=new Set(categoryPages(catalog,listed).map(p=>p.id));
+  const out=[];
+  if(pages.has(mainId))out.push([mainNameOf(catalog,mainId),`${SITE_ORIGIN}${categoryPath(mainId)}`]);
+  if(subId&&pages.has(subId))out.push([subNameOf(catalog,mainId,subId),`${SITE_ORIGIN}${categoryPath(subId)}`]);
+  return out;
+}
+// 商品頁、分類頁的主題是商品／分類，最大的標題（h1）給它們；首頁大圖那行店名改成一般文字
+function demoteHeroHeading(html){
+  return replaceOnce(html,/<h1 class="hero-title"([^>]*)>([\s\S]*?)<\/h1>/,(_,attrs,inner)=>`<p class="hero-title"${attrs}>${inner}</p>`,"hero <h1>");
+}
+// 換掉某個 id 的元素裡面的內容（元素本身、其他屬性不動）
+function fillById(html,tag,id,inner,label){
+  return replaceOnce(html,new RegExp(`(<${tag}\\b[^>]*\\bid="${id}"[^>]*>)[\\s\\S]*?(<\\/${tag}>)`),(_,open,close)=>open+inner+close,label);
+}
+
+/* ── 首頁：店家資料、聯繫資訊、分類按鈕直接寫好 ───────────────────── */
+function homePage(template,site,listed){
+  let html=template;
+  html=fillById(html,"script","structuredData",jsonForScript(storeJsonLd(site.contact,{image:shareImageUrl(site.layout?.heroImage||"")||undefined})),"structuredData");
+  html=fillById(html,"p","contactItems",contactItemsHtml(site.contact),"contactItems");
+  const nav=categoryNavHtml(site.catalog,listed);
+  html=fillById(html,"div","categoriesBar",nav.bar,"categoriesBar");
+  html=fillById(html,"aside","catSidebar",nav.side,"catSidebar");
+  return html;
+}
+
+/* ── 分類頁 ─────────────────────────────────────────────────────── */
+function categoryPage(home,page,site,listed){
+  const url=`${SITE_ORIGIN}${categoryPath(page.id)}`;
+  const title=categoryPageTitle(page,site.contact);
+  const intro=categoryIntro(page,site.contact);
+  const description=clipText(intro,150);
+  const cover=page.products.map(p=>(p.photos||[]).filter(isWebUrl)[0]).find(Boolean)||"";
+  const image=shareImageUrl(cover)||`${SITE_ORIGIN}/og-image.jpg`;
+  const homeTitle=(home.match(/<title>([^<]*)<\/title>/)||[])[1]||SITE_NAME;
+  let html=home;
+  html=replaceOnce(html,/<title>[^<]*<\/title>/,`<title data-home-title="${escapeHTML(homeTitle)}">${escapeHTML(title)}</title>`,"<title>");
+  html=replaceOnce(html,/<meta name="description" content="[^"]*">/,`<meta name="description" content="${escapeHTML(description)}">`,"meta description");
+  html=replaceOnce(html,/<meta property="og:title" content="[^"]*">/,`<meta property="og:title" content="${escapeHTML(title)}">`,"og:title");
+  html=replaceOnce(html,/<meta property="og:description" content="[^"]*">/,`<meta property="og:description" content="${escapeHTML(description)}">`,"og:description");
+  html=replaceOnce(html,/<meta property="og:url" content="[^"]*">/,`<meta property="og:url" content="${escapeHTML(url)}">`,"og:url");
+  html=replaceOnce(html,/<meta property="og:image" content="[^"]*">/,`<meta property="og:image" content="${escapeHTML(image)}">`,"og:image");
+  html=replaceOnce(html,/<meta property="og:image:alt" content="[^"]*">/,`<meta property="og:image:alt" content="${escapeHTML(title)}">`,"og:image:alt");
+  html=replaceOnce(html,/<meta name="twitter:title" content="[^"]*">/,`<meta name="twitter:title" content="${escapeHTML(title)}">`,"twitter:title");
+  html=replaceOnce(html,/<meta name="twitter:description" content="[^"]*">/,`<meta name="twitter:description" content="${escapeHTML(description)}">`,"twitter:description");
+  html=replaceOnce(html,/<meta name="twitter:image" content="[^"]*">/,`<meta name="twitter:image" content="${escapeHTML(image)}">`,"twitter:image");
+  html=replaceOnce(html,/<link rel="canonical" href="[^"]*">/,`<link rel="canonical" href="${escapeHTML(url)}">`,"canonical");
+  // 這個分類的商品清單（每件商品頁的網址）＋麵包屑
+  const list={"@context":"https://schema.org","@type":"CollectionPage",name:title,url,description,
+    mainEntity:{"@type":"ItemList",numberOfItems:page.products.length,
+      itemListElement:page.products.map((p,i)=>({"@type":"ListItem",position:i+1,url:`${SITE_ORIGIN}${productPath(p.id)}`,name:String(p.name||"")}))}};
+  const crumbs=breadcrumbs([[SITE_NAME,`${SITE_ORIGIN}/`],...categoryCrumbs(page.main,page.sub,site.catalog,listed)]);
+  html=replaceOnce(html,"</head>",`<script type="application/ld+json">${jsonForScript(list)}</script>\n<script type="application/ld+json">${jsonForScript(crumbs)}</script>\n</head>`,"</head>");
+  // 一進來就是這個分類的商品（本月選品、分類磚先不放，前台換回「全部」才出現）
+  html=replaceOnce(html,"<body>",`<body class="cat-landing">`,"<body>");
+  html=demoteHeroHeading(html);
+  html=replaceOnce(html,/<h2 class="listing-title" id="listingTitle">[^<]*<\/h2>/,`<h1 class="listing-title" id="listingTitle">${escapeHTML(page.name)}</h1>`,"#listingTitle");
+  html=replaceOnce(html,/<p class="listing-intro" id="listingIntro" hidden><\/p>/,`<p class="listing-intro" id="listingIntro">${escapeHTML(intro)}</p>`,"#listingIntro");
+  const nav=categoryNavHtml(site.catalog,listed,page.main,page.sub);
+  html=fillById(html,"div","categoriesBar",nav.bar,"categoriesBar");
+  html=fillById(html,"aside","catSidebar",nav.side,"catSidebar");
+  html=replaceOnce(html,/<div class="sub-categories-bar" id="subCategoriesBar"><\/div>/,`<div class="sub-categories-bar" id="subCategoriesBar"${nav.sub?' style="display:flex"':""}>${nav.sub}</div>`,"#subCategoriesBar");
+  html=replaceOnce(html,/(<div class="products-grid" id="productsGrid">)[\s\S]*?(<\/div>\s*<\/div>\s*<\/section>)/,
+    (_,open,close)=>`${open}${page.products.map(p=>staticProductCardHtml(p,site.catalog)).join("")}\n    ${close}`,"#productsGrid");
+  return html;
+}
+
+/* ── llms.txt：給 AI 搜尋看的網站簡介 ──────────────────────────────── */
+function llmsTxt(home,site,listed,pages){
+  const desc=(home.match(/<meta name="description" content="([^"]*)">/)||[])[1]||"";
+  const c=site.contact||{};
+  const decode=t=>String(t).replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&amp;/g,"&");
+  const line=t=>String(t||"").replace(/\s+/g," ").trim();
+  const out=[`# ${SITE_NAME}`,"",`> ${line(decode(desc))}`,"","## 店家資訊",
+    ...[["地址",c.addr],["電話",c.phone],["LINE",c.line&&c.lineUrl?`${c.line}（${c.lineUrl}）`:c.line],["營業時間",c.hours],["信箱",c.email],["Google 地圖",c.mapUrl]]
+      .filter(([,v])=>v).map(([k,v])=>`- ${k}：${line(v)}`),
+    `- 網站：${SITE_ORIGIN}/`,"","## 商品分類",
+    ...pages.map(p=>`- [${p.sub?`${p.mainName} › ${p.name}`:p.name}](${SITE_ORIGIN}${categoryPath(p.id)})：${p.products.length} 款`),
+    "","## 商品",
+    ...listed.map(p=>{
+      const price=priceDigits(activeSalePrice(p)||p.price);
+      const bits=[getSizeSummary(p),price?`NT$${Number(price).toLocaleString("en-US")}`:"價格請洽詢"].filter(Boolean);
+      return `- [${line(p.name)}](${SITE_ORIGIN}${productPath(p.id)})：${bits.join("，")}`;
+    }),""];
+  return out.join("\n");
+}
+
 function productPage(template,product,site,gallery,listed){
   const id=product.id;
   const url=`${SITE_ORIGIN}${productPath(id)}`;
@@ -148,9 +248,8 @@ function productPage(template,product,site,gallery,listed){
     category:[mainName,subName].filter(Boolean).join(" > "),
     brand:{"@type":"Brand",name:SITE_NAME},
     ...(offers?{offers}:{})};
-  const crumbs={"@context":"https://schema.org","@type":"BreadcrumbList",itemListElement:[
-    {"@type":"ListItem",position:1,name:SITE_NAME,item:`${SITE_ORIGIN}/`},
-    {"@type":"ListItem",position:2,name,item:url}]};
+  const crumbs=breadcrumbs([[SITE_NAME,`${SITE_ORIGIN}/`],
+    ...categoryCrumbs(product.mainCat,product.subCat,site.catalog,listed),[name,url]]);
   const head=[
     priceNumber?`<meta property="product:price:amount" content="${priceNumber}">\n<meta property="product:price:currency" content="TWD">`:"",
     `<script type="application/ld+json" id="productData">${jsonForScript(productData)}</script>`,
@@ -159,6 +258,7 @@ function productPage(template,product,site,gallery,listed){
   html=replaceOnce(html,"</head>",`${head}\n</head>`,"</head>");
   // 商品頁一開始就是打開的（照片、名稱、價格、尺寸、說明都已經畫好），前台的程式載入後接手
   html=replaceOnce(html,"<body>",`<body class="lightbox-open">`,"<body>");
+  html=demoteHeroHeading(html);
   html=replaceOnce(html,/<div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">/,
     `<div id="lightbox" class="open" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="false" tabindex="-1" data-prerendered="${escapeHTML(id)}">`,"#lightbox");
   html=replaceOnce(html,`<button class="lb-arrow" id="lbPrev"`,`<button class="lb-arrow" id="lbPrev" style="display:none"`,"#lbPrev");
@@ -209,17 +309,20 @@ function headingChars(sources){
 const allStrings=v=>Array.isArray(v)?v.flatMap(allStrings):v&&typeof v==="object"?Object.values(v).flatMap(allStrings):typeof v==="string"?[v]:[];
 
 async function main(){
-  const template=await readFile(path.join(ROOT,"index.html"),"utf8");
+  const sourceHome=await readFile(path.join(ROOT,"index.html"),"utf8");
   const [meta,rows]=await Promise.all([loadMeta(),loadActiveProducts()]);
   // 一件商品都沒拿到幾乎一定是讀取出了問題：停下來，不要把現有的商品頁全部刪掉
   if(!rows.length)throw new Error("沒有讀到任何上架中的商品，這次不更新");
-  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{},buyInfo:meta.data.buyInfo||[]};
+  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{},buyInfo:meta.data.buyInfo||[],layout:meta.data.layout||{}};
   const updated=new Map(rows.map(r=>[r.data.id,r.updateTime]));
   const products=rows.map(r=>normalizeProduct({...r.data}));
   const listed=products.filter(p=>isSafeProductId(p.id)&&isListedProduct(p,site.catalog)).sort(catalogOrderCompare(site.catalog));
   const galleries=await mapLimit(listed,8,p=>(p.photoCount||0)>1?loadGallery(p.id):Promise.resolve([]));
 
   let changed=0;
+  // 首頁先填好（店家資料、聯繫資訊、分類按鈕），商品頁、分類頁都以填好的首頁為底
+  const template=homePage(sourceHome,site,listed);
+  if(await writeIfChanged(path.join(OUT,"index.html"),template))changed++;
   const pagesDir=path.join(OUT,"p");
   const keep=new Set();
   for(const [i,product] of listed.entries()){
@@ -232,8 +335,23 @@ async function main(){
   for(const file of await readdir(pagesDir).catch(()=>[])){
     if(file.endsWith(".html")&&!keep.has(file)){await unlink(path.join(pagesDir,file));removed++}
   }
+  // 分類頁：有商品的主分類、子分類各一頁；分類沒了（刪掉、隱藏、商品都下架）頁面就拿掉
+  const pages=categoryPages(site.catalog,listed).filter(p=>isSafeProductId(p.id));
+  const catDir=path.join(OUT,"c");
+  const keepCats=new Set();
+  for(const page of pages){
+    const file=`${page.id}.html`;
+    keepCats.add(file);
+    if(await writeIfChanged(path.join(catDir,file),categoryPage(template,page,site,listed)))changed++;
+  }
+  for(const file of await readdir(catDir).catch(()=>[])){
+    if(file.endsWith(".html")&&!keepCats.has(file)){await unlink(path.join(catDir,file));removed++}
+  }
+  if(await writeIfChanged(path.join(OUT,"llms.txt"),llmsTxt(template,site,listed,pages)))changed++;
   const lastmods=[meta.updateTime,...listed.map(p=>updated.get(p.id))].map(day).filter(Boolean).sort();
+  const newest=list=>list.map(p=>day(updated.get(p.id))).filter(Boolean).sort().pop();
   const sitemap=sitemapXml([{loc:`${SITE_ORIGIN}/`,lastmod:lastmods[lastmods.length-1]},
+    ...pages.map(page=>({loc:`${SITE_ORIGIN}${categoryPath(page.id)}`,lastmod:newest(page.products)})),
     ...listed.map(p=>({loc:`${SITE_ORIGIN}${productPath(p.id)}`,lastmod:day(updated.get(p.id))}))]);
   if(await writeIfChanged(path.join(OUT,"sitemap.xml"),sitemap))changed++;
   // month：每個月至少會變一次，讓 GitHub 每個月至少有一筆更新——公開的專案 60 天沒有任何更新，
@@ -243,7 +361,7 @@ async function main(){
     products:rows.map(r=>r.data).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
   if(await writeIfChanged(path.join(OUT,"data","site.json"),JSON.stringify(sortKeys(siteData))+"\n"))changed++;
   const shopRender=await readFile(path.join(ROOT,"shop-render.js"),"utf8");
-  const chars=headingChars([stripComments(template),stripComments(shopRender),
+  const chars=headingChars([stripComments(sourceHome),stripComments(shopRender),
     ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]]))),...products.map(p=>p.name)]);
   if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),chars))changed++;
   console.log(`上架中 ${rows.length} 件，產生商品頁 ${listed.length} 件；更新 ${changed} 個檔案，移除 ${removed} 個舊頁面`);

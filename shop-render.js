@@ -508,7 +508,7 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
         <div class="lb-product-cat">${escapeHTML(cat)}</div>
         <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單">${HEART_SVG}</button>
       </div>
-      <h2 class="lb-product-title" id="lbTitle">${escapeHTML(product.name||"")}</h2>
+      <h1 class="lb-product-title" id="lbTitle">${escapeHTML(product.name||"")}</h1>
       ${price?`<div class="lb-product-price">${price}${activeSalePrice(product,now)&&product.saleEnd?`<span class="price-until">特價到 ${saleEndText(product.saleEnd)}</span>`:""}</div>`:""}
       ${lbBadgesHtml(product,site)}
       ${product.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(product.leadTime)}</span></div>`:""}
@@ -518,4 +518,166 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
       ${lineInquireBtnHtml(lineUrl)}
       ${similarHtml(similar,now)}
     `;
+}
+
+/* ── 分類頁（/c/分類編號）──────────────────────────────────────────
+   每個有商品的主分類、子分類各一頁，Google 才收得到「摺疊桌」「藤椅」這類搜尋。
+   頁面一樣是首頁，只是一打開就選好那個分類；首頁的分類按鈕也是連到這些網址的連結。
+   用分類編號當網址（後台改分類名稱，網址不會跟著變、舊連結不會壞）。 */
+export function categoryPath(id){return `/c/${encodeURIComponent(id)}`}
+export function categoryIdFromPath(path){
+  const m=/^\/c\/([^/]+?)(?:\.html)?\/?$/.exec(path||"");
+  if(!m)return null;
+  try{return decodeURIComponent(m[1])}catch(e){return null}
+}
+// 分類編號 → {main, sub}（子分類編號也認得）；找不到回傳 null
+export function categoryFromId(catalog,id){
+  for(const c of catalog||[]){
+    if(c.id===id)return {main:c.id,sub:null};
+    const s=(c.subs||[]).find(s=>s.id===id);
+    if(s)return {main:c.id,sub:s.id};
+  }
+  return null;
+}
+// 要有分類頁的分類：沒隱藏、底下有上架商品（listed 要先排好順序）
+export function categoryPages(catalog,listed){
+  const out=[];
+  for(const c of catalog||[]){
+    if(c.hidden)continue;
+    const inMain=listed.filter(p=>p.mainCat===c.id);
+    if(!inMain.length)continue;
+    out.push({id:c.id,main:c.id,sub:null,name:c.name,mainName:c.name,products:inMain});
+    for(const s of c.subs||[]){
+      if(s.hidden)continue;
+      const inSub=inMain.filter(p=>p.subCat===s.id);
+      if(inSub.length)out.push({id:s.id,main:c.id,sub:s.id,name:s.name,mainName:c.name,products:inSub});
+    }
+  }
+  return out;
+}
+// 地址裡的「○○市○○區」，分類頁的介紹、標題用（後台改地址就跟著變）
+export function storeArea(contact){
+  const m=String(contact?.addr||"").match(/^(.{2,3}?[市縣])(.{1,4}?[區鄉鎮市])/);
+  return m?{city:m[1],district:m[2]}:null;
+}
+export function categoryPageTitle(page,contact){
+  const area=storeArea(contact);
+  const where=area?`${area.city.replace(/^臺/,"台").replace(/市$/,"")}${area.district}`:"";
+  return `${page.name}${page.sub&&!page.name.includes(page.mainName)?`｜${page.mainName}`:""}｜${where?`${where} `:""}${SITE_NAME}`;
+}
+export function categoryIntro(page,contact){
+  const area=storeArea(contact);
+  const names=page.products.slice(0,3).map(p=>String(p.name||"").trim()).filter(Boolean);
+  return `${SITE_NAME}的${page.name}共 ${page.products.length} 款${names.length>1?`，像是${names.join("、")}${page.products.length>names.length?"等":""}`:""}。`
+    +`點商品可以看照片和尺寸${area?`；${area.city}${area.district}的門市可以看實品`:""}，喜歡哪一件直接 LINE 詢問。`;
+}
+// 分類按鈕：手機版上方兩排、電腦版左側清單。都是連到分類頁的連結（Google 跟著連結找到分類頁），
+// 前台點了不換頁，直接切換分類（index.html 攔下點擊）。
+export function categoryNavHtml(catalog,listed,activeMain="全部",activeSub=null){
+  const count=(main,sub)=>listed.filter(p=>(main==="全部"||p.mainCat===main)&&(!sub||p.subCat===sub)).length;
+  const link=(cls,href,main,sub,label,n,active)=>
+    `<a class="${cls}${active?" active":""}" href="${escapeHTML(href)}" data-main="${escapeHTML(main)}"${sub?` data-sub="${escapeHTML(sub)}"`:""}${active?' aria-current="page"':""}>${n==null?escapeHTML(label):`<span>${escapeHTML(label)}</span><span class="mono">${n}</span>`}</a>`;
+  let bar="",side="",sub="";
+  for(const id of ["全部",...(catalog||[]).map(c=>c.id)]){
+    const cat=id==="全部"?null:mainCatOf(catalog,id);
+    const n=count(id,null);
+    if(id!=="全部"&&(cat?.hidden||n===0))continue;
+    const href=id==="全部"?"/":categoryPath(id);
+    const label=mainNameOf(catalog,id);
+    const isActive=activeMain===id;
+    bar+=link("cat-tab",href,id,null,label,null,isActive);
+    side+=link("cat-side-btn",href,id,null,label,n,isActive);
+    if(isActive&&cat?.subs?.length){
+      let subs="";
+      for(const s of cat.subs){
+        const sn=count(id,s.id);
+        if(s.hidden||sn===0)continue;
+        subs+=link("cat-sub-btn",categoryPath(s.id),id,s.id,s.name,sn,activeSub===s.id);
+        sub+=link("sub-tab",categoryPath(s.id),id,s.id,s.name,null,activeSub===s.id);
+      }
+      if(subs)side+=`<div class="cat-subs">${subs}</div>`;
+    }
+  }
+  return {bar,side,sub};
+}
+// 分類頁一開始就畫好的商品格（沒跑程式的時候看得到、Google 也找得到每件商品的連結）。
+// 前台程式載入後會用自己的版本（愛心、第二張照片…）整個換掉，所以這裡只要長得一樣就好。
+const STATIC_GRID_WIDTHS=[200,280,400,500,600,800];
+export function staticProductCardHtml(product,catalog,now=new Date()){
+  const photo=(product.photos||[]).filter(Boolean)[0];
+  const isWeb=/^https?:\/\//i.test(photo||"");
+  const srcset=isWeb?STATIC_GRID_WIDTHS.map(w=>`${normalizePhotoUrl(photo,w)} ${w}w`).join(", "):"";
+  const price=priceHtml(product,now);
+  return `<article class="product-card"><div class="product-img-wrap">${photo?`<img class="img-primary" loading="lazy" decoding="async" src="${escapeHTML(normalizePhotoUrl(photo,600))}"${srcset?` srcset="${escapeHTML(srcset)}" sizes="(max-width:760px) 46vw, 16vw"`:""} alt="${escapeHTML(photoAlt(product,catalog))}">`:""}</div>`
+    +`<div class="product-info"><div class="product-name"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name||"")}</a></div>`
+    +`<div class="product-meta-row"><span class="product-size">${escapeHTML(getSizeSummary(product))}</span></div>${price?`<span class="product-price">${price}</span>`:""}</div></article>`;
+}
+
+/* ── 聯繫資訊、給 Google 看的店家資料 ─────────────────────────────── */
+export function contactItemsHtml(c){
+  const items=[
+    {label:"地址",val:c?.addr,href:c?.mapUrl},
+    {label:"電話",val:c?.phone,href:c?.phone?`tel:${String(c.phone).replace(/[^\d+]/g,"")}`:null},
+    {label:"LINE",val:c?.line,href:c?.lineUrl},
+    {label:"營業時間",val:c?.hours},
+    {label:"信箱",val:c?.email}
+  ].filter(item=>item.val);
+  return items.map(item=>{
+    const isTel=item.href?.startsWith("tel:");
+    const lead=isTel?"phone":item.label==="LINE"?"line_friend":"";
+    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}${lead?` data-lead="${lead}"`:""}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
+    return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
+  }).join('<span class="dot">·</span>');
+}
+// 台灣電話 → 國際格式（02-2705-3858 → +886-2-2705-3858），Google 比較好認
+function intlPhone(phone){
+  const d=String(phone||"").replace(/[^\d+]/g,"");
+  if(!d)return undefined;
+  if(d.startsWith("+"))return d;
+  return d.startsWith("0")?`+886-${String(phone).trim().replace(/^0/,"").replace(/\s+/g,"-")}`:String(phone).trim();
+}
+// 營業時間：看得懂「全年無休／每天／每日 10:00-21:00」這種寫法才給 Google 結構化的時間；
+// 看不懂（例如每天時間不一樣）就不放，不要給錯的
+function openingHoursSpec(hours){
+  const text=String(hours||"");
+  const t=text.match(/(\d{1,2})[:：](\d{2})\s*[-–—~～至到]\s*(\d{1,2})[:：](\d{2})/);
+  if(!t||!/全年無休|每天|每日|天天/.test(text))return undefined;
+  const hm=(h,m)=>`${String(h).padStart(2,"0")}:${m}`;
+  return [{"@type":"OpeningHoursSpecification",
+    dayOfWeek:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+    opens:hm(t[1],t[2]),closes:hm(t[3],t[4])}];
+}
+// 門市在地圖上的位置（Google 地圖上對著店按右鍵拿到的經緯度）。搬家的話記得改這裡
+const STORE_GEO={latitude:25.032357,longitude:121.554016};
+export function storeJsonLd(contact,{image}={}){
+  const c=contact||{};
+  const area=storeArea(c);
+  const data={
+    "@context":"https://schema.org",
+    "@type":"FurnitureStore",
+    "@id":`${SITE_ORIGIN}/#store`,
+    name:SITE_NAME,
+    alternateName:"HsinTong Furniture",
+    url:`${SITE_ORIGIN}/`,
+    image:image||`${SITE_ORIGIN}/og-image.jpg`,
+    logo:`${SITE_ORIGIN}/icon-512.png`,
+    telephone:intlPhone(c.phone),
+    email:c.email||undefined,
+    address:c.addr?{"@type":"PostalAddress",
+      streetAddress:area?String(c.addr).slice(area.city.length+area.district.length):c.addr,
+      addressLocality:area?.district,addressRegion:area?.city,addressCountry:"TW"}:undefined,
+    geo:{"@type":"GeoCoordinates",...STORE_GEO},
+    openingHoursSpecification:openingHoursSpec(c.hours),
+    hasMap:c.mapUrl||undefined,
+    sameAs:[c.fbUrl,c.lineUrl].filter(Boolean)
+  };
+  const clean=v=>{
+    if(Array.isArray(v))return v.length?v:undefined;
+    if(v&&typeof v==="object"){
+      const o=Object.fromEntries(Object.entries(v).map(([k,x])=>[k,clean(x)]).filter(([,x])=>x!==undefined));
+      return o;
+    }
+    return v===""||v==null?undefined:v;
+  };
+  return clean(data);
 }

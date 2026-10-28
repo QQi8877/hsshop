@@ -1,6 +1,6 @@
 // 商品說明的簡易富文本編輯器（貼上整理、文字樣式、清單）
 import{escapeHTML}from"./util.js?v=1";
-import{sanitizeRichHtml,richTextIsEmpty}from"../shop-render.js?v=6";
+import{sanitizeRichHtml,richTextIsEmpty}from"../shop-render.js?v=7";
 
 /* ── 商品說明簡易富文本編輯器（底線／文字大小／文字顏色／網底）─── */
 // AI 聊天複製出來的文字常帶 Markdown 符號（**粗體**、# 標題、- 清單、--- 分隔線），貼進說明時整理成網站用的格式

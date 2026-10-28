@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title data-home-title="信通家俱行 | 讓家更有溫度">2 x 2尺兒童學習桌｜摺疊桌｜信通家俱行</title>
+<title data-home-title="信通家俱行｜台北大安區家具行・讓家更有溫度">2 x 2尺兒童學習桌｜摺疊桌｜信通家俱行</title>
 <meta name="description" content="桌面高度較低，專為孩童使用設計，摺疊收納方便，不用時輕鬆收起。• 低桌面高度，適合兒童使用，• 摺疊好收，不佔房間空間">
 <meta property="og:type" content="product">
 <meta property="og:locale" content="zh_TW">
@@ -22,7 +22,13 @@
 <meta name="twitter:description" content="桌面高度較低，專為孩童使用設計，摺疊收納方便，不用時輕鬆收起。• 低桌面高度，適合兒童使用，• 摺疊好收，不佔房間空間">
 <meta name="twitter:image" content="https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1789458345/fgw9rwc8ogkxhmyfqb9s.jpg">
 <link rel="canonical" href="https://hsintong.cc/p/2g4rdda5">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
+<!-- 給 Google 看的店家資料（地址、電話、營業時間）。直接寫在網頁裡，Google 不用等程式跑完就讀得到；
+     內容由每小時的 _tools/build-pages.mjs 照後台「聯繫資訊」重新產生，不用手改 -->
+<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1789531234/yczpqotfzc5a0wsgs64j.jpg","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"文昌街184號","addressLocality":"大安區","addressRegion":"台北市","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
+<!-- 網站小圖示：Google 搜尋結果左邊的小圖示要真的檔案（48 的倍數），不能是寫在網頁裡的圖 -->
+<link rel="icon" href="/favicon.ico" sizes="48x48">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://res.cloudinary.com">
@@ -31,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=6">
+<link rel="modulepreload" href="/shop-render.js?v=7">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -677,6 +683,14 @@ img.img-fade:not(.is-loaded){opacity:0}
 }
 .listing-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:0 0 14px}
 .listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}
+.listing-head{row-gap:6px}
+.listing-intro{flex:0 0 100%;font-size:13.5px;line-height:1.75;color:var(--muted);text-wrap:pretty}
+/* 分類按鈕現在是連結（Google 才找得到分類頁），樣式照舊 */
+a.cat-tab,a.sub-tab,a.cat-side-btn,a.cat-sub-btn{text-decoration:none}
+/* 商品名稱是連到商品頁的連結；點卡片任何地方一樣是打開商品 */
+.product-name a,.p-card__title a{color:inherit;text-decoration:none}
+/* 從 Google 搜尋直接進到分類頁（/c/分類）：先不放本月選品、分類磚，商品就在大圖下面；換回「全部」就恢復 */
+body.cat-landing #picks,body.cat-landing #catTiles{display:none}
 .applied-chips{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-bottom:18px}
 .chip-applied{
   display:inline-flex;align-items:center;gap:7px;padding:6px 8px 6px 13px;border-radius:var(--radius-pill);
@@ -1541,7 +1555,7 @@ footer a:hover{color:var(--color-on-dark)}
 })();
 </script>
 <script type="application/ld+json" id="productData">{"@context":"https://schema.org","@type":"Product","name":"2 x 2尺兒童學習桌","url":"https://hsintong.cc/p/2g4rdda5","image":["https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_1600/v1789458345/fgw9rwc8ogkxhmyfqb9s.jpg"],"description":"桌面高度較低，專為孩童使用設計，摺疊收納方便，不用時輕鬆收起。• 低桌面高度，適合兒童使用，• 摺疊好收，不佔房間空間","sku":"2g4rdda5","category":"桌子 > 摺疊桌","brand":{"@type":"Brand","name":"信通家俱行"}}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"信通家俱行","item":"https://hsintong.cc/"},{"@type":"ListItem","position":2,"name":"2 x 2尺兒童學習桌","item":"https://hsintong.cc/p/2g4rdda5"}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"信通家俱行","item":"https://hsintong.cc/"},{"@type":"ListItem","position":2,"name":"桌子","item":"https://hsintong.cc/c/cat-table"},{"@type":"ListItem","position":3,"name":"摺疊桌","item":"https://hsintong.cc/c/sub-vsz2vbta"},{"@type":"ListItem","position":4,"name":"2 x 2尺兒童學習桌","item":"https://hsintong.cc/p/2g4rdda5"}]}</script>
 </head>
 <body class="lightbox-open">
 <nav>
@@ -1581,7 +1595,7 @@ footer a:hover{color:var(--color-on-dark)}
   <div class="hero-inner">
     <div class="hero-content">
       <div class="hero-tag" data-page-field="heroTag">HSIN TONG FURNITURE</div>
-      <h1 class="hero-title" data-page-field="heroTitle">信通家俱行</h1>
+      <p class="hero-title" data-page-field="heroTitle">信通家俱行</p>
       <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
       <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
       <div class="hero-actions">
@@ -1623,17 +1637,16 @@ footer a:hover{color:var(--color-on-dark)}
 
 <section id="categories">
   <div class="cat-toolbar">
-    <div class="categories-bar" id="categoriesBar"></div>
+    <div class="categories-bar" id="categoriesBar"><a class="cat-tab active" href="/" data-main="全部" aria-current="page">全部</a><a class="cat-tab" href="/c/cat-table" data-main="cat-table">桌子</a><a class="cat-tab" href="/c/cat-chair" data-main="cat-chair">椅子</a><a class="cat-tab" href="/c/cat-storage" data-main="cat-storage">收納櫃/架</a></div>
     <div class="sub-categories-bar" id="subCategoriesBar"></div>
     <div class="listing-head">
       <h2 class="listing-title" id="listingTitle">全部</h2>
+      <p class="listing-intro" id="listingIntro" hidden></p>
     </div>
     <div class="applied-chips" id="appliedChips"></div>
   </div>
   <div class="cat-layout">
-    <aside class="cat-sidebar" id="catSidebar">
-      <div class="cat-sidebar-skel"><span></span><span></span><span></span><span></span><span></span></div>
-    </aside>
+    <aside class="cat-sidebar" id="catSidebar"><a class="cat-side-btn active" href="/" data-main="全部" aria-current="page"><span>全部</span><span class="mono">59</span></a><a class="cat-side-btn" href="/c/cat-table" data-main="cat-table"><span>桌子</span><span class="mono">13</span></a><a class="cat-side-btn" href="/c/cat-chair" data-main="cat-chair"><span>椅子</span><span class="mono">34</span></a><a class="cat-side-btn" href="/c/cat-storage" data-main="cat-storage"><span>收納櫃/架</span><span class="mono">12</span></a></aside>
     <div class="products-grid" id="productsGrid">
       <div class="loading-breathe">
         <div class="loading-breathe-text">信通家俱行</div>
@@ -1658,7 +1671,7 @@ footer a:hover{color:var(--color-on-dark)}
   <div class="contact-inner reveal">
     <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
     <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
-    <p class="contact-line" id="contactItems"></p>
+    <p class="contact-line" id="contactItems"><span class="item"><b>地址</b><a href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener">台北市大安區文昌街184號</a></span><span class="dot">·</span><span class="item"><b>電話</b><a href="tel:0227053858" data-lead="phone">02-2705-3858</a></span><span class="dot">·</span><span class="item"><b>LINE</b><a href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend">@833pzizi</a></span><span class="dot">·</span><span class="item"><b>營業時間</b>全年無休，每天 10:00-21:00</span><span class="dot">·</span><span class="item"><b>信箱</b>service@hsintong.cc</span></p>
     <a class="fb-icon" id="fbLink" href="#" target="_blank" rel="noopener" aria-label="Facebook">
       <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3H13.5V8.4c0-.87.24-1.46 1.5-1.46H16.5V4.35C16.24 4.32 15.36 4.24 14.33 4.24c-2.15 0-3.62 1.31-3.62 3.72v2.54H8.25v3h2.46V21z"/></svg>
     </a>
@@ -1731,7 +1744,7 @@ footer a:hover{color:var(--color-on-dark)}
         <div class="lb-product-cat">摺疊桌</div>
         <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
       </div>
-      <h2 class="lb-product-title" id="lbTitle">2 x 2尺兒童學習桌</h2>
+      <h1 class="lb-product-title" id="lbTitle">2 x 2尺兒童學習桌</h1>
       
       
       
@@ -1774,7 +1787,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt}from"/shop-render.js?v=6";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml}from"/shop-render.js?v=7";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -1920,6 +1933,42 @@ const DEFAULT_STATE={
   tagDefs:[]
 };
 let state=structuredClone(DEFAULT_STATE);
+/* ── 分類頁（/c/分類編號）：一打開就選好那個分類 ───────────────────
+   分類資料（後台的分類管理）要等讀進來才知道編號是哪個分類，所以先記著，畫分類按鈕前再套用 */
+const routeCategoryId=categoryIdFromPath(location.pathname)||(location.hash.match(/^#cat-(.+)$/)||[])[1]||null;
+let routeCategoryDone=!routeCategoryId;
+function applyRouteCategory(){
+  if(routeCategoryDone)return;
+  const hit=categoryFromId(state.catalog,routeCategoryId);
+  if(!hit)return;
+  routeCategoryDone=true;
+  state.activeMain=hit.main;
+  state.activeSub=hit.sub;
+  // 舊格式（#cat-分類編號，分類頁還沒產生好時 404 頁轉過來的）換成正式網址
+  if(location.hash.startsWith("#cat-")){try{history.replaceState(history.state,"",categoryPath(routeCategoryId))}catch(e){}}
+}
+// 目前選的分類對應的網址、網頁標題（「全部」就是首頁）
+function currentCategoryPage(){
+  if(state.activeMain==="全部")return null;
+  const id=state.activeSub||state.activeMain;
+  const name=state.activeSub?getSubName(state.activeMain,state.activeSub):getMainName(state.activeMain);
+  const products=listedProducts().filter(p=>p.mainCat===state.activeMain&&(!state.activeSub||p.subCat===state.activeSub)).sort(catalogOrderCompare(state.catalog));
+  return {id,main:state.activeMain,sub:state.activeSub,name,mainName:getMainName(state.activeMain),products};
+}
+function listUrl(){const page=currentCategoryPage();return page?categoryPath(page.id):"/"}
+function listTitle(){const page=currentCategoryPage();return page?categoryPageTitle(page,state.contact):HOME_TITLE}
+// 客人自己點分類：換分類、網址跟著換（分享、重新整理都還在這個分類），不另外記一筆瀏覽紀錄
+function setCategory(main,sub=null){
+  state.activeMain=main;
+  state.activeSub=sub;
+  if(main==="全部")document.body.classList.remove("cat-landing");
+  renderCategories();
+  renderProducts();
+  if(isLightboxOpen())return;
+  const url=listUrl();
+  if(location.pathname!==url||location.hash)replaceView(url);
+  document.title=listTitle();
+}
 /* ── 商品標籤（左上角徽章）─────────────────────────────────────
    state.tagDefs 的排列順序就是優先順序：一件商品若同時符合多個標籤，
    只顯示排在最前面的那一個，避免卡片被塞太多徽章。標籤本身（改名／
@@ -1995,63 +2044,17 @@ function listedProducts(){return state.products.filter(p=>isListedProduct(p,stat
 function mainCount(id){return listedProducts().filter(p=>p.mainCat===id).length}
 function subCount(mainId,subId){return listedProducts().filter(p=>p.mainCat===mainId&&p.subCat===subId).length}
 function renderCategories(){
+  applyRouteCategory();
   const bar=document.getElementById("categoriesBar");
   const subBar=document.getElementById("subCategoriesBar");
   const sidebar=document.getElementById("catSidebar");
+  // 分類按鈕是連到分類頁的連結（shop-render.js，跟每小時產生的分類頁同一份），點擊在下面統一攔下來
+  const nav=categoryNavHtml(state.catalog,listedProducts(),state.activeMain,state.activeSub);
   bar.querySelectorAll(".cat-tab").forEach(el=>el.remove());
-  sidebar.innerHTML="";
-  ["全部",...state.catalog.map(c=>c.id)].forEach(id=>{
-    const count=id==="全部"?listedProducts().length:mainCount(id);
-    const cat=id==="全部"?null:getMainCat(id);
-    const isHidden=!!cat?.hidden;
-    // 隱藏「已標記隱藏」或「0 項商品」的主分類
-    if(id!=="全部"&&(isHidden||count===0))return;
-    const isActive=state.activeMain===id;
-    const btn=document.createElement("button");
-    btn.className="cat-tab"+(isActive?" active":"");
-    btn.innerHTML=escapeHTML(getMainName(id));
-    btn.onclick=()=>{state.activeMain=id;state.activeSub=null;renderCategories();renderProducts()};
-    bar.appendChild(btn);
-    // 桌面版左側分類清單：跟水平分類列共用同一組資料與點擊邏輯
-    const sideBtn=document.createElement("button");
-    sideBtn.className="cat-side-btn"+(isActive?" active":"");
-    sideBtn.innerHTML=`<span>${escapeHTML(getMainName(id))}</span><span class="mono">${count}</span>`;
-    sideBtn.onclick=btn.onclick;
-    sidebar.appendChild(sideBtn);
-    if(isActive&&cat?.subs?.length){
-      const subsWrap=document.createElement("div");
-      subsWrap.className="cat-subs";
-      cat.subs.forEach(sub=>{
-        const n=subCount(id,sub.id);
-        if(sub.hidden||n===0)return;
-        const subBtn=document.createElement("button");
-        subBtn.className="cat-sub-btn"+(state.activeSub===sub.id?" active":"");
-        subBtn.innerHTML=`<span>${escapeHTML(sub.name)}</span><span class="mono">${n}</span>`;
-        subBtn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
-        subsWrap.appendChild(subBtn);
-      });
-      sidebar.appendChild(subsWrap);
-    }
-  });
-  subBar.innerHTML="";
-  if(state.activeMain!=="全部"){
-    const main=getMainCat(state.activeMain);
-    if(main?.subs?.length){
-      main.subs.forEach(sub=>{
-        const count=subCount(state.activeMain,sub.id);
-        const isHidden=!!sub.hidden;
-        if(isHidden||count===0)return;
-        const btn=document.createElement("button");
-        btn.className="sub-tab"+(state.activeSub===sub.id?" active":"");
-        btn.innerHTML=escapeHTML(sub.name);
-        btn.onclick=()=>{state.activeSub=sub.id;renderCategories();renderProducts()};
-        subBar.appendChild(btn);
-      });
-    }
-    subBar.style.display="flex";
-  }else{
-    subBar.style.display="none";
-  }
+  bar.insertAdjacentHTML("beforeend",nav.bar);
+  sidebar.innerHTML=nav.side;
+  subBar.innerHTML=nav.sub;
+  subBar.style.display=state.activeMain!=="全部"&&nav.sub?"flex":"none";
   scheduleTabPills();
 }
 // 選中分類的底色：記住上一次的位置，重畫之後從舊位置滑到新點的那顆
@@ -2169,7 +2172,15 @@ function toggleMobileNav(force){
    前面幾排，後面的等快捲到再畫，看起來一樣是一路接著出現。 */
 const GRID_FIRST_BATCH=20,GRID_NEXT_BATCH=24;
 let gridMoreObserver=null;
+// 分類連結：一般點擊就地切換分類；按著 Ctrl／⌘ 或中鍵點，照一般連結在新分頁打開
+document.getElementById("categories").addEventListener("click",event=>{
+  const link=event.target.closest("a[data-main]");
+  if(!link||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();
+  setCategory(link.dataset.main,link.dataset.sub||null);
+});
 function renderProducts(animate=true){
+  applyRouteCategory();
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
   gridMoreObserver?.disconnect();
@@ -2286,7 +2297,7 @@ function renderProducts(animate=true){
     info.className="product-info";
     const price=priceHtml(product);
     info.innerHTML=`
-      <div class="product-name">${escapeHTML(product.name)}</div>
+      <div class="product-name"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name)}</a></div>
       <div class="product-meta-row">
         <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
       </div>
@@ -2331,28 +2342,31 @@ function renderListingTitle(){
   const el=document.getElementById("listingTitle");
   if(!el)return;
   el.textContent=state.activeSub?getSubName(state.activeMain,state.activeSub):getMainName(state.activeMain);
+  // 分類的簡介（跟分類頁一開始寫好的同一段，shop-render.js）；「全部」、搜尋中不放
+  const intro=document.getElementById("listingIntro");
+  const page=searchQuery.trim()?null:currentCategoryPage();
+  const text=page&&page.products.length?categoryIntro(page,state.contact):"";
+  if(intro.textContent!==text)intro.textContent=text;
+  intro.hidden=!text;
 }
 function renderAppliedChips(){
   const wrap=document.getElementById("appliedChips");
   if(!wrap)return;
   const chips=[];
   if(state.activeMain!=="全部"){
-    chips.push({label:getMainName(state.activeMain),clear:()=>{state.activeMain="全部";state.activeSub=null}});
+    chips.push({label:getMainName(state.activeMain),clear:()=>setCategory("全部")});
   }
   if(state.activeSub){
-    chips.push({label:getSubName(state.activeMain,state.activeSub),clear:()=>{state.activeSub=null}});
+    chips.push({label:getSubName(state.activeMain,state.activeSub),clear:()=>setCategory(state.activeMain)});
   }
   if(!chips.length){wrap.innerHTML="";return}
   const closeSvg='<svg viewBox="0 0 24 24" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
   wrap.innerHTML=chips.map((c,i)=>`<button class="chip-applied" data-idx="${i}">${escapeHTML(c.label)}${closeSvg}</button>`).join("")
     +`<button class="chip-clear-all" id="clearAllChips">全部清除</button>`;
   wrap.querySelectorAll(".chip-applied").forEach((btn,i)=>{
-    btn.onclick=()=>{chips[i].clear();renderCategories();renderProducts()};
+    btn.onclick=()=>chips[i].clear();
   });
-  document.getElementById("clearAllChips").onclick=()=>{
-    state.activeMain="全部";state.activeSub=null;
-    renderCategories();renderProducts();
-  };
+  document.getElementById("clearAllChips").onclick=()=>setCategory("全部");
 }
 // 商品照片載入完成才淡入。這一輪已經載入過的網址（切換分類、Firebase 資料回來後
 // 重畫列表）直接顯示、不重播淡入，不然每次重畫整排照片都會閃一下。
@@ -2438,7 +2452,7 @@ function renderPicks(){
     const price=priceHtml(product);
     card.innerHTML=`
       <div class="p-card__media"></div>
-      <div class="p-card__title">${escapeHTML(product.name)}</div>
+      <div class="p-card__title"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name)}</a></div>
       <div class="p-card__foot">
         <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
         ${price?`<span class="price">${price}</span>`:""}
@@ -2514,11 +2528,11 @@ function renderCategoryTiles(){
     const thumbSrc=thumbUrl&&normalizePhotoUrl(thumbUrl,200);
     const thumbSet=buildSrcset(thumbUrl,[120,200]);
     return `
-      <button class="cat-tile reveal" type="button" data-cat="${escapeHTML(cat.id)}" style="transition-delay:${i*60}ms">
+      <a class="cat-tile reveal" href="${escapeHTML(categoryPath(cat.id))}" data-cat="${escapeHTML(cat.id)}" style="transition-delay:${i*60}ms">
         <span class="cat-tile__thumb">${thumbSrc?`<img loading="lazy" decoding="async" src="${escapeHTML(thumbSrc)}"${thumbSet?` srcset="${escapeHTML(thumbSet)}" sizes="56px"`:""} alt="">`:""}</span>
         <span class="cat-tile__name">${escapeHTML(cat.name)}</span>
         <span class="cat-tile__count">${mainCount(cat.id)} 件</span>
-      </button>
+      </a>
     `;
   }).join("")+`
     <a class="cat-tile cat-tile--cta reveal" id="catCta" href="#" target="_blank" rel="noopener" data-lead="line_friend" style="transition-delay:${cats.length*60}ms">
@@ -2526,12 +2540,11 @@ function renderCategoryTiles(){
       <span class="cta-link">LINE 問老闆 →</span>
     </a>
   `;
-  grid.querySelectorAll(".cat-tile[data-cat]").forEach(btn=>{
-    btn.addEventListener("click",()=>{
-      state.activeMain=btn.dataset.cat;
-      state.activeSub=null;
-      renderCategories();
-      renderProducts();
+  grid.querySelectorAll(".cat-tile[data-cat]").forEach(link=>{
+    link.addEventListener("click",event=>{
+      if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+      setCategory(link.dataset.cat);
       document.getElementById("categories").scrollIntoView({behavior:"smooth",block:"start"});
     });
   });
@@ -2844,7 +2857,7 @@ window.addEventListener("popstate",event=>{
     // 按 × 退回打開商品頁前那一筆：商品頁已經關了；退到的那筆如果是從商品網址直接進來的，網址換回首頁
     closingProduct=false;
     if(isLightboxOpen())closeLightbox({history:false});
-    if(s.product)replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?"/":location.href);
+    if(s.product)replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?listUrl():location.href);
     if(!!s.fav!==isFavoritesOpen())toggleFavoritesPanel(!!s.fav,{history:false});
     return;
   }
@@ -3032,10 +3045,10 @@ function closeLightbox({history:useHistory=true}={}){
   resetZoom();
   if(lastFocusedElement instanceof HTMLElement)lastFocusedElement.focus();
   lastFocusedElement=null;
-  document.title=HOME_TITLE;
+  document.title=listTitle();
   if(useHistory){
     if(canStepBack()&&history.state.product){closingProduct=true;history.go(-(history.state.lbDepth||1))}
-    else replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?"/":location.href);
+    else replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?listUrl():location.href);
   }
   // 捲軸回來之後才量卡片的落點
   if(from)flyBackToCard(wrap,from,backSrc);
@@ -3308,60 +3321,24 @@ function renderContact(){
   document.getElementById("fbLink").href=c.fbUrl||"#";
   document.getElementById("lineFab").href=c.lineUrl||"#";
   document.getElementById("mapFab").href=c.mapUrl||"#";
-  const items=[
-    {label:"地址",val:c.addr,href:c.mapUrl},
-    {label:"電話",val:c.phone,href:c.phone?`tel:${c.phone.replace(/[^\d+]/g,"")}`:null},
-    {label:"LINE",val:c.line,href:c.lineUrl},
-    {label:"營業時間",val:c.hours},
-    {label:"信箱",val:c.email}
-  ].filter(item=>item.val);
-  const contactHtml=items.map(item=>{
-    const isTel=item.href?.startsWith("tel:");
-    const lead=isTel?"phone":item.label==="LINE"?"line_friend":"";
-    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}${lead?` data-lead="${lead}"`:""}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
-    return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
-  }).join('<span class="dot">·</span>');
+  const contactHtml=contactItemsHtml(c);
   // 跟 applyPageText 同一個理由：內容沒變就不要重寫 innerHTML，避免砍掉重建
   // 文字節點造成不必要的重繪（開頁時 SWR 快取跟 Firebase 資料各跑一次 renderContact，
   // 兩次資料通常相同）。
   const contactItemsEl=document.getElementById("contactItems");
   if(contactItemsEl.innerHTML!==contactHtml)contactItemsEl.innerHTML=contactHtml;
-  injectStructuredData(c);
-}
-/* ── 結構化資料（JSON-LD）─────────────────────────────────────
-   給 Google 讀的商家資訊，畫面上看不到。內容直接沿用「聯繫資訊」
-   目前顯示的資料，之後在後台改地址/電話，這裡會一起更新，不會跟
-   網站上實際顯示的資訊兜不起來。 */
-function injectStructuredData(c){
-  const data={
-    "@context":"https://schema.org",
-    "@type":"FurnitureStore",
-    "name":"信通家俱行",
-    "alternateName":"Xin Tong Furniture",
-    "url":"https://hsintong.cc/",
-    // 首頁大圖現在是 base64 內嵌，不是真正的網址，塞給 Google 的結構化資料
-    // 沒有意義（不是可以抓取的圖片網址），所以只有真的是網址時才放進去。
-    "image":/^https?:\/\//i.test(state.layout?.heroImage||"")?state.layout.heroImage:undefined,
-    "telephone":c.phone||undefined,
-    "email":c.email||undefined,
-    "address":c.addr?{"@type":"PostalAddress","streetAddress":c.addr,"addressCountry":"TW"}:undefined,
-    "openingHours":c.hours||undefined,
-    "sameAs":[c.fbUrl,c.lineUrl].filter(Boolean)
-  };
-  // 拿掉沒有值的欄位，避免送一堆 undefined 給 Google
-  Object.keys(data).forEach(key=>{if(data[key]===undefined)delete data[key]});
-  let script=document.getElementById("structuredData");
-  if(!script){
-    script=document.createElement("script");
-    script.id="structuredData";
-    script.type="application/ld+json";
-    document.head.appendChild(script);
-  }
-  script.textContent=JSON.stringify(data);
 }
 document.querySelectorAll(".modal-overlay").forEach(overlay=>{
   overlay.addEventListener("click",event=>{if(event.target===overlay)overlay.classList.remove("open")});
 });
+
+// 商品卡片上的商品名稱是連結（給 Google、也能按 Ctrl／⌘ 開新分頁）：一般點擊不換頁，交給卡片打開商品
+document.addEventListener("click",event=>{
+  const link=event.target.closest(".product-card a[href^='/p/'], .p-card a[href^='/p/']");
+  if(!link)return;
+  if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey){event.stopPropagation();return}
+  event.preventDefault();
+},true);
 
 /* ── 將函式掛到 window，讓 HTML onclick 可以呼叫（module 作用域限制）── */
 Object.assign(window,{

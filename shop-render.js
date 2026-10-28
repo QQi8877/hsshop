@@ -647,6 +647,8 @@ function openingHoursSpec(hours){
     dayOfWeek:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
     opens:hm(t[1],t[2]),closes:hm(t[3],t[4])}];
 }
+// 門市在地圖上的位置（Google 地圖上對著店按右鍵拿到的經緯度）。搬家的話記得改這裡
+const STORE_GEO={latitude:25.032357,longitude:121.554016};
 export function storeJsonLd(contact,{image}={}){
   const c=contact||{};
   const area=storeArea(c);
@@ -664,6 +666,7 @@ export function storeJsonLd(contact,{image}={}){
     address:c.addr?{"@type":"PostalAddress",
       streetAddress:area?String(c.addr).slice(area.city.length+area.district.length):c.addr,
       addressLocality:area?.district,addressRegion:area?.city,addressCountry:"TW"}:undefined,
+    geo:{"@type":"GeoCoordinates",...STORE_GEO},
     openingHoursSpecification:openingHoursSpec(c.hours),
     hasMap:c.mapUrl||undefined,
     sameAs:[c.fbUrl,c.lineUrl].filter(Boolean)

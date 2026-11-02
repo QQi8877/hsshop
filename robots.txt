@@ -2,5 +2,6 @@ User-agent: *
 Allow: /
 Disallow: /manage.html
 Disallow: /admin/
+Disallow: /CLAUDE.md
 
 Sitemap: https://hsintong.cc/sitemap.xml

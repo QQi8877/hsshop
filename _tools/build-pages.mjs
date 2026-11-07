@@ -212,7 +212,6 @@ function llmsTxt(home,site,listed,pages){
 function productPage(template,product,site,gallery,listed){
   const id=product.id;
   const url=`${SITE_ORIGIN}${productPath(id)}`;
-  const mainName=mainNameOf(site.catalog,product.mainCat),subName=subNameOf(site.catalog,product.mainCat,product.subCat);
   const name=String(product.name||"商品");
   const title=productPageTitle(product,site.catalog);
   const descText=flattenLines(productDescText(product));
@@ -241,18 +240,20 @@ function productPage(template,product,site,gallery,listed){
     itemCondition:"https://schema.org/NewCondition",
     ...(sale&&product.saleEnd?{priceValidUntil:product.saleEnd}:{}),
     seller:{"@type":"Organization",name:SITE_NAME}}:undefined;
-  const productData={"@context":"https://schema.org","@type":"Product",name,url,
+  // 給 Google 的商品資料：Google 規定一定要有價格（或評論、評分），沒標價的商品放了只會被
+  // Search Console 當成錯誤，所以有價格才放。分類不另外寫（Google 不接受「桌子 > 摺疊桌」這種
+  // 寫法），交給下面的麵包屑。後台補上價格，下一次自動更新就會出現。
+  const productData=offers&&{"@context":"https://schema.org","@type":"Product",name,url,
     ...(photos.length?{image:photos.slice(0,6).map(p=>normalizePhotoUrl(p))}:{}),
     ...(descText?{description:clipText(descText,500)}:{}),
     sku:String(product.sku||id),
-    category:[mainName,subName].filter(Boolean).join(" > "),
     brand:{"@type":"Brand",name:SITE_NAME},
-    ...(offers?{offers}:{})};
+    offers};
   const crumbs=breadcrumbs([[SITE_NAME,`${SITE_ORIGIN}/`],
     ...categoryCrumbs(product.mainCat,product.subCat,site.catalog,listed),[name,url]]);
   const head=[
     priceNumber?`<meta property="product:price:amount" content="${priceNumber}">\n<meta property="product:price:currency" content="TWD">`:"",
-    `<script type="application/ld+json" id="productData">${jsonForScript(productData)}</script>`,
+    productData?`<script type="application/ld+json" id="productData">${jsonForScript(productData)}</script>`:"",
     `<script type="application/ld+json">${jsonForScript(crumbs)}</script>`
   ].filter(Boolean).join("\n");
   html=replaceOnce(html,"</head>",`${head}\n</head>`,"</head>");

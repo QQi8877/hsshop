@@ -614,20 +614,41 @@ export function staticProductCardHtml(product,catalog,now=new Date()){
 }
 
 /* ── 聯繫資訊、給 Google 看的店家資料 ─────────────────────────────── */
+// 聯繫資訊的小圖示（線條風格，跟網站其他圖示一致）
+const CONTACT_ICONS={
+  addr:'<path d="M12 21s-7-5.6-7-11.5a7 7 0 1 1 14 0C19 15.4 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  hours:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  phone:'<path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/>',
+  line:'<path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/>',
+  email:'<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>',
+  fb:'<path d="M14 8.5h2.5V5H14a3.5 3.5 0 0 0-3.5 3.5V11H8v3.5h2.5V21H14v-6.5h2.5L17 11h-3V8.9c0-.2.2-.4.4-.4z"/>',
+  map:'<path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13L15 6.5z"/><path d="M9 4.5v13M15 6.5v13"/>'
+};
+const contactIcon=key=>`<svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${CONTACT_ICONS[key]}</svg>`;
+// 聯繫資訊：一行一項（地址、營業時間、電話、LINE、信箱、Facebook），前台跟每小時產生的首頁共用
 export function contactItemsHtml(c){
   const items=[
-    {label:"地址",val:c?.addr,href:c?.mapUrl},
-    {label:"電話",val:c?.phone,href:c?.phone?`tel:${String(c.phone).replace(/[^\d+]/g,"")}`:null},
-    {label:"LINE",val:c?.line,href:c?.lineUrl},
-    {label:"營業時間",val:c?.hours},
-    {label:"信箱",val:c?.email}
+    {key:"addr",label:"地址",val:c?.addr,href:c?.mapUrl},
+    {key:"hours",label:"營業時間",val:c?.hours},
+    {key:"phone",label:"電話",val:c?.phone,href:c?.phone?`tel:${String(c.phone).replace(/[^\d+]/g,"")}`:null},
+    {key:"line",label:"LINE",val:c?.line,href:c?.lineUrl},
+    {key:"email",label:"信箱",val:c?.email,href:c?.email?`mailto:${c.email}`:null},
+    {key:"fb",label:"Facebook",val:c?.fbUrl?"信通家俱行 粉絲專頁":"",href:c?.fbUrl}
   ].filter(item=>item.val);
   return items.map(item=>{
-    const isTel=item.href?.startsWith("tel:");
-    const lead=isTel?"phone":item.label==="LINE"?"line_friend":"";
-    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${isTel?"":' target="_blank" rel="noopener"'}${lead?` data-lead="${lead}"`:""}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
-    return `<span class="item"><b>${escapeHTML(item.label)}</b>${valueHtml}</span>`;
-  }).join('<span class="dot">·</span>');
+    const sameTab=/^(tel|mailto):/.test(item.href||"");
+    const lead=item.key==="phone"?"phone":item.key==="line"?"line_friend":"";
+    const valueHtml=item.href?`<a href="${escapeHTML(item.href)}"${sameTab?"":' target="_blank" rel="noopener"'}${lead?` data-lead="${lead}"`:""}>${escapeHTML(item.val)}</a>`:escapeHTML(item.val);
+    return `<div class="contact-row"><dt>${contactIcon(item.key)}${escapeHTML(item.label)}</dt><dd>${valueHtml}</dd></div>`;
+  }).join("");
+}
+// 聯繫我們的大按鈕：LINE 詢問（主要）、打電話、Google 地圖導航；沒填的就不放
+export function contactActionsHtml(c){
+  return [
+    c?.lineUrl&&`<a class="contact-btn contact-btn--primary" href="${escapeHTML(c.lineUrl)}" target="_blank" rel="noopener" data-lead="line_friend">${contactIcon("line")}LINE 詢問</a>`,
+    c?.phone&&`<a class="contact-btn" href="${escapeHTML(`tel:${String(c.phone).replace(/[^\d+]/g,"")}`)}" data-lead="phone">${contactIcon("phone")}打電話</a>`,
+    c?.mapUrl&&`<a class="contact-btn" href="${escapeHTML(c.mapUrl)}" target="_blank" rel="noopener">${contactIcon("map")}地圖導航</a>`
+  ].filter(Boolean).join("");
 }
 // 台灣電話 → 國際格式（02-2705-3858 → +886-2-2705-3858），Google 比較好認
 function intlPhone(phone){

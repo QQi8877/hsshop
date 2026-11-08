@@ -12,9 +12,9 @@
 - 資料：Firebase Firestore（商品、分類、聯繫資訊）；照片：Cloudinary 圖床。
 - 每小時自動更新（`.github/workflows/build-pages.yml` → `_tools/build-pages.mjs`）：
   - 產生商品頁 `p/*.html`、分類頁 `c/*.html`、`sitemap.xml`、`data/site.json`、`llms.txt`。
-  - 把店家資料（structuredData）、聯繫資訊（contactItems）、分類按鈕（categoriesBar、catSidebar）填進 `index.html`；改版型照常直接改 index.html。
+  - 把店家資料（structuredData）、聯繫資訊（contactItems、contactActions）、分類按鈕（categoriesBar、catSidebar）填進 `index.html`；改版型照常直接改 index.html。
   - `_tools/subset-fonts.py` 會把標題字型瘦身成只含網站用到的字。
-- 改了 `shop-render.js` 或 `admin/` 底下的檔案，引用它的地方 `?v=` 數字要加一（目前 shop-render.js 是 v=7）。
+- 改了 `shop-render.js` 或 `admin/` 底下的檔案，引用它的地方 `?v=` 數字要加一（目前 shop-render.js 是 v=8）。
 - 改版前先讀最近的 PR（#28、#29、#30）和程式裡的註解，了解目前的做法。
 
 ## 工作流程

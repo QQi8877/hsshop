@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=7">
+<link rel="modulepreload" href="/shop-render.js?v=8">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -864,7 +864,8 @@ body.cat-landing #picks,body.cat-landing #catTiles{display:none}
   width:min(520px,100%);
   background:var(--paper);
   box-shadow:-24px 0 70px rgba(0,0,0,.24);
-  transform:translateX(105%);
+  /* 收起來時整個推出畫面外，連左邊的影子（約 95px）也不能露出來，不然畫面右邊會有一條灰邊 */
+  transform:translateX(calc(100% + 120px));
   transition:transform .24s ease;
   display:flex;
   flex-direction:column;
@@ -947,10 +948,15 @@ body.cat-landing #picks,body.cat-landing #catTiles{display:none}
   white-space:pre-line;margin-bottom:18px;
 }
 .favorites-preview-back{background:transparent;border:0;color:var(--tan-dark);font-size:13px;cursor:pointer;text-decoration:underline}
-#contact{background:var(--charcoal);padding:70px 38px;text-align:center}
+#contact{background:var(--charcoal);padding:80px 38px}
+/* 左邊：標題＋一句話＋三個大按鈕；右邊：一行一項的聯繫資訊 */
 .contact-inner{
-  max-width:1400px;
+  max-width:1080px;
   margin:auto;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);
+  gap:56px;
+  align-items:start;
 }
 .contact-heading{
   font-family:var(--font-heading);
@@ -958,33 +964,27 @@ body.cat-landing #picks,body.cat-landing #catTiles{display:none}
   font-size:27px;
   font-weight:600;
 }
-.contact-sub{color:rgba(255,255,255,.48);font-size:13px;letter-spacing:.08em;margin:6px 0 32px}
-.contact-line{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  align-items:baseline;
-  gap:8px 0;
-  color:rgba(255,255,255,.82);
-  font-size:14px;
+.contact-sub{color:rgba(255,255,255,.48);font-size:13px;letter-spacing:.08em;margin:6px 0 0}
+.contact-lead{color:var(--inverse-text-secondary);font-size:15px;line-height:1.8;margin:18px 0 26px}
+.contact-actions{display:flex;flex-wrap:wrap;gap:10px}
+.contact-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  min-height:48px;padding:0 22px;border-radius:var(--radius-pill);
+  border:1.5px solid rgba(255,255,255,.3);color:var(--inverse-text);
+  font-size:14px;font-weight:600;letter-spacing:.02em;text-decoration:none;
+  transition:background .15s,border-color .15s,color .15s;
 }
-.contact-line .item{white-space:nowrap}
-.contact-line b{color:var(--tan-on-dark);font-weight:600;letter-spacing:.04em;margin-right:6px}
-.contact-line a{color:rgba(255,255,255,.82);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.32);transition:color .15s,border-color .15s}
-.contact-line a:hover{color:var(--tan-on-dark);border-color:var(--tan-on-dark)}
-.contact-line .dot{color:rgba(255,255,255,.28);margin:0 14px;font-size:12px}
-.fb-icon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:34px;
-  height:34px;
-  margin-top:26px;
-  border-radius:50%;
-  color:rgba(255,255,255,.5);
-  transition:color .16s ease,background .16s ease;
-}
-.fb-icon:hover{color:var(--white);background:rgba(255,255,255,.08)}
+.contact-btn:hover{border-color:var(--inverse-text);background:rgba(255,255,255,.06)}
+.contact-btn--primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.contact-btn--primary:hover{background:var(--brand-hover);border-color:var(--brand-hover)}
+.contact-btn .contact-icon{width:18px;height:18px}
+.contact-list{margin:0;border-top:1px solid rgba(255,255,255,.12)}
+.contact-row{display:grid;grid-template-columns:118px minmax(0,1fr);gap:12px;align-items:center;padding:15px 2px;border-bottom:1px solid rgba(255,255,255,.12)}
+.contact-row dt{display:flex;align-items:center;gap:9px;color:var(--tan-on-dark);font-size:13.5px;font-weight:600;letter-spacing:.04em}
+.contact-row dt .contact-icon{width:17px;height:17px;flex:none;align-self:center}
+.contact-row dd{margin:0;color:var(--inverse-text);font-size:15px;line-height:1.6;overflow-wrap:anywhere}
+.contact-row a{color:inherit;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.28);transition:color .15s,border-color .15s}
+.contact-row a:hover{color:var(--tan-on-dark);border-color:var(--tan-on-dark)}
 footer{
   background:var(--charcoal);
   color:var(--color-on-dark-2);
@@ -1341,9 +1341,11 @@ footer a:hover{color:var(--color-on-dark)}
   .cat-toolbar{padding:28px 15px 0}
   .cat-layout{padding:0 15px;margin-top:14px}
   #navSearchBar{width:100%}
-  #contact{padding:54px 22px}
-  .contact-line{flex-direction:column;align-items:center;gap:12px}
-  .contact-line .dot{display:none}
+  #contact{padding:56px 22px}
+  .contact-inner{grid-template-columns:minmax(0,1fr);gap:34px}
+  .contact-actions{flex-direction:column}
+  .contact-btn{width:100%;min-height:50px;font-size:15px}
+  .contact-row{grid-template-columns:104px minmax(0,1fr);padding:14px 0}
   footer{padding:20px 22px}
   .modal-scroll{padding:28px 20px}
   #lightbox{
@@ -1478,8 +1480,7 @@ footer a:hover{color:var(--color-on-dark)}
 #contact{background:var(--inverse-bg)}
 .contact-heading{font-size:30px;line-height:1.3}
 .contact-sub{color:var(--inverse-accent);font-size:12px;font-weight:600;letter-spacing:.24em}
-.contact-line{color:var(--inverse-text)}
-.contact-line a{color:var(--inverse-text)}
+.contact-row dd{color:var(--inverse-text)}
 
 @media(max-width:760px){
   .hero-title{font-size:40px}
@@ -1668,23 +1669,20 @@ footer a:hover{color:var(--color-on-dark)}
 
 <section id="contact">
   <div class="contact-inner reveal">
-    <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
-    <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
-    <p class="contact-line" id="contactItems"><span class="item"><b>地址</b><a href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener">台北市大安區文昌街184號</a></span><span class="dot">·</span><span class="item"><b>電話</b><a href="tel:0227053858" data-lead="phone">02-2705-3858</a></span><span class="dot">·</span><span class="item"><b>LINE</b><a href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend">@833pzizi</a></span><span class="dot">·</span><span class="item"><b>營業時間</b>全年無休，每天 10:00-21:00</span><span class="dot">·</span><span class="item"><b>信箱</b>service@hsintong.cc</span></p>
-    <a class="fb-icon" id="fbLink" href="#" target="_blank" rel="noopener" aria-label="Facebook">
-      <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M13.5 21v-7.5H16l.4-3H13.5V8.4c0-.87.24-1.46 1.5-1.46H16.5V4.35C16.24 4.32 15.36 4.24 14.33 4.24c-2.15 0-3.62 1.31-3.62 3.72v2.54H8.25v3h2.46V21z"/></svg>
-    </a>
+    <div class="contact-intro">
+      <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
+      <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
+      <p class="contact-lead">歡迎來門市看實品，或直接 LINE 詢問。</p>
+      <div class="contact-actions" id="contactActions"><a class="contact-btn contact-btn--primary" href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE 詢問</a><a class="contact-btn" href="tel:0227053858" data-lead="phone"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/></svg>打電話</a><a class="contact-btn" href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13L15 6.5z"/><path d="M9 4.5v13M15 6.5v13"/></svg>地圖導航</a></div>
+    </div>
+    <dl class="contact-list" id="contactItems"><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11.5a7 7 0 1 1 14 0C19 15.4 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>地址</dt><dd><a href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener">台北市大安區文昌街184號</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>營業時間</dt><dd>全年無休，每天 10:00-21:00</dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/></svg>電話</dt><dd><a href="tel:0227053858" data-lead="phone">02-2705-3858</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE</dt><dd><a href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend">@833pzizi</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>信箱</dt><dd><a href="mailto:service@hsintong.cc">service@hsintong.cc</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8.5h2.5V5H14a3.5 3.5 0 0 0-3.5 3.5V11H8v3.5h2.5V21H14v-6.5h2.5L17 11h-3V8.9c0-.2.2-.4.4-.4z"/></svg>Facebook</dt><dd><a href="https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW" target="_blank" rel="noopener">信通家俱行 粉絲專頁</a></dd></div></dl>
   </div>
 </section>
 
 </main>
 
 <footer>
-  <div class="footer-brand">XIN TONG FURNITURE | 信通家俱行 | 讓家更有溫度</div>
-  <a id="mapFab" href="#" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:inherit">
-    <svg viewBox="0 0 24 24" width="14" height="14" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s-8-6.2-8-13a8 8 0 1 1 16 0c0 6.8-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
-    Google 地圖
-  </a>
+  <div class="footer-brand">HSIN TONG FURNITURE｜信通家俱行｜讓家更有溫度</div>
   <div>© 2026 信通家俱行</div>
 </footer>
 
@@ -1786,7 +1784,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml}from"/shop-render.js?v=7";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=8";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2134,6 +2132,15 @@ function handleSearchInput(){
     const term=searchQuery.trim();
     if(term&&term!==lastTrackedSearch){lastTrackedSearch=term;track("search",{search_term:term})}
   },1500);
+}
+// 手機上搜尋框很窄，完整的提示字放不下（會被切成「搜尋商品名」），換短的
+{
+  const input=document.getElementById("productSearch");
+  const narrow=window.matchMedia("(max-width:760px)");
+  const full=input.placeholder;
+  const fit=()=>{input.placeholder=narrow.matches?"搜尋商品":full};
+  fit();
+  narrow.addEventListener?.("change",fit);
 }
 function clearSearch(){
   clearTimeout(searchDebounceTimer);
@@ -3317,9 +3324,10 @@ function renderBuyInfo(){
 function renderContact(){
   renderBuyInfo();
   const c=state.contact;
-  document.getElementById("fbLink").href=c.fbUrl||"#";
   document.getElementById("lineFab").href=c.lineUrl||"#";
-  document.getElementById("mapFab").href=c.mapUrl||"#";
+  const actionsHtml=contactActionsHtml(c);
+  const actionsEl=document.getElementById("contactActions");
+  if(actionsEl.innerHTML!==actionsHtml)actionsEl.innerHTML=actionsHtml;
   const contactHtml=contactItemsHtml(c);
   // 跟 applyPageText 同一個理由：內容沒變就不要重寫 innerHTML，避免砍掉重建
   // 文字節點造成不必要的重繪（開頁時 SWR 快取跟 Firebase 資料各跑一次 renderContact，

@@ -1396,17 +1396,22 @@ footer a:hover{color:var(--color-on-dark)}
 .sec-head a:hover{color:var(--brand-hover);text-decoration:underline;text-underline-offset:3px}
 
 /* 本月選品卡片 */
-.p-card{padding:12px;background:var(--surface);box-shadow:none}
-.p-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
-.p-card__media{border-radius:var(--radius-md)}
+/* 本月選品不另外包一張白卡片：米色背景上直接放照片框＋文字，只剩照片框一塊色塊，
+   滑鼠移過去照片框浮起來（跟商品照片同一個底色，照片跟框融成一片） */
+.p-card{padding:0;background:transparent;box-shadow:none;gap:12px}
+.p-card:hover{box-shadow:none;transform:none}
+.p-card__media{border-radius:var(--radius-lg);transition:transform .22s ease,box-shadow .22s ease}
+.p-card:hover .p-card__media{box-shadow:var(--shadow-md)}
+@media(prefers-reduced-motion:no-preference){.p-card:hover .p-card__media{transform:translateY(-3px)}}
+.p-card__title,.p-card__foot{padding:0 2px}
 .p-card__title{font-size:17px;line-height:1.45}
 .p-card__foot{border-top:0;padding-top:2px}
 .p-card__foot .mono{font-family:var(--font-body);font-size:12px;line-height:1.5;color:var(--text-tertiary)}
 .p-card__foot .price{font-size:18px;color:var(--brand-text);font-variant-numeric:tabular-nums}
-.p-card__fav{top:20px;right:20px;width:36px;height:36px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+.p-card__fav{top:10px;right:10px;width:36px;height:36px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
 .p-card__fav svg{width:17px;height:17px}
 .p-card__fav.active{background:var(--surface);color:var(--danger)}
-.p-card__badge{top:20px;left:20px;height:36px}
+.p-card__badge{top:10px;left:10px;height:36px}
 
 /* 分類磚 */
 .cat-tile{background:var(--bg-sunken);padding:20px 12px 16px}

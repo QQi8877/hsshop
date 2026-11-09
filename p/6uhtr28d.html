@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=8">
+<link rel="modulepreload" href="/shop-render.js?v=9">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -1396,17 +1396,22 @@ footer a:hover{color:var(--color-on-dark)}
 .sec-head a:hover{color:var(--brand-hover);text-decoration:underline;text-underline-offset:3px}
 
 /* 本月選品卡片 */
-.p-card{padding:12px;background:var(--surface);box-shadow:none}
-.p-card:hover{box-shadow:var(--shadow-md);transform:translateY(-3px)}
-.p-card__media{border-radius:var(--radius-md)}
+/* 本月選品不另外包一張白卡片：米色背景上直接放照片框＋文字，只剩照片框一塊色塊，
+   滑鼠移過去照片框浮起來（跟商品照片同一個底色，照片跟框融成一片） */
+.p-card{padding:0;background:transparent;box-shadow:none;gap:12px}
+.p-card:hover{box-shadow:none;transform:none}
+.p-card__media{border-radius:var(--radius-lg);transition:transform .22s ease,box-shadow .22s ease}
+.p-card:hover .p-card__media{box-shadow:var(--shadow-md)}
+@media(prefers-reduced-motion:no-preference){.p-card:hover .p-card__media{transform:translateY(-3px)}}
+.p-card__title,.p-card__foot{padding:0 2px}
 .p-card__title{font-size:17px;line-height:1.45}
 .p-card__foot{border-top:0;padding-top:2px}
 .p-card__foot .mono{font-family:var(--font-body);font-size:12px;line-height:1.5;color:var(--text-tertiary)}
 .p-card__foot .price{font-size:18px;color:var(--brand-text);font-variant-numeric:tabular-nums}
-.p-card__fav{top:20px;right:20px;width:36px;height:36px;background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}
+.p-card__fav{top:6px;right:6px;width:36px;height:36px;color:var(--text);background:rgba(255,253,249,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(46,38,30,.10)}
 .p-card__fav svg{width:17px;height:17px}
-.p-card__fav.active{background:var(--surface);color:var(--danger)}
-.p-card__badge{top:20px;left:20px;height:36px}
+.p-card__fav.active{color:var(--danger)}
+.p-card__badge{top:6px;left:6px;height:36px}
 
 /* 分類磚 */
 .cat-tile{background:var(--bg-sunken);padding:20px 12px 16px}
@@ -1446,7 +1451,8 @@ footer a:hover{color:var(--color-on-dark)}
 .product-name{font-size:17px;line-height:1.45}
 .product-size{font-size:12px;line-height:1.5;color:var(--text-tertiary)}
 .product-price{font-size:18px;color:var(--brand-text);font-variant-numeric:tabular-nums}
-.favorite-btn{width:36px;height:36px;border-radius:var(--radius-pill);background:var(--surface);color:var(--text);filter:none;box-shadow:var(--shadow-sm)}
+/* 愛心按鈕：半透明霧面玻璃（後面的照片微微透出來、模糊），本月選品跟商品列表一樣 */
+.favorite-btn{width:36px;height:36px;border-radius:var(--radius-pill);color:var(--text);filter:none;background:rgba(255,253,249,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.7);box-shadow:0 2px 8px rgba(46,38,30,.10)}
 .favorite-btn svg{width:17px;height:17px}
 .favorite-btn.active{color:var(--danger)}
 
@@ -1573,7 +1579,7 @@ footer a:hover{color:var(--color-on-dark)}
       <li><a href="#contact">聯繫</a></li>
     </ul>
     <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
-      <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       <span class="fav-label">收藏</span>
       <span class="favorites-count" id="favoritesCount">0</span>
     </button>
@@ -1739,7 +1745,7 @@ footer a:hover{color:var(--color-on-dark)}
     <div class="lb-info" id="lbInfo">
       <div class="lb-cat-row">
         <div class="lb-product-cat">藤椅</div>
-        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
+        <button class="lb-favorite" id="lbFavoriteBtn" onclick="toggleLbFavorite()" aria-label="加入喜愛清單"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
       </div>
       <h1 class="lb-product-title" id="lbTitle">原藤雙枕休閒椅</h1>
       
@@ -1784,7 +1790,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=8";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=9";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2240,7 +2246,7 @@ function renderProducts(animate=true){
     fav.className="favorite-btn"+(isFavorite(product.id)?" active":"");
     fav.dataset.favId=product.id;
     fav.title="加入喜愛清單";
-    fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+    fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
       event.stopPropagation();
       toggleFavorite(product.id,fav);
@@ -2464,7 +2470,7 @@ function renderPicks(){
         ${price?`<span class="price">${price}</span>`:""}
       </div>
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
-        <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 24 24" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
       ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
     `;
@@ -2679,7 +2685,7 @@ function flyHeartToFab(btn){
   if(btn.classList.contains("favorite-btn"))fly.style.color="var(--danger)";
   fly.style.left=x0+"px";
   fly.style.top=y0+"px";
-  fly.innerHTML='<div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z"/></svg></div></div>';
+  fly.innerHTML='<div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z"/></svg></div></div>';
   document.body.appendChild(fly);
   const moveY=fly.firstElementChild,scale=moveY.firstElementChild,dur=680;
   favCountHolds++;

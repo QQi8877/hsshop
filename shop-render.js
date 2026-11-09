@@ -463,7 +463,7 @@ export function lineInquireBtnHtml(url){
 
 /* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、LINE 詢問）────
    opts：{option:目前選的款式（-1＝沒選）, productUrl:這件商品的網址, now:判斷特價有沒有過期用的時間} */
-const HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+const HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 /* ── 購買須知（後台「購買須知」填的問答：運送、安裝、付款、退換貨…）──────
    [{q:標題,a:內容}]，標題或內容空白的不顯示；內容是純文字，換行照樣換行 */
 export function buyInfoItems(site){

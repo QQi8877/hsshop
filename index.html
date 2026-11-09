@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=8">
+<link rel="modulepreload" href="/shop-render.js?v=9">
 <link rel="modulepreload" href="/dim-figures.js?v=3">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -1577,7 +1577,7 @@ footer a:hover{color:var(--color-on-dark)}
       <li><a href="#contact">聯繫</a></li>
     </ul>
     <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
-      <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       <span class="fav-label">收藏</span>
       <span class="favorites-count" id="favoritesCount">0</span>
     </button>
@@ -1771,7 +1771,7 @@ footer a:hover{color:var(--color-on-dark)}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=8";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=9";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2227,7 +2227,7 @@ function renderProducts(animate=true){
     fav.className="favorite-btn"+(isFavorite(product.id)?" active":"");
     fav.dataset.favId=product.id;
     fav.title="加入喜愛清單";
-    fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+    fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
       event.stopPropagation();
       toggleFavorite(product.id,fav);
@@ -2451,7 +2451,7 @@ function renderPicks(){
         ${price?`<span class="price">${price}</span>`:""}
       </div>
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
-        <svg viewBox="0 0 24 24" data-icon><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        <svg viewBox="0 0 24 24" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
       ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
     `;
@@ -2666,7 +2666,7 @@ function flyHeartToFab(btn){
   if(btn.classList.contains("favorite-btn"))fly.style.color="var(--danger)";
   fly.style.left=x0+"px";
   fly.style.top=y0+"px";
-  fly.innerHTML='<div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.1C.5 8.3 2.4 4.5 6 4.5c2 0 3.6 1.1 4.5 2.7C11.4 5.6 13 4.5 15 4.5c3.6 0 5.5 3.8 4 7.4-2.5 4.5-10 9.1-10 9.1z"/></svg></div></div>';
+  fly.innerHTML='<div><div><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z"/></svg></div></div>';
   document.body.appendChild(fly);
   const moveY=fly.firstElementChild,scale=moveY.firstElementChild,dur=680;
   favCountHolds++;

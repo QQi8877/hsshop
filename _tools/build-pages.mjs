@@ -4,7 +4,7 @@
      那件商品，Google 可以一件一件收錄；分享到 LINE／Facebook 時顯示那件商品的照片、名稱、介紹。
    - c/<分類編號>.html：每個有商品的主分類、子分類一頁（https://hsintong.cc/c/分類編號）。內容是首頁＋選好
      那個分類的商品，「摺疊桌」「藤椅」這類搜尋才有頁面可以排上去。
-   - index.html 裡標了 id 的幾個地方：給 Google 看的店家資料（structuredData）、聯繫資訊（contactItems）、
+   - index.html 裡標了 id 的幾個地方：給 Google 看的店家資料（structuredData）、聯繫資訊（contactItems、contactActions）、
      分類按鈕（categoriesBar、catSidebar）照後台的資料填好，不用等網頁的程式跑完 Google 就讀得到。
      其他地方不動，所以改版型照常直接改 index.html。
    - llms.txt：給 AI 搜尋（ChatGPT、Perplexity…）看的網站簡介、分類、商品清單。
@@ -21,7 +21,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -141,7 +141,8 @@ function fillById(html,tag,id,inner,label){
 function homePage(template,site,listed){
   let html=template;
   html=fillById(html,"script","structuredData",jsonForScript(storeJsonLd(site.contact,{image:shareImageUrl(site.layout?.heroImage||"")||undefined})),"structuredData");
-  html=fillById(html,"p","contactItems",contactItemsHtml(site.contact),"contactItems");
+  html=fillById(html,"dl","contactItems",contactItemsHtml(site.contact),"contactItems");
+  html=fillById(html,"div","contactActions",contactActionsHtml(site.contact),"contactActions");
   const nav=categoryNavHtml(site.catalog,listed);
   html=fillById(html,"div","categoriesBar",nav.bar,"categoriesBar");
   html=fillById(html,"aside","catSidebar",nav.side,"catSidebar");

@@ -9,24 +9,26 @@
      只做首頁最上面那一屏。商品讀 data/site.json，顯示規則沿用 shop-render.js。
      決定不採用的話，刪掉這個檔案就好，其他地方完全不受影響。 -->
 <style>
-/* 版面概念：小清新——大量留白、淡淡的鼠尾草綠跟天空藍、細字；右邊一扇拱窗，商品像擺在窗邊的光裡 */
+/* 版面概念：小清新——大量留白、米色跟木色、細字；右邊一扇拱窗，商品像擺在窗邊的光裡；
+   下面的商品列表不框卡片，照片直接放在米色底上 */
 :root{
-  --bg:#f8faf5;        /* 帶一點綠的白 */
-  --ink:#33413b;       /* 不用純黑，偏綠的深灰 */
-  --ink-2:#71807a;
-  --leaf:#4f7d68;      /* 葉子綠：按鈕、重點字 */
-  --leaf-deep:#3f6855;
-  --sage:#dfe9db;      /* 拱窗的底色（淡鼠尾草綠） */
-  --sky:#dcebf1;       /* 窗後面那顆淡藍的圓 */
+  --bg:#faf6ee;        /* 米白 */
+  --ink:#4a3f35;       /* 深木色的字，不用純黑 */
+  --ink-2:#8b7c6c;
+  --leaf:#96643b;      /* 木色：按鈕、重點字（變數名稱沿用上一版） */
+  --leaf-deep:#7c5230;
+  --sage:#eadcc6;      /* 拱窗後面那片影子窗（淺橡木色） */
+  --sky:#f1e6d3;       /* 窗後面那顆圓（亞麻色） */
   --photo:#fffaf3;     /* 商品照片本身的底色 */
-  --butter:#f7e9b5;    /* 一小點奶油黃 */
-  --line:#d5ded3;
-  --white:#fffffc;
+  --butter:#f4e2ae;    /* 一小點奶油黃 */
+  --line:#e4d9c8;
+  --white:#fffdf9;
   --sans:"PingFang TC","Microsoft JhengHei UI","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
   --wrap:1120px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{overflow-x:clip}
+html{scroll-behavior:smooth}
 body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.8;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
@@ -63,7 +65,7 @@ h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butte
 .stage{position:relative;aspect-ratio:1/1.02;max-width:560px;width:100%;margin-left:auto;margin-bottom:44px}
 .sun{position:absolute;right:-4%;top:2%;width:46%;aspect-ratio:1;border-radius:50%;background:var(--sky)}
 .dot{position:absolute;left:3%;bottom:20%;width:9%;aspect-ratio:1;border-radius:50%;background:var(--butter)}
-/* 拱窗：後面一片淡綠的影子窗，前面的窗跟商品照片同一個底色，照片放上去就融在一起 */
+/* 拱窗：後面一片淺木色的影子窗，前面的窗跟商品照片同一個底色，照片放上去就融在一起 */
 .arch-back{position:absolute;left:5%;right:19%;top:11%;bottom:9%;border-radius:999px 999px 0 0;background:var(--sage)}
 .arch{position:absolute;left:11%;right:13%;top:7%;bottom:9%;border-radius:999px 999px 0 0;background:var(--photo);overflow:hidden}
 .floor{position:absolute;left:0;right:0;bottom:9%;height:1px;background:var(--ink);opacity:.55}
@@ -88,7 +90,59 @@ h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butte
 @keyframes rise{from{opacity:0;transform:translateY(14px)}}
 .stage{animation:rise 1s .1s ease both}
 
+/* ── 商品列表：不框卡片，照片一塊、字直接寫在米色底上 ── */
+.shop{border-top:1px solid var(--line);padding-block:56px 80px}
+.shop-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.shop-head h2{font-size:28px;font-weight:300;letter-spacing:.1em}
+.shop-head span{font-size:13.5px;color:var(--ink-2)}
+.tabs{position:relative;display:flex;gap:30px;margin-top:22px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tabs button{flex:none;padding:10px 0 13px;font-size:15.5px;color:var(--ink-2);white-space:nowrap;transition:color .2s}
+.tabs button small{margin-left:6px;font-size:12px;opacity:.75}
+.tabs button:hover,.tabs button[aria-pressed=true]{color:var(--ink)}
+.tabs button[aria-pressed=true]{font-weight:400}
+/* 選中的分類底下那條木色的線，換分類時滑過去 */
+.tabs i{position:absolute;left:0;bottom:0;height:2px;width:1px;background:var(--leaf);transform-origin:left;transition:transform .35s cubic-bezier(.2,.8,.2,1)}
+.subs{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;min-height:0}
+.subs button{min-height:34px;padding:0 14px;border-radius:6px;font-size:13.5px;color:var(--ink-2);background:transparent;border:1px solid var(--line);transition:background .2s,color .2s,border-color .2s}
+.subs button:hover{border-color:var(--leaf);color:var(--leaf)}
+.subs button[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--white)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:44px 28px;margin-top:34px}
+.item{position:relative;min-width:0;animation:rise .6s ease both}
+.item a{display:block}
+.pic{position:relative;aspect-ratio:1/1;border-radius:6px;background:var(--photo);overflow:hidden}
+.pic img{position:absolute;inset:8%;width:84%;height:84%;object-fit:contain;transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.pic::after{content:"看看這件";position:absolute;left:12px;bottom:12px;padding:4px 12px;border-radius:6px;background:var(--white);font-size:12.5px;color:var(--leaf);opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+@media(hover:hover){
+  .item:hover .pic img{transform:scale(1.06)}
+  .item:hover .pic::after{opacity:1;transform:none}
+  .item:hover .nm{background-size:100% 1px}
+}
+.nm{display:inline;font-weight:400;font-size:16px;line-height:1.6;background:linear-gradient(var(--ink),var(--ink)) 0 100%/0 1px no-repeat;transition:background-size .3s ease}
+.meta{margin-top:12px}
+.sz{display:block;margin-top:2px;font-size:13px;color:var(--ink-2)}
+.pr{display:block;margin-top:4px;font-size:15.5px;font-weight:400;color:var(--leaf)}
+.pr s{margin-left:8px;font-size:12px;color:var(--ink-2)}
+.tagline{position:absolute;left:10px;top:10px;padding:2px 10px;border-radius:6px;background:var(--butter);font-size:12px;font-weight:400}
+.heart{position:absolute;right:8px;top:8px;width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:rgba(255,253,249,.7);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);color:var(--ink-2);transition:color .2s,transform .2s}
+.heart svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6}
+.heart:hover{color:var(--leaf)}
+.heart[aria-pressed=true]{color:var(--leaf)}
+.heart[aria-pressed=true] svg{fill:currentColor}
+.heart.pop{animation:pop .35s ease}
+@keyframes pop{40%{transform:scale(1.3)}}
+.morebar{display:flex;justify-content:center;margin-top:48px}
+.morebar button{min-height:48px;padding:0 34px;border:1px solid var(--ink);border-radius:6px;font-weight:400;letter-spacing:.06em;transition:background .2s,color .2s}
+.morebar button:hover{background:var(--ink);color:var(--white)}
+.none{grid-column:1/-1;padding:40px 0;text-align:center;color:var(--ink-2)}
+
+@media(min-width:861px) and (max-width:1040px){.grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:860px){
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:30px 16px}
+  .shop{padding-block:40px 64px}
+  .shop-head h2{font-size:24px}
+  .tabs{gap:24px}
+  .nm{font-size:15px}
   nav{display:none}
   header .wrap{min-height:60px}
   .hero .wrap{grid-template-columns:minmax(0,1fr);gap:34px;padding-block:14px 48px}
@@ -104,10 +158,10 @@ h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butte
 </style>
 </head>
 <body>
-<div class="note">這是主視覺的示範頁，正式網站沒有變動。</div>
+<div class="note">這是新風格的示範頁，正式網站沒有變動。</div>
 <header><div class="wrap">
   <a class="brand" href="/demo.html"><i aria-hidden="true"></i>信通家俱行</a>
-  <nav aria-label="主選單"><a href="/#categories">商品</a><a href="/#buyInfo">購買須知</a><a href="/#contact">聯繫我們</a></nav>
+  <nav aria-label="主選單"><a href="#shop">商品</a><a href="/#buyInfo">購買須知</a><a href="/#contact">聯繫我們</a></nav>
   <a class="pill" id="lineTop" href="#" target="_blank" rel="noopener">LINE 詢問</a>
 </div></header>
 
@@ -118,7 +172,7 @@ h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butte
     <p class="lead rise">桌子、椅子、收納架，用心挑過的每一件家具，陪你過每一天的日常。</p>
     <div class="acts rise">
       <a class="btn" id="lineHero" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE 詢問</a>
-      <a class="more" href="/#categories">逛逛全部商品</a>
+      <a class="more" href="#shop">逛逛全部商品</a>
     </div>
     <div class="facts rise" id="facts"></div>
   </div>
@@ -134,8 +188,16 @@ h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butte
   </div>
 </div></main>
 
+<section class="shop" id="shop"><div class="wrap">
+  <div class="shop-head"><h2>全部商品</h2><span id="shopCount"></span></div>
+  <div class="tabs" id="tabs" role="group" aria-label="商品分類"></div>
+  <div class="subs" id="subs" role="group" aria-label="子分類"></div>
+  <div class="grid" id="grid"></div>
+  <div class="morebar" id="morebar" hidden><button type="button" id="more">再看更多</button></div>
+</div></section>
+
 <script type="module">
-import{escapeHTML,normalizeProduct,isListedProduct,catalogOrderCompare,productPath,normalizePhotoUrl,getSizeSummary,photoAlt}from"/shop-render.js?v=9";
+import{escapeHTML,normalizeProduct,isListedProduct,catalogOrderCompare,productPath,normalizePhotoUrl,getSizeSummary,photoAlt,activeSalePrice,mainNameOf}from"/shop-render.js?v=9";
 const $=id=>document.getElementById(id);
 const calm=matchMedia("(prefers-reduced-motion:reduce)").matches;
 let picks=[],current=0,timer=0;
@@ -167,9 +229,55 @@ try{
   $("picks").innerHTML=picks.map(({cat},i)=>`<button type="button" data-i="${i}">${escapeHTML(cat.name)}</button>`).join("");
   $("picks").addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(b)show(+b.dataset.i,true)});
   show(0);
+  initShop(listed,catalog);
   // 沒人動的時候每 5 秒換一件；客人自己點過就停
   if(!calm&&picks.length>1)timer=setInterval(()=>show((current+1)%picks.length),5000);
 }catch(e){$("cardName").textContent="商品資料暫時載入不了"}
+
+/* ── 商品列表 ── */
+function initShop(listed,catalog){
+  const PAGE=12;                       // 先放 12 件，按「再看更多」再多 12 件
+  const st={main:"全部",sub:null,shown:PAGE,fav:new Set()};
+  try{st.fav=new Set(JSON.parse(localStorage.getItem("hs_demo_fav")||"[]"))}catch(e){}
+  const money=v=>{const n=String(v??"").replace(/[^\d]/g,"");return n?`$ ${Number(n).toLocaleString("en-US")}`:""};
+  const count=(m,sub)=>listed.filter(p=>(m==="全部"||p.mainCat===m)&&(!sub||p.subCat===sub)).length;
+  const mains=["全部",...catalog.filter(c=>!c.hidden&&count(c.id)).map(c=>c.id)];
+  function tabs(){
+    $("tabs").innerHTML=mains.map(id=>`<button type="button" data-main="${escapeHTML(id)}" aria-pressed="${st.main===id}">${escapeHTML(mainNameOf(catalog,id))}<small>${count(id)}</small></button>`).join("")+"<i></i>";
+    const cat=catalog.find(c=>c.id===st.main);
+    $("subs").innerHTML=(cat?.subs||[]).filter(x=>!x.hidden&&count(cat.id,x.id)).map(x=>`<button type="button" data-sub="${escapeHTML(x.id)}" aria-pressed="${st.sub===x.id}">${escapeHTML(x.name)}</button>`).join("");
+    line();
+  }
+  function line(){
+    const on=$("tabs").querySelector("[aria-pressed=true]"),bar=$("tabs").querySelector("i");
+    if(on&&bar)bar.style.transform=`translateX(${on.offsetLeft}px) scaleX(${on.offsetWidth})`;
+  }
+  function grid(){
+    const list=listed.filter(p=>(st.main==="全部"||p.mainCat===st.main)&&(!st.sub||p.subCat===st.sub));
+    $("shopCount").textContent=`共 ${list.length} 件`;
+    $("grid").innerHTML=list.slice(0,st.shown).map((p,i)=>{
+      const photo=(p.photos||[]).filter(Boolean)[0],sale=activeSalePrice(p),price=money(sale||p.price);
+      return `<article class="item" style="animation-delay:${(i%PAGE)*35}ms"><a href="${escapeHTML(productPath(p.id))}">
+        <div class="pic">${photo?`<img loading="lazy" decoding="async" src="${escapeHTML(normalizePhotoUrl(photo,500))}" alt="${escapeHTML(photoAlt(p,catalog))}">`:""}</div>
+        <div class="meta"><span class="nm">${escapeHTML(p.name)}</span><span class="sz">${escapeHTML(getSizeSummary(p))}</span>${price?`<span class="pr">${price}${sale&&p.price?`<s>${money(p.price)}</s>`:""}</span>`:""}</div></a>
+        ${(p.badges||[]).includes("custom")?'<span class="tagline">可客製化</span>':""}
+        <button class="heart" type="button" data-fav="${escapeHTML(p.id)}" aria-pressed="${st.fav.has(p.id)}" aria-label="收藏 ${escapeHTML(p.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z"/></svg></button></article>`;
+    }).join("")||'<div class="none">這個分類目前沒有商品</div>';
+    $("morebar").hidden=list.length<=st.shown;
+    $("more").textContent=`再看更多（還有 ${Math.max(0,list.length-st.shown)} 件）`;
+  }
+  $("tabs").addEventListener("click",e=>{const b=e.target.closest("[data-main]");if(!b)return;st.main=b.dataset.main;st.sub=null;st.shown=PAGE;tabs();grid()});
+  $("subs").addEventListener("click",e=>{const b=e.target.closest("[data-sub]");if(!b)return;st.sub=st.sub===b.dataset.sub?null:b.dataset.sub;st.shown=PAGE;tabs();grid()});
+  $("more").addEventListener("click",()=>{st.shown+=PAGE;grid()});
+  $("grid").addEventListener("click",e=>{
+    const b=e.target.closest("[data-fav]");if(!b)return;
+    const on=!st.fav.has(b.dataset.fav);on?st.fav.add(b.dataset.fav):st.fav.delete(b.dataset.fav);
+    b.setAttribute("aria-pressed",on);b.classList.toggle("pop",on);
+    try{localStorage.setItem("hs_demo_fav",JSON.stringify([...st.fav]))}catch(e){}
+  });
+  addEventListener("resize",line);
+  tabs();grid();
+}
 
 // 滑鼠在主視覺上移動時，裝飾跟著飄一點
 if(!calm&&matchMedia("(hover:hover)").matches){

@@ -4,401 +4,182 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex,nofollow">
-<title>信通家俱行｜新風格示範</title>
-<!-- 新風格的示範頁（給老闆看雛型用，不是正式頁面）：Google 不收錄、網站上沒有任何連結連過來。
-     商品資料讀 data/site.json（每小時自動更新的那一份），顯示規則沿用 shop-render.js。
+<title>信通家俱行｜主視覺示範</title>
+<!-- 新風格的示範頁（給老闆看主視覺用，不是正式頁面）：Google 不收錄、網站上沒有任何連結連過來。
+     只做首頁最上面那一屏。商品讀 data/site.json，顯示規則沿用 shop-render.js。
      決定不採用的話，刪掉這個檔案就好，其他地方完全不受影響。 -->
 <style>
-/* 版面概念：傳統家具行的型錄＋價目牌——方正的格子、細黑框線、直角；唯一搶眼的是那條黃色捲尺 */
+/* 版面概念：小清新——大量留白、淡淡的鼠尾草綠跟天空藍、細字；右邊一扇拱窗，商品像擺在窗邊的光裡 */
 :root{
-  --bg:#eceee9;        /* 淺灰綠（磨石子地） */
-  --tile:#fffaf3;      /* 商品照片本身的底色，照片框用同一個顏色才會融在一起 */
-  --paper:#f8f8f4;
-  --ink:#1b201e;
-  --ink-2:#55605b;
-  --line:#1b201e;
-  --line-soft:#c5cbc5;
-  --green:#1d5a48;     /* 老鐵窗的深綠：主要按鈕、選中的分類 */
-  --green-ink:#f3f7f4;
-  --tape:#f1c232;      /* 捲尺黃：只用在量尺 */
-  --red:#b3261e;       /* 紅紙紅：只用在特價 */
-  --sans:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
-  --num:"SF Mono","Menlo","Consolas","Roboto Mono",ui-monospace,monospace;
-  --wrap:1180px;
+  --bg:#f8faf5;        /* 帶一點綠的白 */
+  --ink:#33413b;       /* 不用純黑，偏綠的深灰 */
+  --ink-2:#71807a;
+  --leaf:#4f7d68;      /* 葉子綠：按鈕、重點字 */
+  --leaf-deep:#3f6855;
+  --sage:#dfe9db;      /* 拱窗的底色（淡鼠尾草綠） */
+  --sky:#dcebf1;       /* 窗後面那顆淡藍的圓 */
+  --photo:#fffaf3;     /* 商品照片本身的底色 */
+  --butter:#f7e9b5;    /* 一小點奶油黃 */
+  --line:#d5ded3;
+  --white:#fffffc;
+  --sans:"PingFang TC","Microsoft JhengHei UI","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
+  --wrap:1120px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
 html,body{overflow-x:clip}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
-a{color:inherit}
-button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+body{min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--sans);font-weight:300;font-size:16px;line-height:1.8;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 img{display:block;max-width:100%}
-:focus-visible{outline:3px solid var(--green);outline-offset:2px}
-.wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.num{font-family:var(--num);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+:focus-visible{outline:2px solid var(--leaf);outline-offset:3px}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-left:max(22px,env(safe-area-inset-left,0px));padding-right:max(22px,env(safe-area-inset-right,0px))}
 
-/* ── 頂列 ── */
-.top{position:sticky;top:0;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;align-items:center;gap:14px;min-height:56px}
-.brand{font-weight:700;font-size:18px;text-decoration:none;letter-spacing:.02em}
-.open{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-2);margin-right:auto}
-.open i{width:9px;height:9px;background:var(--line-soft)}
-.open.is-open i{background:var(--green)}
-.open.is-open b{color:var(--green)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border:1px solid var(--line);background:var(--paper);font-weight:700;text-decoration:none;transition:transform .12s ease,box-shadow .12s ease}
-.btn--main{background:var(--green);border-color:var(--green);color:var(--green-ink)}
-/* 按下去像實體按鍵：平常有一塊硬邊的影子，按下去整顆壓進去 */
-.btn{box-shadow:3px 3px 0 var(--line)}
-.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--line)}
-.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--line)}
-.top .btn{min-height:38px;padding:0 14px;font-size:14px;box-shadow:2px 2px 0 var(--line)}
+.note{font-size:12.5px;text-align:center;padding:6px 16px;color:var(--ink-2);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;gap:28px;min-height:72px}
+.brand{font-size:19px;font-weight:400;letter-spacing:.12em;margin-right:auto}
+.brand i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--leaf);margin-right:10px;vertical-align:middle;transform:translateY(-1px)}
+nav{display:flex;gap:26px;font-size:14.5px;color:var(--ink-2)}
+nav a{padding:6px 0;background:linear-gradient(var(--leaf),var(--leaf)) 0 100%/0 1px no-repeat;transition:background-size .3s ease,color .2s}
+nav a:hover{color:var(--ink);background-size:100% 1px}
+.pill{padding:8px 18px;border:1px solid var(--leaf);border-radius:6px;color:var(--leaf);font-size:14px;font-weight:400;transition:background .2s,color .2s}
+.pill:hover{background:var(--leaf);color:var(--white)}
 
-/* ── 開頭：店名＋量尺 ── */
-.hero{border-bottom:1px solid var(--line)}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:40px;padding-block:44px 48px;align-items:center}
-.hero h1{font-size:clamp(34px,5vw,56px);line-height:1.15;font-weight:900;letter-spacing:.01em;text-wrap:balance}
-.hero p{margin:14px 0 24px;color:var(--ink-2);font-size:16px;max-width:26em}
-.hero-acts{display:flex;flex-wrap:wrap;gap:12px}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:48px;align-items:center;padding-block:28px 56px}
+.where{display:inline-flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2);letter-spacing:.08em}
+.where::before{content:"";width:28px;height:1px;background:var(--leaf)}
+h1{margin:18px 0 20px;font-size:clamp(38px,5.4vw,62px);font-weight:300;line-height:1.3;letter-spacing:.06em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--leaf);background:linear-gradient(var(--butter),var(--butter)) 0 88%/100% .28em no-repeat}
+.lead{max-width:24em;color:var(--ink-2);font-size:16.5px}
+.acts{display:flex;flex-wrap:wrap;align-items:center;gap:22px;margin-top:34px}
+.btn{display:inline-flex;align-items:center;gap:9px;min-height:50px;padding:0 28px;border-radius:6px;background:var(--leaf);color:var(--white);font-weight:400;letter-spacing:.06em;transition:background .2s,transform .2s}
+.btn:hover{background:var(--leaf-deep);transform:translateY(-2px)}
+.btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.more{font-size:15px;font-weight:400;padding:6px 0;border-bottom:1px solid var(--ink);transition:color .2s,border-color .2s}
+.more:hover{color:var(--leaf);border-color:var(--leaf)}
+.facts{display:flex;flex-wrap:wrap;gap:8px 28px;margin-top:44px;padding-top:20px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+.facts b{font-weight:400;color:var(--ink);margin-right:8px}
 
-.ruler{border:1px solid var(--line);background:var(--paper)}
-.ruler-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:16px 18px 6px}
-.ruler-head h2{font-size:18px;font-weight:700}
-.ruler-read{font-size:15px;color:var(--ink-2);white-space:nowrap}
-.ruler-read b{font-size:30px;color:var(--ink);font-weight:700}
-.tape-box{position:relative;margin:10px 18px 0;height:64px}
-/* 捲尺：每 10 公分一小格、每 50 公分一長格 */
-.tape{position:absolute;inset:0;border:1px solid var(--line);background:
-  repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100% / 4.2)) 0 0 / 100% 26px no-repeat,
-  repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100% / 21)) 0 0 / 100% 12px no-repeat,
-  var(--tape)}
-.tape-nums{position:absolute;left:0;right:0;bottom:5px;font-size:11px;font-weight:700}
-.tape-nums span{position:absolute;transform:translateX(-50%)}
-.tape-nums span:first-child{transform:none;left:4px!important}
-.tape-nums span:last-child{transform:translateX(-100%);padding-right:4px}
-.tape-mark{position:absolute;top:-7px;bottom:-7px;width:3px;margin-left:-1px;background:var(--red);pointer-events:none;will-change:transform}
-.tape-mark::before{content:"";position:absolute;top:0;left:50%;width:13px;height:13px;margin-left:-6.5px;background:var(--red)}
-.tape-off{position:absolute;top:0;bottom:0;right:0;background:rgba(27,32,30,.38);pointer-events:none}
-.ruler input[type=range]{position:absolute;inset:-8px 0;width:100%;height:calc(100% + 16px);opacity:0;cursor:ew-resize;margin:0}
-.tape-box:focus-within .tape{outline:3px solid var(--green);outline-offset:2px}
-.ruler-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px 16px;font-size:14px}
-.ruler-foot b{font-size:17px}
-.textbtn{text-decoration:underline;text-underline-offset:3px;font-size:14px;min-height:32px}
-.textbtn[hidden]{display:none}
+/* 右邊的主視覺：淡藍的圓＋拱窗＋商品＋一張小卡 */
+.stage{position:relative;aspect-ratio:1/1.02;max-width:560px;width:100%;margin-left:auto;margin-bottom:44px}
+.sun{position:absolute;right:-4%;top:2%;width:46%;aspect-ratio:1;border-radius:50%;background:var(--sky)}
+.dot{position:absolute;left:3%;bottom:20%;width:9%;aspect-ratio:1;border-radius:50%;background:var(--butter)}
+/* 拱窗：後面一片淡綠的影子窗，前面的窗跟商品照片同一個底色，照片放上去就融在一起 */
+.arch-back{position:absolute;left:5%;right:19%;top:11%;bottom:9%;border-radius:999px 999px 0 0;background:var(--sage)}
+.arch{position:absolute;left:11%;right:13%;top:7%;bottom:9%;border-radius:999px 999px 0 0;background:var(--photo);overflow:hidden}
+.floor{position:absolute;left:0;right:0;bottom:9%;height:1px;background:var(--ink);opacity:.55}
+.shot{position:absolute;inset:14% 8% 0;opacity:0;transform:translateY(10px) scale(.98);transition:opacity .7s ease,transform .7s ease}
+.shot.on{opacity:1;transform:none}
+.shot img{width:100%;height:100%;object-fit:contain;object-position:50% 100%}
+.card{position:absolute;right:0;bottom:15%;min-width:172px;max-width:62%;padding:13px 18px 12px;background:var(--white);border-radius:6px;box-shadow:0 14px 34px -18px rgba(51,65,59,.45);transition:transform .3s ease}
+.card:hover{transform:translateY(-3px)}
+.card small{display:block;font-size:12px;color:var(--leaf);letter-spacing:.08em}
+.card strong{display:block;font-weight:400;font-size:16px;line-height:1.5}
+.card span{font-size:12.5px;color:var(--ink-2)}
+.picks{position:absolute;left:11%;top:calc(91% + 14px);display:flex;gap:8px}
+.picks button{min-height:36px;padding:0 15px;border:1px solid var(--line);border-radius:6px;background:var(--white);font-size:13.5px;color:var(--ink-2);transition:border-color .2s,color .2s,background .2s}
+.picks button:hover{border-color:var(--leaf);color:var(--leaf)}
+.picks button[aria-pressed=true]{background:var(--leaf);border-color:var(--leaf);color:var(--white)}
+/* 滑鼠在主視覺上移動，圓、小點、小卡各自慢慢跟著飄一點（--mx、--my 由程式給） */
+.sun,.dot,.card{translate:calc(var(--mx,0) * var(--k,0px)) calc(var(--my,0) * var(--k,0px));transition:translate .5s ease-out,transform .3s ease}
+.sun{--k:-14px}.dot{--k:18px}.card{--k:8px}
+/* 進場：字一行一行浮上來 */
+.rise{animation:rise .8s ease both}
+.rise:nth-child(2){animation-delay:.08s}.rise:nth-child(3){animation-delay:.16s}.rise:nth-child(4){animation-delay:.24s}.rise:nth-child(5){animation-delay:.32s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}}
+.stage{animation:rise 1s .1s ease both}
 
-/* ── 分類＋工具列 ── */
-.bar{position:sticky;top:57px;z-index:15;background:var(--bg);border-bottom:1px solid var(--line)}
-.bar .wrap{display:flex;align-items:stretch;gap:0;overflow-x:auto;scrollbar-width:none}
-.bar .wrap::-webkit-scrollbar{display:none}
-.tab{flex:none;display:flex;align-items:center;gap:7px;min-height:48px;padding:0 16px;border-right:1px solid var(--line-soft);font-weight:700;white-space:nowrap;position:relative}
-.tab:first-child{border-left:1px solid var(--line-soft)}
-.tab small{font-family:var(--num);font-size:11px;font-weight:400;color:var(--ink-2)}
-.tab[aria-pressed=true]{background:var(--green);color:var(--green-ink)}
-.tab[aria-pressed=true] small{color:inherit;opacity:.8}
-.unit{margin-left:auto;flex:none;display:flex;align-items:center;gap:8px;padding-left:16px;font-size:13px;color:var(--ink-2);white-space:nowrap}
-.seg{display:inline-flex;border:1px solid var(--line)}
-.seg button{min-height:32px;padding:0 12px;font-size:13px;font-weight:700}
-.seg button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
-.subs{display:flex;flex-wrap:wrap;gap:8px;padding-block:14px 0}
-.subs:empty{display:none}
-.chip{min-height:34px;padding:0 12px;border:1px solid var(--line-soft);background:var(--paper);font-size:13.5px}
-.chip[aria-pressed=true]{border-color:var(--line);background:var(--ink);color:var(--paper)}
-
-/* ── 商品格：一整張型錄，格子之間只有一條線 ── */
-.list-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:22px 12px}
-.list-head h2{font-size:22px;font-weight:900}
-.list-head span{font-size:13.5px;color:var(--ink-2)}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-left:1px solid var(--line);margin-bottom:56px}
-.card{position:relative;display:flex;flex-direction:column;border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper);min-width:0;animation:card-in .28s ease both}
-@keyframes card-in{from{opacity:0;transform:translateY(6px)}}
-.card a.hit{position:absolute;inset:0;z-index:1}
-.photo{position:relative;aspect-ratio:1/1;background:var(--tile);overflow:hidden}
-.photo img{position:absolute;inset:9%;width:82%;height:82%;object-fit:contain;transition:transform .3s ease}
-/* 滑鼠移過去：照片退後一點，下面跟右邊「畫」出寬跟高的標線 */
-.dim{position:absolute;pointer-events:none;color:var(--green);font-size:11px;font-weight:700;opacity:0;transition:opacity .2s ease}
-.dim i{position:absolute;background:currentColor;transition:transform .32s cubic-bezier(.2,.8,.2,1)}
-.dim-w{left:9%;right:9%;bottom:10px;height:14px}
-.dim-w i{left:0;right:0;top:6px;height:1px;transform:scaleX(0);transform-origin:left}
-.dim-w::before,.dim-w::after,.dim-h::before,.dim-h::after{content:"";position:absolute;background:currentColor}
-.dim-w::before,.dim-w::after{top:2px;width:1px;height:9px}
-.dim-w::before{left:0}.dim-w::after{right:0}
-.dim-w span{position:absolute;left:50%;top:-1px;transform:translateX(-50%);background:var(--tile);padding:0 6px;line-height:14px}
-.dim-h{top:9%;bottom:calc(9% + 18px);left:8px;width:14px}
-.dim-h i{top:0;bottom:0;left:6px;width:1px;transform:scaleY(0);transform-origin:top}
-.dim-h::before,.dim-h::after{left:2px;height:1px;width:9px}
-.dim-h::before{top:0}.dim-h::after{bottom:0}
-.dim-h span{position:absolute;top:50%;left:7px;transform:translate(-50%,-50%) rotate(-90deg);background:var(--tile);padding:0 6px;line-height:14px;white-space:nowrap}
-@media(hover:hover){
-  .card:hover .photo img{transform:scale(.9)}
-  .card:hover .dim{opacity:1}
-  .card:hover .dim i{transform:none}
-  .card:hover{background:var(--tile)}
-}
-.fav{position:absolute;z-index:2;top:8px;right:8px;width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--line-soft);background:var(--paper)}
-.fav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2}
-.fav[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:var(--tape)}
-.fav[aria-pressed=true] svg{fill:currentColor}
-.fav.pop{animation:pop .3s ease}
-@keyframes pop{40%{transform:scale(1.25) rotate(-8deg)}}
-.tag{position:absolute;z-index:2;top:8px;left:8px;padding:2px 8px;background:var(--tape);border:1px solid var(--line);font-size:12px;font-weight:700}
-.info{padding:12px 12px 14px;border-top:1px solid var(--line-soft);display:flex;flex-direction:column;gap:8px;flex:1}
-.name{font-weight:700;font-size:15.5px;line-height:1.35}
-/* 尺寸做成一塊規格牌：寬｜深｜高 三格 */
-.spec{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-soft);margin-top:auto}
-.spec div{padding:5px 4px 4px;text-align:center;border-right:1px solid var(--line-soft);min-width:0}
-.spec div:last-child{border-right:0}
-.spec dt{font-size:11px;color:var(--ink-2);line-height:1.2}
-.spec dd{font-size:14px;line-height:1.3}
-.spec--ask{display:block;padding:7px 8px;font-size:13px;color:var(--ink-2);text-align:center}
-.price{font-family:var(--num);font-size:17px;font-weight:700}
-.price s{font-size:12px;font-weight:400;color:var(--ink-2);margin-left:6px}
-.price.sale{color:var(--red)}
-.empty{grid-column:1/-1;padding:44px 16px;text-align:center;color:var(--ink-2);border-right:1px solid var(--line);border-bottom:1px solid var(--line);background:var(--paper)}
-
-/* ── 來店資訊 ── */
-.visit{background:var(--ink);color:var(--paper)}
-.visit .wrap{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:40px;padding-block:52px}
-.visit h2{font-size:28px;font-weight:900}
-.visit p{margin:10px 0 22px;color:#c3cbc6}
-.visit .btn{border-color:var(--paper);box-shadow:3px 3px 0 var(--tape)}
-.visit .btn:hover{box-shadow:4px 4px 0 var(--tape)}
-.visit .btn:active{box-shadow:0 0 0 var(--tape)}
-.visit .btn:not(.btn--main){background:transparent;color:var(--paper)}
-.facts{border-top:1px solid #56605b}
-.facts div{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:13px 0;border-bottom:1px solid #56605b}
-.facts dt{color:var(--tape);font-weight:700;font-size:14px}
-.facts dd{overflow-wrap:anywhere}
-.facts a{text-underline-offset:3px}
-footer{background:var(--ink);color:#aab3ad;font-size:12.5px;border-top:1px solid #56605b}
-footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:16px}
-
-/* ── 詢問列：收藏了商品才從下面滑上來 ── */
-.tray{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--tape);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
-.tray.on{transform:none}
-.tray .wrap{display:flex;align-items:center;gap:12px;padding-block:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
-.tray p{margin-right:auto;font-weight:700;min-width:0}
-.tray p small{display:block;font-weight:400;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tray .btn{min-height:42px;white-space:nowrap;flex:none}
-.tray .textbtn{white-space:nowrap;flex:none}
-.demo-note{background:var(--tape);border-bottom:1px solid var(--line);font-size:13px;text-align:center;padding:6px 16px}
-
-@media(max-width:900px){
-  .hero .wrap,.visit .wrap{grid-template-columns:minmax(0,1fr);gap:26px}
-  .hero .wrap{padding-block:28px 32px}
-  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media(max-width:620px){
-  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .open span{display:none}
-  .unit>span{display:none}
-  .name{font-size:14.5px}
-  .spec dd{font-size:13px}
-  .info{padding:10px 9px 12px}
-  .hero-acts .btn{flex:1}
-  /* 手機沒有「滑鼠移過去」：標線改成一直淡淡地畫著 */
-}
-@media(hover:none){
-  .dim{opacity:.85}.dim i{transform:none}
-  .photo img{transform:scale(.92)}
+@media(max-width:860px){
+  nav{display:none}
+  header .wrap{min-height:60px}
+  .hero .wrap{grid-template-columns:minmax(0,1fr);gap:34px;padding-block:14px 48px}
+  .stage{margin:0 auto 40px;max-width:420px}
+  .card{bottom:11%;padding:10px 14px 9px;min-width:0}
+  .card strong{font-size:14.5px}
+  .facts{margin-top:30px}
+  .btn{flex:1;justify-content:center}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation:none!important;transition:none!important}
-  html{scroll-behavior:auto}
 }
 </style>
 </head>
 <body>
-<div class="demo-note">這是新風格的示範頁，商品是真實資料，正式網站沒有變動。</div>
-<header class="top"><div class="wrap">
-  <a class="brand" href="#top">信通家俱行</a>
-  <div class="open" id="openState" aria-live="polite"><i aria-hidden="true"></i><b>營業時間</b><span></span></div>
-  <a class="btn btn--main" id="lineTop" href="#" target="_blank" rel="noopener">LINE 詢問</a>
+<div class="note">這是主視覺的示範頁，正式網站沒有變動。</div>
+<header><div class="wrap">
+  <a class="brand" href="/demo.html"><i aria-hidden="true"></i>信通家俱行</a>
+  <nav aria-label="主選單"><a href="/#categories">商品</a><a href="/#buyInfo">購買須知</a><a href="/#contact">聯繫我們</a></nav>
+  <a class="pill" id="lineTop" href="#" target="_blank" rel="noopener">LINE 詢問</a>
 </div></header>
 
-<main id="top">
-<section class="hero"><div class="wrap">
+<main class="hero"><div class="wrap">
   <div>
-    <h1>信通家俱行</h1>
-    <p>讓家，更有溫度。桌椅、藤椅、鋁架、收納櫃，文昌街門市看得到實品。</p>
-    <div class="hero-acts">
-      <a class="btn btn--main" id="lineHero" href="#" target="_blank" rel="noopener">LINE 詢問</a>
-      <a class="btn" href="#list">看全部商品</a>
+    <div class="where rise">台北大安・文昌街</div>
+    <h1 class="rise">讓家，<br>更有<em>溫度</em></h1>
+    <p class="lead rise">桌子、椅子、收納架，用心挑過的每一件家具，陪你過每一天的日常。</p>
+    <div class="acts rise">
+      <a class="btn" id="lineHero" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE 詢問</a>
+      <a class="more" href="/#categories">逛逛全部商品</a>
     </div>
+    <div class="facts rise" id="facts"></div>
   </div>
-  <div class="ruler" aria-labelledby="rulerTitle">
-    <div class="ruler-head">
-      <h2 id="rulerTitle">家裡的位置有多寬？</h2>
-      <div class="ruler-read"><b class="num" id="rulerCm">不限</b> <span id="rulerUnit"></span></div>
-    </div>
-    <div class="tape-box">
-      <div class="tape" aria-hidden="true"></div>
-      <div class="tape-off" id="tapeOff" aria-hidden="true"></div>
-      <div class="tape-nums num" id="tapeNums" aria-hidden="true"></div>
-      <div class="tape-mark" id="tapeMark" aria-hidden="true"></div>
-      <input type="range" id="rulerInput" min="30" max="240" step="5" value="240" aria-label="位置的寬度（公分），拉到最右邊是不限">
-    </div>
-    <div class="ruler-foot">
-      <span>放得下的有 <b class="num" id="fitCount">0</b> 件</span>
-      <button class="textbtn" id="rulerReset" type="button" hidden>不限寬度</button>
-    </div>
+
+  <div class="stage" id="stage">
+    <div class="sun" aria-hidden="true"></div>
+    <div class="arch-back" aria-hidden="true"></div>
+    <div class="arch" id="arch"></div>
+    <div class="floor" aria-hidden="true"></div>
+    <div class="dot" aria-hidden="true"></div>
+    <a class="card" id="card" href="/"><small id="cardCat"></small><strong id="cardName">商品載入中</strong><span id="cardSize"></span></a>
+    <div class="picks" id="picks" role="group" aria-label="換一件商品看看"></div>
   </div>
-</div></section>
-
-<nav class="bar" aria-label="商品分類"><div class="wrap" id="tabs"></div></nav>
-
-<section id="list"><div class="wrap">
-  <div class="subs" id="subs"></div>
-  <div class="list-head"><h2 id="listTitle">全部商品</h2><span id="listCount"></span></div>
-  <div class="grid" id="grid"><div class="empty">商品載入中</div></div>
-</div></section>
-
-<section class="visit" id="visit"><div class="wrap">
-  <div>
-    <h2>來店看實品</h2>
-    <p>坐坐看、摸摸看，尺寸不確定也可以帶著量好的寬度來問。</p>
-    <div class="hero-acts">
-      <a class="btn btn--main" id="lineVisit" href="#" target="_blank" rel="noopener">LINE 詢問</a>
-      <a class="btn" id="mapBtn" href="#" target="_blank" rel="noopener">地圖導航</a>
-    </div>
-  </div>
-  <dl class="facts" id="facts"></dl>
-</div></section>
-</main>
-<footer><div class="wrap"><span>信通家俱行 HSIN TONG FURNITURE</span><span>© 2026</span></div></footer>
-
-<div class="tray" id="tray"><div class="wrap">
-  <p><span id="trayCount"></span><small id="trayNames"></small></p>
-  <button class="textbtn" id="trayClear" type="button">清空</button>
-  <a class="btn btn--main" id="trayLine" href="#" target="_blank" rel="noopener">用 LINE 問這幾件</a>
-</div></div>
+</div></main>
 
 <script type="module">
-import{escapeHTML,normalizeProduct,isListedProduct,catalogOrderCompare,productPath,normalizePhotoUrl,mainNameOf,subNameOf,activeSalePrice,photoAlt}from"/shop-render.js?v=9";
-
-const TAI_CHI=30.3;            // 1 台尺 = 30.3 公分
-const RULER_MIN=30,RULER_MAX=240; // 拉到最右邊（240）= 不限
+import{escapeHTML,normalizeProduct,isListedProduct,catalogOrderCompare,productPath,normalizePhotoUrl,getSizeSummary,photoAlt}from"/shop-render.js?v=9";
 const $=id=>document.getElementById(id);
-const state={catalog:[],contact:{},products:[],main:"全部",sub:null,maxW:RULER_MAX,unit:"cm",fav:new Set()};
-try{state.fav=new Set(JSON.parse(localStorage.getItem("hs_demo_fav")||"[]"))}catch(e){}
+const calm=matchMedia("(prefers-reduced-motion:reduce)").matches;
+let picks=[],current=0,timer=0;
 
-const num=v=>{const n=parseFloat(String(v??"").replace(/[^\d.]/g,""));return Number.isFinite(n)&&n>0?n:null};
-const widthOf=p=>num(p.dimensions?.width);
-const fmt=cm=>state.unit==="cm"?String(cm):(Math.round(cm/TAI_CHI*10)/10).toString();
-const unitLabel=()=>state.unit==="cm"?"公分":"台尺";
-const money=v=>{const n=String(v??"").replace(/[^\d]/g,"");return n?`$${Number(n).toLocaleString("en-US")}`:""};
-
-function visible(){
-  return state.products.filter(p=>{
-    if(state.main!=="全部"&&p.mainCat!==state.main)return false;
-    if(state.sub&&p.subCat!==state.sub)return false;
-    if(state.maxW<RULER_MAX){const w=widthOf(p);if(w==null||w>state.maxW)return false}
-    return true;
-  });
+function show(i,byUser){
+  current=i;
+  const {cat,product}=picks[i];
+  $("arch").querySelectorAll(".shot").forEach((el,n)=>el.classList.toggle("on",n===i));
+  $("picks").querySelectorAll("button").forEach((b,n)=>b.setAttribute("aria-pressed",n===i));
+  $("cardCat").textContent=cat.name;
+  $("cardName").textContent=product.name;
+  $("cardSize").textContent=getSizeSummary(product);
+  $("card").href=productPath(product.id);
+  if(byUser){clearInterval(timer);timer=0}
 }
-function renderTabs(){
-  const count=id=>state.products.filter(p=>id==="全部"||p.mainCat===id).length;
-  const cats=["全部",...state.catalog.filter(c=>!c.hidden&&count(c.id)).map(c=>c.id)];
-  $("tabs").innerHTML=cats.map(id=>`<button class="tab" type="button" data-main="${escapeHTML(id)}" aria-pressed="${state.main===id}">${escapeHTML(mainNameOf(state.catalog,id))}<small>${count(id)}</small></button>`).join("")
-    +`<div class="unit"><span>尺寸單位</span><div class="seg" role="group" aria-label="尺寸單位">
-      <button type="button" data-unit="cm" aria-pressed="${state.unit==="cm"}">公分</button><button type="button" data-unit="chi" aria-pressed="${state.unit==="chi"}">台尺</button></div></div>`;
-  const main=state.catalog.find(c=>c.id===state.main);
-  $("subs").innerHTML=(main?.subs||[]).filter(s=>!s.hidden&&state.products.some(p=>p.mainCat===main.id&&p.subCat===s.id))
-    .map(s=>`<button class="chip" type="button" data-sub="${escapeHTML(s.id)}" aria-pressed="${state.sub===s.id}">${escapeHTML(s.name)}</button>`).join("");
-}
-function cardHtml(p,i){
-  const d=p.dimensions||{},w=num(d.width),dp=num(d.depth),h=num(d.height);
-  const photo=(p.photos||[]).filter(Boolean)[0];
-  const sale=activeSalePrice(p),price=money(sale||p.price);
-  const cell=(label,v)=>`<div><dt>${label}</dt><dd class="num">${v==null?"–":fmt(v)}</dd></div>`;
-  const tag=(p.badges||[]).includes("custom")?'<span class="tag">可客製</span>':"";
-  return `<article class="card" style="animation-delay:${Math.min(i,11)*22}ms">
-    <a class="hit" href="${escapeHTML(productPath(p.id))}" aria-label="${escapeHTML(p.name)}"></a>
-    <div class="photo">${photo?`<img loading="lazy" decoding="async" src="${escapeHTML(normalizePhotoUrl(photo,500))}" alt="${escapeHTML(photoAlt(p,state.catalog))}">`:""}
-      ${w?`<div class="dim dim-w"><i></i><span class="num">寬 ${fmt(w)}</span></div>`:""}
-      ${h?`<div class="dim dim-h"><i></i><span class="num">高 ${fmt(h)}</span></div>`:""}
-    </div>${tag}
-    <button class="fav" type="button" data-fav="${escapeHTML(p.id)}" aria-pressed="${state.fav.has(p.id)}" aria-label="收藏 ${escapeHTML(p.name)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z"/></svg></button>
-    <div class="info"><div class="name">${escapeHTML(p.name)}</div>
-      ${price?`<div class="price${sale?" sale":""}">${price}${sale&&p.price?`<s>${money(p.price)}</s>`:""}</div>`:""}
-      ${w||dp||h?`<dl class="spec" aria-label="尺寸（${unitLabel()}）">${cell("寬",w)}${cell("深",dp)}${cell("高",h)}</dl>`:'<div class="spec spec--ask">尺寸請洽詢</div>'}
-    </div></article>`;
-}
-function renderGrid(){
-  const list=visible();
-  const name=state.sub?subNameOf(state.catalog,state.main,state.sub):state.main==="全部"?"全部商品":mainNameOf(state.catalog,state.main);
-  $("listTitle").textContent=name;
-  $("listCount").textContent=`${list.length} 件，尺寸單位：${unitLabel()}`;
-  $("fitCount").textContent=list.length;
-  $("grid").innerHTML=list.length?list.map(cardHtml).join("")
-    :`<div class="empty">這個寬度放得下的${state.main==="全部"?"":escapeHTML(name)}目前沒有。把量尺拉寬一點，或直接 LINE 問我們有沒有別的尺寸。</div>`;
-}
-function renderRuler(){
-  const v=state.maxW,free=v>=RULER_MAX,pct=(v-RULER_MIN)/(RULER_MAX-RULER_MIN)*100;
-  $("rulerCm").textContent=free?"不限":state.unit==="cm"?v:fmt(v);
-  $("rulerUnit").textContent=free?"":state.unit==="cm"?`公分（約 ${(Math.round(v/TAI_CHI*10)/10)} 台尺）`:`台尺（${v} 公分）`;
-  $("tapeMark").style.left=pct+"%";
-  $("tapeOff").style.width=(100-pct)+"%";
-  $("rulerReset").hidden=free;
-  $("rulerInput").setAttribute("aria-valuetext",free?"不限":`${v} 公分`);
-}
-function renderTray(){
-  const picked=state.products.filter(p=>state.fav.has(p.id));
-  $("tray").classList.toggle("on",picked.length>0);
-  $("trayCount").textContent=`已選 ${picked.length} 件`;
-  $("trayNames").textContent=picked.map(p=>p.name).join("、");
-  try{localStorage.setItem("hs_demo_fav",JSON.stringify([...state.fav]))}catch(e){}
-}
-function renderContact(){
-  const c=state.contact,tel=String(c.phone||"").replace(/[^\d+]/g,"");
-  ["lineTop","lineHero","lineVisit","trayLine"].forEach(id=>{$(id).href=c.lineUrl||"#"});
-  $("mapBtn").href=c.mapUrl||"#";
-  const rows=[["地址",c.addr&&`<a href="${escapeHTML(c.mapUrl||"#")}" target="_blank" rel="noopener">${escapeHTML(c.addr)}</a>`],["營業時間",escapeHTML(c.hours||"")],
-    ["電話",c.phone&&`<a href="tel:${escapeHTML(tel)}">${escapeHTML(c.phone)}</a>`],["LINE",c.line&&`<a href="${escapeHTML(c.lineUrl||"#")}" target="_blank" rel="noopener">${escapeHTML(c.line)}</a>`],
-    ["信箱",c.email&&`<a href="mailto:${escapeHTML(c.email)}">${escapeHTML(c.email)}</a>`]];
-  $("facts").innerHTML=rows.filter(r=>r[1]).map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join("");
-  // 現在有沒有開：照營業時間（例如 10:00-21:00）跟台北現在的時間算
-  const m=String(c.hours||"").match(/(\d{1,2})[:：](\d{2})\s*[-–~～至到]\s*(\d{1,2})[:：](\d{2})/);
-  if(!m)return;
-  const tick=()=>{
-    const now=new Date(new Date().toLocaleString("en-US",{timeZone:"Asia/Taipei"}));
-    const mins=now.getHours()*60+now.getMinutes(),from=+m[1]*60+ +m[2],to=+m[3]*60+ +m[4],open=mins>=from&&mins<to;
-    const el=$("openState");el.classList.toggle("is-open",open);
-    el.querySelector("b").textContent=open?"營業中":"休息中";
-    el.querySelector("span").textContent=open?`到 ${m[3]}:${m[4]}`:`${m[1]}:${m[2]} 開門`;
-  };
-  tick();setInterval(tick,60000);
-}
-
-// 量尺上的刻度數字（公分）
-$("tapeNums").innerHTML=[30,80,130,180,230].map(n=>`<span style="left:${(n-RULER_MIN)/(RULER_MAX-RULER_MIN)*100}%">${n}</span>`).join("");
-$("rulerInput").addEventListener("input",e=>{state.maxW=+e.target.value;renderRuler();renderGrid()});
-$("rulerReset").addEventListener("click",()=>{state.maxW=RULER_MAX;$("rulerInput").value=RULER_MAX;renderRuler();renderGrid()});
-$("tabs").addEventListener("click",e=>{
-  const tab=e.target.closest("[data-main]"),unit=e.target.closest("[data-unit]");
-  if(tab){state.main=tab.dataset.main;state.sub=null}
-  else if(unit)state.unit=unit.dataset.unit;
-  else return;
-  renderTabs();renderRuler();renderGrid();
-});
-$("subs").addEventListener("click",e=>{
-  const chip=e.target.closest("[data-sub]");if(!chip)return;
-  state.sub=state.sub===chip.dataset.sub?null:chip.dataset.sub;renderTabs();renderGrid();
-});
-$("grid").addEventListener("click",e=>{
-  const btn=e.target.closest("[data-fav]");if(!btn)return;
-  const id=btn.dataset.fav,on=!state.fav.has(id);
-  on?state.fav.add(id):state.fav.delete(id);
-  btn.setAttribute("aria-pressed",on);btn.classList.remove("pop");void btn.offsetWidth;if(on)btn.classList.add("pop");
-  renderTray();
-});
-$("trayClear").addEventListener("click",()=>{state.fav.clear();renderTray();renderGrid()});
-
 try{
   const data=await(await fetch("/data/site.json")).json();
-  state.catalog=data.meta.catalog||[];state.contact=data.meta.contact||{};
-  state.products=data.products.map(p=>normalizeProduct({...p})).filter(p=>isListedProduct(p,state.catalog)).sort(catalogOrderCompare(state.catalog));
-  renderContact();renderTabs();renderRuler();renderGrid();renderTray();
-}catch(e){
-  $("grid").innerHTML='<div class="empty">商品資料暫時載入不了，請重新整理頁面。</div>';
+  const catalog=data.meta.catalog||[],c=data.meta.contact||{};
+  ["lineTop","lineHero"].forEach(id=>{$(id).href=c.lineUrl||"#"});
+  $("facts").innerHTML=[["營業",c.hours],["電話",c.phone]].filter(r=>r[1]).map(([k,v])=>`<span><b>${k}</b>${escapeHTML(v)}</span>`).join("");
+  const listed=data.products.map(p=>normalizeProduct({...p})).filter(p=>isListedProduct(p,catalog)).sort(catalogOrderCompare(catalog));
+  // 每個主分類挑一件有照片的當主角（後台「首頁版面」選的本月選品優先）
+  const featured=new Set(data.meta.layout?.picksProductIds||[]);
+  picks=catalog.filter(cat=>!cat.hidden).map(cat=>{
+    const inCat=listed.filter(p=>p.mainCat===cat.id&&(p.photos||[]).filter(Boolean).length);
+    return {cat,product:inCat.find(p=>featured.has(p.id))||inCat[0]};
+  }).filter(x=>x.product).slice(0,4);
+  $("arch").innerHTML=picks.map(({product})=>`<div class="shot"><img src="${escapeHTML(normalizePhotoUrl(product.photos[0],800))}" alt="${escapeHTML(photoAlt(product,catalog))}"></div>`).join("");
+  $("picks").innerHTML=picks.map(({cat},i)=>`<button type="button" data-i="${i}">${escapeHTML(cat.name)}</button>`).join("");
+  $("picks").addEventListener("click",e=>{const b=e.target.closest("[data-i]");if(b)show(+b.dataset.i,true)});
+  show(0);
+  // 沒人動的時候每 5 秒換一件；客人自己點過就停
+  if(!calm&&picks.length>1)timer=setInterval(()=>show((current+1)%picks.length),5000);
+}catch(e){$("cardName").textContent="商品資料暫時載入不了"}
+
+// 滑鼠在主視覺上移動時，裝飾跟著飄一點
+if(!calm&&matchMedia("(hover:hover)").matches){
+  const stage=$("stage");
+  stage.addEventListener("pointermove",e=>{
+    const r=stage.getBoundingClientRect();
+    stage.style.setProperty("--mx",((e.clientX-r.left)/r.width-.5).toFixed(3));
+    stage.style.setProperty("--my",((e.clientY-r.top)/r.height-.5).toFixed(3));
+  });
+  stage.addEventListener("pointerleave",()=>{stage.style.setProperty("--mx",0);stage.style.setProperty("--my",0)});
 }
 </script>
 </body>

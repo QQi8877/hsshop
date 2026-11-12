@@ -24,7 +24,7 @@
 <link rel="canonical" href="https://hsintong.cc/p/kacbc36d">
 <!-- 給 Google 看的店家資料（地址、電話、營業時間）。直接寫在網頁裡，Google 不用等程式跑完就讀得到；
      內容由每小時的 _tools/build-pages.mjs 照後台「聯繫資訊」重新產生，不用手改 -->
-<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1789531234/yczpqotfzc5a0wsgs64j.jpg","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"106 台北市大安區文昌街184號","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
+<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1794489634/ux1rkwrfvpe6eakvmw4k.png","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"106 台北市大安區文昌街184號","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
 <!-- 網站小圖示：Google 搜尋結果左邊的小圖示要真的檔案（48 的倍數），不能是寫在網頁裡的圖 -->
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -1500,7 +1500,7 @@ footer a:hover{color:var(--color-on-dark)}
    1. 標題（--font-heading）改用各裝置內建的黑體（蘋方／微軟正黑體／思源黑體），不再用筆畫細的明體；
       只有店名、首頁大標、載入中的店名保留明體（--font-brand，用的還是 fonts/ 裡瘦身過的 HS Serif）
    2. 小字放大加深；商品名稱中等粗細（500），左邊商品目錄跟分類按鈕粗體（600）
-   3. 互動（JS 在檔案最後的 siteFx）：捲動進度條、首頁大圖輪播本月選品＋跟著滑鼠微動、
+   3. 互動（JS 在檔案最後的 siteFx）：捲動進度條、首頁大圖跟著滑鼠微動、
       卡片滑過出現「看看這件」、回到頂端、手機捲過大圖後底部的 LINE 按鈕 */
 :root{
   --font-brand:"HS Serif","Noto Serif TC",serif;
@@ -1556,25 +1556,11 @@ footer a:hover{color:var(--color-on-dark)}
 .hero-line-cta:active,.hero-cta:active,.contact-btn:active,.cat-tile:active,.favorites-fab:active,.product-card:active,.p-card:active{transform:scale(.97)}
 @media(hover:hover){.cat-tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}}
 
-/* 首頁大圖：後面多一圈細線圓，跟著滑鼠往反方向微動；下面一張小卡寫現在輪到哪件商品 */
+/* 首頁大圖：後面多一圈細線圓，跟著滑鼠往反方向微動 */
 #hero{overflow:hidden}
 .hero-photo{position:relative;overflow:visible;transform:translate(calc(var(--mx,0)*-10px),calc(var(--my,0)*-10px));transition:transform .5s cubic-bezier(.16,.84,.44,1)}
 .hero-photo::before{content:"";position:absolute;inset:-22px;border:1.5px solid var(--border-strong,#cdbda3);border-radius:50%;transform:translate(calc(var(--mx,0)*26px),calc(var(--my,0)*26px));transition:transform .7s cubic-bezier(.16,.84,.44,1);pointer-events:none}
 .hero-photo::after{content:"";position:absolute;right:4%;top:6%;width:44px;height:44px;border-radius:50%;background:var(--brand);opacity:.9;transform:translate(calc(var(--mx,0)*40px),calc(var(--my,0)*40px));transition:transform .9s cubic-bezier(.16,.84,.44,1);pointer-events:none}
-.hero-photo img{border-radius:0;transition:opacity .45s ease,transform 1.6s cubic-bezier(.22,.8,.3,1)}
-.hero-photo img.is-swapping{opacity:0!important;transform:scale(.96)!important}
-.hero-now{
-  position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);z-index:2;
-  display:flex;align-items:center;gap:10px;max-width:86%;padding:10px 16px;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-md);
-  font-size:14px;font-weight:600;color:var(--text);text-decoration:none;white-space:nowrap;cursor:pointer;
-}
-.hero-now small{font-size:11.5px;font-weight:600;letter-spacing:.14em;color:var(--brand)}
-.hero-now span{overflow:hidden;text-overflow:ellipsis}
-.hero-now i{font-style:normal;color:var(--brand);transition:transform .2s ease}
-.hero-now:hover i{transform:translateX(4px)}
-.hero-dots{position:absolute;left:50%;bottom:-44px;transform:translateX(-50%);display:flex;gap:7px}
-.hero-dots button{width:22px;height:4px;padding:0;border:0;border-radius:2px;background:var(--border-strong,#cdbda3);transition:background .2s,width .3s}
-.hero-dots button[aria-current="true"]{background:var(--brand);width:34px}
 
 /* 最上面的捲動進度條 */
 .fx-progress{position:fixed;left:0;top:0;z-index:120;height:3px;width:100%;background:var(--brand);transform-origin:left;transform:scaleX(var(--p,0));pointer-events:none}
@@ -1601,9 +1587,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
   .p-card__title,.product-name{font-size:15px}
   .fx-line{display:flex}
   .hero-photo::before{display:none}
-  .hero-photo{margin-bottom:52px}
   .hero-photo::after{width:30px;height:30px}
-  .hero-now{font-size:13px;padding:8px 12px}
 }
 /* 商品詳情：說明文字放大、加粗、用最深的字色（原本 14px、一般粗細、灰棕色，看起來太淡）。
    500 在蘋果、Android 是中等粗細；Windows 的微軟正黑體沒有 500，會顯示一般粗細，所以顏色也一起加深 */
@@ -3654,51 +3638,6 @@ function openRoutedProduct(final){
     });
     hero.addEventListener("pointerleave",()=>{photo.style.setProperty("--mx",0);photo.style.setProperty("--my",0)});
   }
-
-  // 3. 首頁大圖輪播本月選品：每 4.5 秒換一件，下面小卡寫品名，點了打開那件商品
-  const img=document.getElementById("heroPhotoImg"),grid=document.getElementById("picksGrid");
-  if(!photo||!img||!grid)return;
-  let items=[],index=0,timer=null,now=null,dots=null;
-  const photoKey=url=>String(url||"").split("?")[0].split("/").pop(); // 同一張照片不同寬度的網址，檔名都一樣
-  const read=()=>[...grid.querySelectorAll(".p-card:not(.skeleton)")].map(card=>{
-    const pic=card.querySelector("img.img-primary")||card.querySelector("img");
-    const name=(card.querySelector(".p-card__title")||{}).textContent||"";
-    // 連 srcset 一起帶過來：大圖本來就有 srcset，只換 src 的話瀏覽器還是照 srcset 顯示原本那張
-    return pic&&pic.getAttribute("src")?{card,src:pic.getAttribute("src"),srcset:pic.getAttribute("srcset")||"",name:name.trim()}:null;
-  }).filter(Boolean);
-  const show=(i,user)=>{
-    index=(i+items.length)%items.length;
-    const it=items[index];
-    now.querySelector("span").textContent=it.name;
-    [...dots.children].forEach((d,k)=>d.setAttribute("aria-current",k===index));
-    if(photoKey(img.getAttribute("src"))!==photoKey(it.src)){
-      const apply=()=>{if(it.srcset)img.srcset=it.srcset;else img.removeAttribute("srcset");img.src=it.src;img.alt=it.name;img.classList.remove("is-swapping")};
-      img.classList.add("is-swapping");
-      // 先在背景把下一張載好再換，換的時候才不會空一下
-      const pre=new Image();
-      if(it.srcset){pre.sizes=img.sizes;pre.srcset=it.srcset}
-      pre.src=it.src;
-      const wait=new Promise(r=>{pre.onload=pre.onerror=r;setTimeout(r,1500)});
-      Promise.all([wait,new Promise(r=>setTimeout(r,reduce?0:380))]).then(()=>{if(items[index]===it)apply()});
-    }
-    if(user){clearInterval(timer);timer=null}
-  };
-  const start=()=>{
-    items=read();
-    if(items.length<2)return false;
-    now=photo.appendChild(el("a","hero-now","<small>本月選品</small><span></span><i>→</i>"));
-    now.href="#picks";
-    now.addEventListener("click",e=>{e.preventDefault();items[index].card.click()});
-    dots=photo.appendChild(el("div","hero-dots"));
-    items.forEach((it,k)=>{const b=dots.appendChild(el("button",""));b.type="button";b.setAttribute("aria-label",it.name);b.addEventListener("click",()=>show(k,true))});
-    // 從現在大圖顯示的那件開始
-    const cur=items.findIndex(it=>photoKey(it.src)===photoKey(img.getAttribute("src")));
-    show(cur>=0?cur:0);
-    if(!reduce)timer=setInterval(()=>{if(!document.hidden&&!document.body.classList.contains("lightbox-open"))show(index+1)},4500);
-    return true;
-  };
-  let tries=0;
-  const wait=setInterval(()=>{if(start()||++tries>40)clearInterval(wait)},500);
 })();
 </script>
 </body>

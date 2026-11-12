@@ -105,14 +105,6 @@ function addDims(s,{W,D,H,seatY},k){
   }
 }
 
-// 五爪椅腳（辦公椅、氣壓圓椅）：從中柱往外放射五支腳，腳尖一顆輪子
-function starBase(s,cx,cz,r,h){
-  const tips=[0,1,2,3,4].map(i=>{const a=Math.PI*(.5+i*.4);return [cx+r*Math.cos(a),cz+r*Math.sin(a)]});
-  for(const [x,z] of [...tips].sort((a,b)=>b[1]-a[1])){ // 後面的先畫
-    s.line([cx,h,cz],[x,h*.55,z],S.leg);
-    s.line([x,h*.55,z],[x,0,z],S.leg);
-  }
-}
 // 鋁架：四支立柱＋層板，中間夾著有拉門的箱子；boxes 是每個箱子的 [底, 頂]（佔總高的比例）
 function boxRack(s,{W,D,H},boxes){
   const t=Math.max(H*.025,1),e=Math.min(W,D)*.02;
@@ -164,64 +156,14 @@ const FIGURES=[
     }
     return {W,D,H,seatY:SH};
   }},
-  {key:"foldchair",label:"折疊椅",seat:true,size:{W:42,D:46,H:78,SH:45},draw(s,{W,D,H,SH,round}){
-    // 兩側各一組交叉腳：前腳一路斜上去變成椅背的立柱，後腳撐在椅面前緣底下
-    const t=Math.max(H*.045,1.5),i=W*.05,bh=(H-SH)*.34;
-    const side=(x,style)=>{s.line([x,0,D],[x,SH-t,D*.12],style);s.line([x,0,D*.05],[x,H,D],style)};
-    side(W-i,S.farLeg);
-    s.line([i,H*.12,D*.85],[W-i,H*.12,D*.85],S.thin);
-    if(round)s.cyl(W/2,SH-t,D*.45,Math.min(W,D*.9)/2,t);else s.box(0,SH-t,D*.05,W,t,D*.8);
-    side(i,S.leg);
-    s.box(i,H-bh,D-Math.max(D*.05,1.2),W-i*2,bh,Math.max(D*.05,1.2));
-    return {W,D,H,seatY:SH};
-  }},
-  {key:"foldstool",label:"折疊凳",seat:true,size:{W:32,D:32,H:45},draw(s,{W,D,H}){
-    // 沒有椅背的折疊椅：兩側交叉腳撐著圓椅面
-    const t=Math.max(H*.07,1.5),i=W*.1,y=H-t;
-    const side=(x,style)=>{s.line([x,0,D*.95],[x,y,D*.15],style);s.line([x,0,D*.05],[x,y,D*.85],style)};
-    side(W-i,S.farLeg);
-    s.line([i,H*.1,D*.9],[W-i,H*.1,D*.9],S.thin);
-    side(i,S.leg);
-    s.line([i,H*.1,D*.1],[W-i,H*.1,D*.1],S.thin);
-    s.cyl(W/2,y,D/2,Math.min(W,D)/2,t);
-    return {W,D,H,seatY:H};
-  }},
   {key:"roundstool",label:"圓凳",seat:true,size:{W:30,D:30,H:50},draw(s,{W,D,H}){
-    const t=Math.max(H*.08,2),r=Math.min(W,D)/2,cx=W/2,cz=D/2,q=r*.62,y=H*.3;
-    const legs=[[cx-q,cz+q],[cx+q,cz+q],[cx-q,cz-q],[cx+q,cz-q]];
-    for(const [x,z] of legs.slice(0,2))s.line([x,0,z],[x,H-t,z],S.farLeg);
-    s.line([cx-q,y,cz+q],[cx+q,y,cz+q],S.thin);s.line([cx-q,y,cz-q],[cx-q,y,cz+q],S.thin);s.line([cx+q,y,cz-q],[cx+q,y,cz+q],S.thin);
-    for(const [x,z] of legs.slice(2))s.line([x,0,z],[x,H-t,z],S.leg);
-    s.line([cx-q,y,cz-q],[cx+q,y,cz-q],S.thin);
+    // 圓椅面＋四支直腳：腳直接接在椅面的圓邊底下（照椅面畫出來的橢圓找位置，才不會對不上）
+    const t=Math.max(H*.08,2),r=Math.min(W,D)/2,cx=W/2,cz=D/2;
+    const leg=(deg,style)=>{const [top]=ring(cx,H-t,cz,r*.8,deg*Math.PI/180,deg*Math.PI/180,1);s.line([top[0],top[1]-(H-t),0],top,style)};
+    leg(60,S.farLeg);leg(120,S.farLeg);
     s.cyl(cx,H-t,cz,r,t);
+    leg(212,S.leg);leg(328,S.leg);
     return {W,D,H,seatY:H};
-  }},
-  {key:"barstool",label:"吧檯椅",seat:true,size:{W:38,D:42,H:90,SH:75},draw(s,{W,D,H,SH}){
-    // 圓盤底座＋中柱＋腳踏圈＋圓椅面，後面一塊矮靠背
-    const r=Math.min(W,D)/2,cx=W/2,cz=D/2,t=Math.max(H*.05,2),bt=Math.max(D*.06,1.2);
-    s.cyl(cx,0,cz,r*.95,Math.max(H*.02,.8));
-    s.line([cx,H*.02,cz],[cx,SH-t,cz],S.leg);
-    s.poly(ring(cx,SH*.32,cz,r*.6,0,Math.PI*2),`fill="none" ${FACE}`);
-    s.cyl(cx,SH-t,cz,r,t);
-    if(H-SH>H*.08)s.line([cx,SH,D-bt/2],[cx,SH+(H-SH)*.3,D-bt/2],S.leg);
-    if(H-SH>H*.08)s.box(W*.12,SH+(H-SH)*.25,D-bt,W*.76,(H-SH)*.75,bt);
-    return {W,D,H,seatY:SH};
-  }},
-  {key:"swivelstool",label:"氣壓圓椅",seat:true,size:{W:34,D:34,H:50},draw(s,{W,D,H}){
-    const r=Math.min(W,D)/2,cx=W/2,cz=D/2,t=Math.max(H*.12,3);
-    starBase(s,cx,cz,r*1.05,H*.1);
-    s.line([cx,H*.1,cz],[cx,H-t,cz],S.leg);
-    s.cyl(cx,H-t,cz,r,t);
-    return {W,D,H,seatY:H};
-  }},
-  {key:"office",label:"辦公椅",seat:true,size:{W:60,D:60,H:100,SH:46},draw(s,{W,D,H,SH}){
-    const cx=W/2,cz=D/2,t=Math.max(H*.06,3),bt=Math.max(D*.08,2),sw=W*.8,x0=(W-sw)/2,A=SH+(H-SH)*.38;
-    starBase(s,cx,cz,Math.min(W,D)/2,H*.08);
-    s.line([cx,H*.08,cz],[cx,SH-t,cz],S.leg);
-    s.box(x0,SH-t,D*.12,sw,t,D*.7);
-    s.box(x0,SH+(H-SH)*.15,D*.82-bt,sw,(H-SH)*.85,bt);
-    for(const x of [x0,x0+sw]){s.line([x,SH-t/2,D*.5],[x,A,D*.5],S.leg);s.line([x,A,D*.25],[x,A,D*.7],S.leg)}
-    return {W,D,H,seatY:SH};
   }},
   {key:"stool",label:"板凳",seat:true,size:{W:36,D:27,H:45},draw(s,{W,D,H}){
     const t=Math.max(H*.1,2),i=Math.min(W,D)*.08,y=H*.3;
@@ -277,7 +219,6 @@ function figureParams(fig,dims={}){
   for(const k of keys)p[k]=given[k]>0?given[k]:def[k]*scale;
   const longest=Math.max(p.W,p.D,p.H);
   for(const k of keys)p[k]=Math.max(p[k],longest*.2);
-  p.round=/圓(皮|板|椅面)/.test(dims.name||"");
   if(def.SH)p.SH=Math.min(Math.max(dims.seat>0?dims.seat:def.SH/def.H*p.H,p.H*.2),p.H*.9);
   return p;
 }
@@ -311,7 +252,8 @@ export function figureDimsOf(dimensions,specs,name=""){
   return {w:num(dimensions?.width),d:num(dimensions?.depth),h:num(dimensions?.height),seat:i>=0?num(specs[i].h):0,name:String(name||"")};
 }
 
-// 「自動」：先依子分類（對不上再看主分類）的名稱決定大類，再用品名跟尺寸挑更像的圖。
+// 「自動」：先依子分類（對不上再看主分類）的名稱決定大類，再用品名跟尺寸微調：
+// 沒有椅背的椅子畫成凳子（品名有「圓」就用圓凳）、品名有「箱」的鋁架用附箱的圖。圖刻意畫得簡單，只求大致像。
 // 大類：摺疊桌用交叉腳的摺疊桌圖；床邊桌要算桌子，所以「桌」排在「床」前面；
 // 床架的「架」不能當成層架，所以「床」排在「架」前面；「鞋櫃/架」這種兩個字都有的算層架
 function categoryFigureKey(subName,mainName){
@@ -331,15 +273,12 @@ function categoryFigureKey(subName,mainName){
 // info：figureDimsOf 的結果 {w,d,h,seat,name}（不給就只看分類）
 export function autoDimFigureKey(subName,mainName,info={}){
   const base=categoryFigureKey(subName,mainName);
-  const name=String(info.name||""),text=name+(subName||"");
+  const name=String(info.name||"");
   const h=info.h>0?info.h:0,seat=info.seat>0?info.seat:0;
   if(base==="chair"||base==="armchair"||base==="stool"){
-    // 沒有椅背：總高不到 55 公分，或是總高跟座高幾乎一樣
-    const backless=base==="stool"||(h>0&&(h<=55||(seat>0&&h-seat<8)));
+    // 沒有椅背：總高不到 55 公分、總高跟座高幾乎一樣，或品名是「圓椅／圓凳」又沒提到靠背
+    const backless=base==="stool"||(h>0&&(h<=55||(seat>0&&h-seat<8)))||(/圓(椅|凳)/.test(name)&&!/靠|背|扶手/.test(name));
     const round=/圓/.test(name)&&!/圓背/.test(name);
-    if(/吧檯|吧台/.test(text))return "barstool";
-    if(/氣壓|辦公|電腦椅/.test(text))return backless||(/圓椅/.test(name)&&!/扶手|靠背/.test(name))?"swivelstool":"office";
-    if(base!=="armchair"&&/摺疊|折疊|折合/.test(text))return backless?"foldstool":"foldchair";
     if(backless)return round?"roundstool":"stool";
     return base;
   }

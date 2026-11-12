@@ -3641,19 +3641,27 @@ function openRoutedProduct(final){
   const img=document.getElementById("heroPhotoImg"),grid=document.getElementById("picksGrid");
   if(!photo||!img||!grid)return;
   let items=[],index=0,timer=null,now=null,dots=null;
+  const photoKey=url=>String(url||"").split("?")[0].split("/").pop(); // 同一張照片不同寬度的網址，檔名都一樣
   const read=()=>[...grid.querySelectorAll(".p-card:not(.skeleton)")].map(card=>{
     const pic=card.querySelector("img.img-primary")||card.querySelector("img");
     const name=(card.querySelector(".p-card__title")||{}).textContent||"";
-    return pic&&(pic.currentSrc||pic.src)?{card,src:pic.currentSrc||pic.src,name:name.trim()}:null;
+    // 連 srcset 一起帶過來：大圖本來就有 srcset，只換 src 的話瀏覽器還是照 srcset 顯示原本那張
+    return pic&&pic.getAttribute("src")?{card,src:pic.getAttribute("src"),srcset:pic.getAttribute("srcset")||"",name:name.trim()}:null;
   }).filter(Boolean);
   const show=(i,user)=>{
     index=(i+items.length)%items.length;
     const it=items[index];
     now.querySelector("span").textContent=it.name;
     [...dots.children].forEach((d,k)=>d.setAttribute("aria-current",k===index));
-    if(img.getAttribute("src")!==it.src){
+    if(photoKey(img.getAttribute("src"))!==photoKey(it.src)){
+      const apply=()=>{if(it.srcset)img.srcset=it.srcset;else img.removeAttribute("srcset");img.src=it.src;img.alt=it.name;img.classList.remove("is-swapping")};
       img.classList.add("is-swapping");
-      setTimeout(()=>{img.src=it.src;img.alt=it.name;img.classList.remove("is-swapping")},reduce?0:380);
+      // 先在背景把下一張載好再換，換的時候才不會空一下
+      const pre=new Image();
+      if(it.srcset){pre.sizes=img.sizes;pre.srcset=it.srcset}
+      pre.src=it.src;
+      const wait=new Promise(r=>{pre.onload=pre.onerror=r;setTimeout(r,1500)});
+      Promise.all([wait,new Promise(r=>setTimeout(r,reduce?0:380))]).then(()=>{if(items[index]===it)apply()});
     }
     if(user){clearInterval(timer);timer=null}
   };
@@ -3666,7 +3674,7 @@ function openRoutedProduct(final){
     dots=photo.appendChild(el("div","hero-dots"));
     items.forEach((it,k)=>{const b=dots.appendChild(el("button",""));b.type="button";b.setAttribute("aria-label",it.name);b.addEventListener("click",()=>show(k,true))});
     // 從現在大圖顯示的那件開始
-    const cur=items.findIndex(it=>it.src===img.getAttribute("src"));
+    const cur=items.findIndex(it=>photoKey(it.src)===photoKey(img.getAttribute("src")));
     show(cur>=0?cur:0);
     if(!reduce)timer=setInterval(()=>{if(!document.hidden&&!document.body.classList.contains("lightbox-open"))show(index+1)},4500);
     return true;

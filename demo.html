@@ -1588,15 +1588,20 @@ footer a:hover{color:var(--color-on-dark)}
 .products-section-count{font-size:13px}
 
 /* 商品卡片：名稱 16px 粗體、尺寸 12.5px 深色 */
-.p-card__title,.product-name{font-size:16px;font-weight:600;line-height:1.45;letter-spacing:.01em}
+/* 商品名稱用中等粗細（蘋果、Android 是 500；Windows 的微軟正黑體沒有 500，會顯示一般粗細） */
+.p-card__title,.product-name{font-size:16px;font-weight:500;line-height:1.45;letter-spacing:.01em}
 .product-size,.p-card__foot .mono{font-size:12.5px;color:var(--text-secondary)}
 .product-price,.p-card__foot .price{font-size:17px}
 .product-info{padding:11px 14px 13px}
 .cat-tile__name{font-size:16px}
 .cat-tile__count{font-size:12.5px;color:var(--text-secondary)}
-.cat-side-btn{font-size:15px}
-.cat-side-btn .mono,.cat-sub-btn .mono{font-size:12px!important;color:var(--text-tertiary)!important}
-.cat-tab,.sub-tab{font-size:15px}
+/* 左邊的商品目錄、手機上方的分類按鈕：加粗放大，一眼看得到 */
+.cat-side-btn{font-size:16px;font-weight:600;letter-spacing:.04em}
+.cat-sub-btn{font-size:14.5px;font-weight:600}
+.cat-side-btn .mono,.cat-sub-btn .mono{font-size:12.5px!important;font-weight:600;color:var(--text-tertiary)!important}
+.cat-side-btn.active .mono{color:rgba(255,255,255,.75)!important}
+.cat-tab{font-size:15.5px;font-weight:600}
+.sub-tab{font-size:14.5px;font-weight:600}
 .favorite-item-meta{font-size:12.5px}
 
 /* 滑過商品：照片下緣滑出「看看這件 →」 */

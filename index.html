@@ -1605,6 +1605,14 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
   .hero-photo::after{width:30px;height:30px}
   .hero-now{font-size:13px;padding:8px 12px}
 }
+/* 商品詳情：說明文字放大、加粗、用最深的字色（原本 14px、一般粗細、灰棕色，看起來太淡）。
+   500 在蘋果、Android 是中等粗細；Windows 的微軟正黑體沒有 500，會顯示一般粗細，所以顏色也一起加深 */
+.lb-product-note{font-size:15.5px;font-weight:500;color:var(--ink);line-height:1.8}
+.lb-product-note b,.lb-product-note strong{font-weight:700}
+.lb-spec-title{font-size:13.5px;font-weight:600}
+.lb-dim-k{font-size:13.5px;font-weight:500;color:var(--text-secondary)}
+.lb-dim-extra,.lb-dim-note{font-size:14px;font-weight:500}
+.lb-dim-extra span{color:var(--text-secondary)}
 </style>
 <script>
 /* 第一次來的客人（這台瀏覽器還沒存過商品資料）：馬上去抓每小時自動更新的商品資料

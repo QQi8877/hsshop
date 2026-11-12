@@ -66,9 +66,11 @@
      其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong>
      預設是 700）。用到 700 瀏覽器找不到對應的檔案，會改用最接近的字重或自己加粗，字體看起來不一樣。
      內文用的是裝置內建字型，沒有這個限制。
-     後台 manage.html 仍然使用 fonts/ 裡的完整字型（Noto Serif TC、Noto Sans TC），那些檔案不能刪。 -->
+     後台 manage.html 仍然使用 fonts/ 裡的完整字型（Noto Serif TC、Noto Sans TC），那些檔案不能刪。
+
+     2026-11 視覺 2.1：標題（--font-heading）改用裝置內建的黑體，上面這套明體只剩店名、首頁大標、
+     載入中的店名在用（--font-brand，都是 600），所以只 preload 600 那個檔案。見 <style> 最後「視覺 2.1」。 -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600-sub.woff2" crossorigin>
-<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-400-sub.woff2" crossorigin>
 <style>
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
@@ -1493,6 +1495,116 @@ footer a:hover{color:var(--color-on-dark)}
   .sec-head h2,.buyinfo-title,.listing-title,.contact-heading{font-size:24px}
   .favorites-fab{padding:0 12px}
 }
+
+/* ══ 視覺 2.1（2026-11）：蓋在上面所有規則之後的調整 ═══════════════════
+   1. 標題（--font-heading）改用各裝置內建的黑體（蘋方／微軟正黑體／思源黑體），不再用筆畫細的明體；
+      只有店名、首頁大標、載入中的店名保留明體（--font-brand，用的還是 fonts/ 裡瘦身過的 HS Serif）
+   2. 小字放大加深；商品名稱中等粗細（500），左邊商品目錄跟分類按鈕粗體（600）
+   3. 互動（JS 在檔案最後的 siteFx）：捲動進度條、首頁大圖輪播本月選品＋跟著滑鼠微動、
+      卡片滑過出現「看看這件」、回到頂端、手機捲過大圖後底部的 LINE 按鈕 */
+:root{
+  --font-brand:"HS Serif","Noto Serif TC",serif;
+  --font-heading:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
+  --text-secondary:#4f453a;
+  --text-tertiary:#655a4c;
+}
+.nav-logo,.hero-title,.loading-breathe-text{font-family:var(--font-brand)}
+.hero-title{font-size:58px;letter-spacing:.04em}
+.hero-sub{font-size:19px;font-weight:600;letter-spacing:.1em}
+.hero-desc{font-size:16px;color:var(--text-secondary)}
+.hero-tag{font-size:12px;font-weight:600}
+
+/* 區塊標題：加粗放大，前面一小段木色短線，進到畫面時短線拉長 */
+.sec-head h2,.listing-title{font-size:26px;font-weight:600;letter-spacing:.04em;display:flex;align-items:center;gap:12px}
+.sec-head h2::before,.listing-title::before{content:"";width:28px;height:3px;background:var(--brand);flex:none;transform-origin:left;transition:transform .7s cubic-bezier(.16,.84,.44,1) .15s}
+.reveal.will-reveal:not(.is-visible) h2::before{transform:scaleX(0)}
+.sec-head a{font-size:13.5px;font-weight:600}
+.products-section-title{font-size:20px;letter-spacing:.06em}
+.products-section-count{font-size:13px}
+
+/* 商品卡片：名稱 16px 粗體、尺寸 12.5px 深色 */
+/* 商品名稱用中等粗細（蘋果、Android 是 500；Windows 的微軟正黑體沒有 500，會顯示一般粗細） */
+.p-card__title,.product-name{font-size:16px;font-weight:500;line-height:1.45;letter-spacing:.01em}
+.product-size,.p-card__foot .mono{font-size:12.5px;color:var(--text-secondary)}
+.product-price,.p-card__foot .price{font-size:17px}
+.product-info{padding:11px 14px 13px}
+.cat-tile__name{font-size:16px}
+.cat-tile__count{font-size:12.5px;color:var(--text-secondary)}
+/* 左邊的商品目錄、手機上方的分類按鈕：加粗放大，一眼看得到 */
+.cat-side-btn{font-size:16px;font-weight:600;letter-spacing:.04em}
+.cat-sub-btn{font-size:14.5px;font-weight:600}
+.cat-side-btn .mono,.cat-sub-btn .mono{font-size:12.5px!important;font-weight:600;color:var(--text-tertiary)!important}
+.cat-side-btn.active .mono{color:rgba(255,255,255,.75)!important}
+.cat-tab{font-size:15.5px;font-weight:600}
+.sub-tab{font-size:14.5px;font-weight:600}
+.favorite-item-meta{font-size:12.5px}
+
+/* 滑過商品：照片下緣滑出「看看這件 →」 */
+.product-img-wrap::after,.p-card__media::after{
+  content:"看看這件 →";position:absolute;left:50%;bottom:10px;z-index:5;
+  padding:6px 14px;background:rgba(34,29,24,.86);color:#fff;font-size:12.5px;font-weight:600;letter-spacing:.06em;white-space:nowrap;border-radius:4px;
+  opacity:0;transform:translate(-50%,10px);transition:opacity .22s ease,transform .22s ease;pointer-events:none;
+}
+@media(hover:hover){
+  .product-card:hover .product-img-wrap::after,.p-card:hover .p-card__media::after{opacity:1;transform:translate(-50%,0)}
+  .product-card:hover .img-zoom-hint{opacity:0}
+  .product-card:hover .product-name,.p-card:hover .p-card__title{color:var(--brand)}
+}
+.product-name,.p-card__title{transition:color .18s ease}
+/* 按下去有回饋 */
+.hero-line-cta,.hero-cta,.contact-btn,.cat-tile,.favorites-fab{transition:transform .14s ease,background .15s,border-color .15s,color .15s,box-shadow .2s}
+.hero-line-cta:active,.hero-cta:active,.contact-btn:active,.cat-tile:active,.favorites-fab:active,.product-card:active,.p-card:active{transform:scale(.97)}
+@media(hover:hover){.cat-tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}}
+
+/* 首頁大圖：後面多一圈細線圓，跟著滑鼠往反方向微動；下面一張小卡寫現在輪到哪件商品 */
+#hero{overflow:hidden}
+.hero-photo{position:relative;overflow:visible;transform:translate(calc(var(--mx,0)*-10px),calc(var(--my,0)*-10px));transition:transform .5s cubic-bezier(.16,.84,.44,1)}
+.hero-photo::before{content:"";position:absolute;inset:-22px;border:1.5px solid var(--border-strong,#cdbda3);border-radius:50%;transform:translate(calc(var(--mx,0)*26px),calc(var(--my,0)*26px));transition:transform .7s cubic-bezier(.16,.84,.44,1);pointer-events:none}
+.hero-photo::after{content:"";position:absolute;right:4%;top:6%;width:44px;height:44px;border-radius:50%;background:var(--brand);opacity:.9;transform:translate(calc(var(--mx,0)*40px),calc(var(--my,0)*40px));transition:transform .9s cubic-bezier(.16,.84,.44,1);pointer-events:none}
+.hero-photo img{border-radius:0;transition:opacity .45s ease,transform 1.6s cubic-bezier(.22,.8,.3,1)}
+.hero-photo img.is-swapping{opacity:0!important;transform:scale(.96)!important}
+.hero-now{
+  position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);z-index:2;
+  display:flex;align-items:center;gap:10px;max-width:86%;padding:10px 16px;background:#fff;border:1px solid var(--border);border-radius:6px;box-shadow:var(--shadow-md);
+  font-size:14px;font-weight:600;color:var(--text);text-decoration:none;white-space:nowrap;cursor:pointer;
+}
+.hero-now small{font-size:11.5px;font-weight:600;letter-spacing:.14em;color:var(--brand)}
+.hero-now span{overflow:hidden;text-overflow:ellipsis}
+.hero-now i{font-style:normal;color:var(--brand);transition:transform .2s ease}
+.hero-now:hover i{transform:translateX(4px)}
+.hero-dots{position:absolute;left:50%;bottom:-44px;transform:translateX(-50%);display:flex;gap:7px}
+.hero-dots button{width:22px;height:4px;padding:0;border:0;border-radius:2px;background:var(--border-strong,#cdbda3);transition:background .2s,width .3s}
+.hero-dots button[aria-current="true"]{background:var(--brand);width:34px}
+
+/* 最上面的捲動進度條 */
+.fx-progress{position:fixed;left:0;top:0;z-index:120;height:3px;width:100%;background:var(--brand);transform-origin:left;transform:scaleX(var(--p,0));pointer-events:none}
+/* 回到頂端 */
+.fx-top{
+  position:fixed;right:20px;bottom:22px;z-index:90;width:46px;height:46px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);
+  display:grid;place-items:center;box-shadow:var(--shadow-md);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .25s,transform .25s,visibility 0s linear .25s,background .15s;
+}
+.fx-top.show{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.fx-top:hover{background:var(--bg-sunken)}
+.fx-top svg{width:20px;height:20px}
+/* 手機：捲過首頁大圖之後，底部浮出 LINE 詢問 */
+.fx-line{
+  position:fixed;left:16px;right:78px;bottom:22px;z-index:90;height:46px;display:none;align-items:center;justify-content:center;gap:8px;
+  background:var(--brand);color:#fff;font-size:15px;font-weight:600;letter-spacing:.06em;text-decoration:none;border-radius:6px;box-shadow:0 8px 22px rgba(138,69,32,.32);
+  opacity:0;visibility:hidden;transform:translateY(16px);transition:opacity .25s,transform .25s,visibility 0s linear .25s;
+}
+.fx-line.show{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
+@media(max-width:860px){
+  .hero-title{font-size:40px}
+  .sec-head h2,.listing-title{font-size:22px}
+  .sec-head h2::before,.listing-title::before{width:20px}
+  .p-card__title,.product-name{font-size:15px}
+  .fx-line{display:flex}
+  .hero-photo::before{display:none}
+  .hero-photo{margin-bottom:52px}
+  .hero-photo::after{width:30px;height:30px}
+  .hero-now{font-size:13px;padding:8px 12px}
+}
 </style>
 <script>
 /* 第一次來的客人（這台瀏覽器還沒存過商品資料）：馬上去抓每小時自動更新的商品資料
@@ -1557,7 +1669,7 @@ footer a:hover{color:var(--color-on-dark)}
   }
   setTimeout(function(){reveal(false)},1500);
   // 帶上「，」：副標常有全形逗號，標點檔也要一起等到（只給字型名稱的話只會載入沒有限定字範圍的那個檔）
-  Promise.all(['400 1em "HS Serif"','600 1em "HS Serif"'].map(function(f){return document.fonts.load(f,"信通家俱行，")}))
+  Promise.all(['600 1em "HS Serif"'].map(function(f){return document.fonts.load(f,"信通家俱行，")}))
     .then(function(){reveal(true)},function(){reveal(false)});
 })();
 </script>
@@ -3494,6 +3606,83 @@ function openRoutedProduct(final){
     const ids=wishlistMatch[1].split(",").filter(Boolean);
     if(ids.length)renderSharedWishlist(ids);
   }
+})();
+</script>
+<script>
+/* ── siteFx：視覺 2.1 的互動（樣式在 <style> 最後「視覺 2.1」那段）───────────── */
+(function(){
+  const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const el=(tag,cls,html)=>{const n=document.createElement(tag);n.className=cls;if(html)n.innerHTML=html;return n};
+  // 1. 捲動進度條、回到頂端、手機底部 LINE 按鈕
+  const bar=document.body.appendChild(el("div","fx-progress"));
+  const top=document.body.appendChild(el("button","fx-top",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'));
+  top.type="button";top.setAttribute("aria-label","回到頂端");
+  top.addEventListener("click",()=>scrollTo({top:0,behavior:reduce?"auto":"smooth"}));
+  const line=document.body.appendChild(el("a","fx-line","LINE 詢問老闆"));
+  line.target="_blank";line.rel="noopener";
+  const hero=document.getElementById("hero"),contact=document.getElementById("contact");
+  let ticking=false;
+  const onScroll=()=>{
+    ticking=false;
+    const max=document.documentElement.scrollHeight-innerHeight;
+    bar.style.setProperty("--p",max>0?Math.min(1,scrollY/max):0);
+    top.classList.toggle("show",scrollY>innerHeight*.8);
+    const src=document.getElementById("lineFab");
+    if(src&&src.getAttribute("href")&&src.getAttribute("href")!=="#")line.href=src.href;
+    const pastHero=hero?hero.getBoundingClientRect().bottom<60:scrollY>400;
+    const atContact=contact?contact.getBoundingClientRect().top<innerHeight-80:false;
+    line.classList.toggle("show",pastHero&&!atContact&&!!line.getAttribute("href"));
+  };
+  addEventListener("scroll",()=>{if(!ticking){ticking=true;requestAnimationFrame(onScroll)}},{passive:true});
+  addEventListener("resize",onScroll);onScroll();
+
+  // 2. 首頁大圖跟著滑鼠微動
+  const photo=document.getElementById("heroPhoto");
+  if(hero&&photo&&!reduce&&matchMedia("(hover:hover)").matches){
+    hero.addEventListener("pointermove",e=>{
+      const r=hero.getBoundingClientRect();
+      photo.style.setProperty("--mx",((e.clientX-r.left)/r.width-.5).toFixed(3));
+      photo.style.setProperty("--my",((e.clientY-r.top)/r.height-.5).toFixed(3));
+    });
+    hero.addEventListener("pointerleave",()=>{photo.style.setProperty("--mx",0);photo.style.setProperty("--my",0)});
+  }
+
+  // 3. 首頁大圖輪播本月選品：每 4.5 秒換一件，下面小卡寫品名，點了打開那件商品
+  const img=document.getElementById("heroPhotoImg"),grid=document.getElementById("picksGrid");
+  if(!photo||!img||!grid)return;
+  let items=[],index=0,timer=null,now=null,dots=null;
+  const read=()=>[...grid.querySelectorAll(".p-card:not(.skeleton)")].map(card=>{
+    const pic=card.querySelector("img.img-primary")||card.querySelector("img");
+    const name=(card.querySelector(".p-card__title")||{}).textContent||"";
+    return pic&&(pic.currentSrc||pic.src)?{card,src:pic.currentSrc||pic.src,name:name.trim()}:null;
+  }).filter(Boolean);
+  const show=(i,user)=>{
+    index=(i+items.length)%items.length;
+    const it=items[index];
+    now.querySelector("span").textContent=it.name;
+    [...dots.children].forEach((d,k)=>d.setAttribute("aria-current",k===index));
+    if(img.getAttribute("src")!==it.src){
+      img.classList.add("is-swapping");
+      setTimeout(()=>{img.src=it.src;img.alt=it.name;img.classList.remove("is-swapping")},reduce?0:380);
+    }
+    if(user){clearInterval(timer);timer=null}
+  };
+  const start=()=>{
+    items=read();
+    if(items.length<2)return false;
+    now=photo.appendChild(el("a","hero-now","<small>本月選品</small><span></span><i>→</i>"));
+    now.href="#picks";
+    now.addEventListener("click",e=>{e.preventDefault();items[index].card.click()});
+    dots=photo.appendChild(el("div","hero-dots"));
+    items.forEach((it,k)=>{const b=dots.appendChild(el("button",""));b.type="button";b.setAttribute("aria-label",it.name);b.addEventListener("click",()=>show(k,true))});
+    // 從現在大圖顯示的那件開始
+    const cur=items.findIndex(it=>it.src===img.getAttribute("src"));
+    show(cur>=0?cur:0);
+    if(!reduce)timer=setInterval(()=>{if(!document.hidden&&!document.body.classList.contains("lightbox-open"))show(index+1)},4500);
+    return true;
+  };
+  let tries=0;
+  const wait=setInterval(()=>{if(start()||++tries>40)clearInterval(wait)},500);
 })();
 </script>
 </body>

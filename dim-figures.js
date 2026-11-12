@@ -15,7 +15,7 @@
    ⚠ 改了這個檔案，記得把 index.html、manage.html 裡 import 網址的 ?v= 數字加一，
    不然瀏覽器可能還在用快取裡的舊版。 */
 
-const KX=.69,KY=.4;       // 深度方向往右上 30 度斜、畫成實際長度的 0.8 倍：深比寬長的家具看得出來比較深
+const KX=.48,KY=.28;      // 深度方向往右上 30 度斜、畫成實際長度的 0.55 倍：畫太長的話，正方形的椅面、桌面看起來會像長方形
 const FONT=13;
 const G=8,T=3;            // 尺寸線離家具的距離、兩端短線的一半長度（圖上的長度，不跟著家具縮放）
 const BOX=82;             // 家具縮放到剛好塞進 82×82 的正方形
@@ -39,7 +39,7 @@ const r1=n=>Math.round(n*10)/10;
 // 所以直接畫成正的扁橢圓（圓心照投影的位置放，回傳的點已經是畫面上的位置，z 固定 0）
 function ring(cx,y,cz,r,a,b,n=28){
   const u=cx+KX*cz,v=y+KY*cz,pts=[];
-  for(let i=0;i<=n;i++){const t=a+(b-a)*i/n;pts.push([u+r*1.12*Math.cos(t),v+r*.42*Math.sin(t),0])}
+  for(let i=0;i<=n;i++){const t=a+(b-a)*i/n;pts.push([u+r*1.06*Math.cos(t),v+r*.32*Math.sin(t),0])}
   return pts;
 }
 
@@ -163,11 +163,13 @@ const FIGURES=[
     if(round){
       // 圓椅面：腳往內縮，上端才會落在椅面的圓裡面
       const r=Math.min(W,D)/2,cx=W/2,cz=D/2,q=r*.65,bt=Math.max(D*.07,1.5);
-      const cross=(x,style)=>{s.line([x,0,cz-q],[x,y,cz+q],style);s.line([x,0,cz+q],[x,y,cz-q],style)};
+      const e=D*.06; // 腳落地的位置照商品的深度張開（深比椅面大的折疊椅，腳本來就往前後撐開）
+      const cross=(x,style)=>{s.line([x,0,e],[x,y,cz+q],style);s.line([x,0,D-e],[x,y,cz-q],style)};
       cross(cx-r*.4,S.farLeg);
       if(!noBack){
-        for(const x of [cx-r*.4,cx+r*.4])s.line([x,SH,cz+q],[x,H-t,cz+q],S.leg);
-        s.box(cx-r*.5,H-bh,cz+q-bt/2,r,bh,bt);
+        const zb=cz+r*.55; // 椅背立柱接在椅面後緣的圓裡面
+        for(const x of [cx-r*.6,cx+r*.6])s.line([x,SH,zb],[x,H-t,zb],S.leg);
+        s.box(cx-r*.7,H-bh,zb-bt/2,r*1.4,bh,bt);
       }
       cross(cx+r*.4,S.leg);
       s.cyl(cx,y,cz,r,t);

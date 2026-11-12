@@ -156,16 +156,31 @@ const FIGURES=[
     }
     return {W,D,H,seatY:SH};
   }},
-  {key:"foldchair",label:"折疊椅",seat:true,size:{W:42,D:46,H:78,SH:45},draw(s,{W,D,H,SH,noBack}){
-    // 跟摺疊桌同一種畫法：前後各一組交叉腳，上下兩端都接在椅面跟地面的四個角；後面那組畫淡一點。
-    // 沒有椅背的折疊椅（總高跟座高一樣）就不畫椅背
-    const t=Math.max(H*.045,1.5),i=W*.06,bt=Math.max(D*.07,1.5),top=noBack?H:SH,y=top-t,b0=SH+(H-SH)*.38;
-    s.line([i,0,D-i],[W-i,y,D-i],S.farLeg);s.line([W-i,0,D-i],[i,y,D-i],S.farLeg);
-    s.line([i,0,i],[W-i,y,i],S.leg);s.line([W-i,0,i],[i,y,i],S.leg);
+  {key:"foldchair",label:"折疊椅",seat:true,size:{W:42,D:46,H:78,SH:45},draw(s,{W,D,H,SH,noBack,round}){
+    // 左右兩側各一組交叉腳（從側面看是 X）：上端接在椅面底下、下端落地；左邊那組被椅子擋在後面，畫淡一點。
+    // 沒有椅背的折疊椅（總高跟座高一樣）不畫椅背；品名有「圓」的畫圓椅面
+    const t=Math.max(H*.045,1.5),top=noBack?H:SH,y=top-t,bh=(H-SH)*.6;
+    if(round){
+      // 圓椅面：腳往內縮，上端才會落在椅面的圓裡面
+      const r=Math.min(W,D)/2,cx=W/2,cz=D/2,q=r*.65,bt=Math.max(D*.07,1.5);
+      const cross=(x,style)=>{s.line([x,0,cz-q],[x,y,cz+q],style);s.line([x,0,cz+q],[x,y,cz-q],style)};
+      cross(cx-r*.4,S.farLeg);
+      if(!noBack){
+        for(const x of [cx-r*.4,cx+r*.4])s.line([x,SH,cz+q],[x,H-t,cz+q],S.leg);
+        s.box(cx-r*.5,H-bh,cz+q-bt/2,r,bh,bt);
+      }
+      cross(cx+r*.4,S.leg);
+      s.cyl(cx,y,cz,r,t);
+      return {W,D,H,seatY:top};
+    }
+    const i=W*.06,bt=Math.max(D*.07,1.5);
+    const cross=(x,style)=>{s.line([x,0,i],[x,y,D-i],style);s.line([x,0,D-i],[x,y,i],style)};
+    cross(i,S.farLeg);
     s.box(0,y,0,W,t,D);
+    cross(W-i,S.leg);
     if(!noBack){
       for(const x of [i,W-i])s.line([x,SH,D-i],[x,H-t,D-i],S.leg);
-      s.box(0,b0,D-bt,W,H-b0,bt);
+      s.box(0,H-bh,D-bt,W,bh,bt);
     }
     return {W,D,H,seatY:top};
   }},
@@ -233,6 +248,7 @@ function figureParams(fig,dims={}){
   const longest=Math.max(p.W,p.D,p.H);
   for(const k of keys)p[k]=Math.max(p[k],longest*.2);
   p.noBack=isBackless(dims);
+  p.round=/圓/.test(dims.name||"")&&!/圓背/.test(dims.name||"");
   if(def.SH)p.SH=Math.min(Math.max(dims.seat>0?dims.seat:def.SH/def.H*p.H,p.H*.2),p.H*.9);
   return p;
 }

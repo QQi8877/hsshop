@@ -15,7 +15,7 @@
    ⚠ 改了這個檔案，記得把 index.html、manage.html 裡 import 網址的 ?v= 數字加一，
    不然瀏覽器可能還在用快取裡的舊版。 */
 
-const KX=.69,KY=.4;       // 深度方向往右上 30 度斜、畫成實際長度的 0.8 倍：深比寬長的家具看得出來比較深
+const KX=.48,KY=.28;      // 深度方向往右上 30 度斜、畫成實際長度的 0.55 倍：畫太長的話，正方形的椅面、桌面看起來會像長方形
 const FONT=13;
 const G=8,T=3;            // 尺寸線離家具的距離、兩端短線的一半長度（圖上的長度，不跟著家具縮放）
 const BOX=82;             // 家具縮放到剛好塞進 82×82 的正方形
@@ -35,6 +35,13 @@ const S={
   label:`fill="${C.label}" font-size="${FONT}" font-weight="600"`
 };
 const r1=n=>Math.round(n*10)/10;
+// 水平圓上從角度 a 到 b 的一串點。照斜投影硬算圓會變成歪一邊的橢圓，看起來像盤子斜放，
+// 所以直接畫成正的扁橢圓（圓心照投影的位置放，回傳的點已經是畫面上的位置，z 固定 0）
+function ring(cx,y,cz,r,a,b,n=28){
+  const u=cx+KX*cz,v=y+KY*cz,pts=[];
+  for(let i=0;i<=n;i++){const t=a+(b-a)*i/n;pts.push([u+r*1.06*Math.cos(t),v+r*.32*Math.sin(t),0])}
+  return pts;
+}
 
 // k：家具的縮放比例（見 buildFigure）；只縮放座標，線的粗細、字的大小不變
 function createScene(k=1){
@@ -50,6 +57,13 @@ function createScene(k=1){
       s.poly([[x,y,z],[x+w,y,z],[x+w,y+h,z],[x,y+h,z]],S.front);
       s.poly([[x+w,y,z],[x+w,y,z+d],[x+w,y+h,z+d],[x+w,y+h,z]],S.side);
       s.poly([[x,y+h,z],[x+w,y+h,z],[x+w,y+h,z+d],[x,y+h,z+d]],S.top);
+    },
+    // 圓盤（圓椅面、圓底座的頂面）：水平的圓，圓心 (cx,y,cz)、半徑 r
+    disc(cx,y,cz,r,style=S.top){s.poly(ring(cx,y,cz,r,0,Math.PI*2),style)},
+    // 圓柱：側面只畫看得到的前半圈，再蓋上頂面
+    cyl(cx,y,cz,r,h){
+      s.poly([...ring(cx,y,cz,r,Math.PI,Math.PI*2),...ring(cx,y+h,cz,r,0,-Math.PI)],S.front);
+      s.disc(cx,y+h,cz,r);
     },
     label(at,dx,dy,text,anchor){
       const [px,py]=P(at),x=px+dx,y=py+dy,w=FONT*text.length;
@@ -91,6 +105,21 @@ function addDims(s,{W,D,H,seatY},k){
   }
 }
 
+// 鋁架：四支立柱＋層板，中間夾著有拉門的箱子；boxes 是每個箱子的 [底, 頂]（佔總高的比例）
+function boxRack(s,{W,D,H},boxes){
+  const t=Math.max(H*.025,1),e=Math.min(W,D)*.02;
+  for(const x of [e,W-e])s.line([x,0,D-e],[x,H,D-e],S.leg);
+  if(boxes[0][0]>.2)s.box(0,H*.06,0,W,t,D);
+  for(const [a,b] of boxes){
+    s.box(0,H*a,0,W,H*(b-a),D);
+    s.line([W/2,H*a,0],[W/2,H*b,0],S.thin);
+    for(const x of [W*.44,W*.56])s.line([x,H*(a+b)/2-H*.03,0],[x,H*(a+b)/2+H*.03,0],S.thin);
+  }
+  s.box(0,H-t,0,W,t,D);
+  for(const x of [e,W-e])s.line([x,0,e],[x,H,e],S.leg);
+  return {W,D,H};
+}
+
 const FIGURES=[
   {key:"table",label:"桌子",size:{W:120,D:60,H:75},draw(s,{W,D,H}){
     const t=Math.max(H*.045,1.5),i=Math.min(W,D)*.05;
@@ -127,6 +156,45 @@ const FIGURES=[
     }
     return {W,D,H,seatY:SH};
   }},
+  {key:"foldchair",label:"折疊椅",seat:true,size:{W:42,D:46,H:78,SH:45},draw(s,{W,D,H,SH,noBack,round}){
+    // 左右兩側各一組交叉腳（從側面看是 X）：上端接在椅面底下、下端落地；左邊那組被椅子擋在後面，畫淡一點。
+    // 沒有椅背的折疊椅（總高跟座高一樣）不畫椅背；品名有「圓」的畫圓椅面
+    const t=Math.max(H*.045,1.5),top=noBack?H:SH,y=top-t,bh=(H-SH)*.6;
+    if(round){
+      // 圓椅面：腳往內縮，上端才會落在椅面的圓裡面
+      const r=Math.min(W,D)/2,cx=W/2,cz=D/2,q=r*.65,bt=Math.max(D*.07,1.5);
+      const e=D*.06; // 腳落地的位置照商品的深度張開（深比椅面大的折疊椅，腳本來就往前後撐開）
+      const cross=(x,style)=>{s.line([x,0,e],[x,y,cz+q],style);s.line([x,0,D-e],[x,y,cz-q],style)};
+      cross(cx-r*.4,S.farLeg);
+      if(!noBack){
+        const zb=cz+r*.55; // 椅背立柱接在椅面後緣的圓裡面
+        for(const x of [cx-r*.6,cx+r*.6])s.line([x,SH,zb],[x,H-t,zb],S.leg);
+        s.box(cx-r*.7,H-bh,zb-bt/2,r*1.4,bh,bt);
+      }
+      cross(cx+r*.4,S.leg);
+      s.cyl(cx,y,cz,r,t);
+      return {W,D,H,seatY:top};
+    }
+    const i=W*.06,bt=Math.max(D*.07,1.5);
+    const cross=(x,style)=>{s.line([x,0,i],[x,y,D-i],style);s.line([x,0,D-i],[x,y,i],style)};
+    cross(i,S.farLeg);
+    s.box(0,y,0,W,t,D);
+    cross(W-i,S.leg);
+    if(!noBack){
+      for(const x of [i,W-i])s.line([x,SH,D-i],[x,H-t,D-i],S.leg);
+      s.box(0,H-bh,D-bt,W,bh,bt);
+    }
+    return {W,D,H,seatY:top};
+  }},
+  {key:"roundstool",label:"圓凳",seat:true,size:{W:30,D:30,H:50},draw(s,{W,D,H}){
+    // 圓椅面＋四支直腳：腳直接接在椅面的圓邊底下（照椅面畫出來的橢圓找位置，才不會對不上）
+    const t=Math.max(H*.08,2),r=Math.min(W,D)/2,cx=W/2,cz=D/2;
+    const leg=(deg,style)=>{const [top]=ring(cx,H-t,cz,r*.8,deg*Math.PI/180,deg*Math.PI/180,1);s.line([top[0],top[1]-(H-t),0],top,style)};
+    leg(60,S.farLeg);leg(120,S.farLeg);
+    s.cyl(cx,H-t,cz,r,t);
+    leg(212,S.leg);leg(328,S.leg);
+    return {W,D,H,seatY:H};
+  }},
   {key:"stool",label:"板凳",seat:true,size:{W:36,D:27,H:45},draw(s,{W,D,H}){
     const t=Math.max(H*.1,2),i=Math.min(W,D)*.08,y=H*.3;
     for(const [x,z] of [[i,D-i],[W-i,D-i]])s.line([x,0,z],[x,H-t,z],S.leg);
@@ -143,6 +211,8 @@ const FIGURES=[
     for(const x of [e,W-e])s.line([x,0,e],[x,H,e],S.leg);
     return {W,D,H};
   }},
+  {key:"rackbox",label:"單箱架",size:{W:57,D:38,H:86},draw(s,p){return boxRack(s,p,[[.44,.8]])}},
+  {key:"rackbox2",label:"雙箱架",size:{W:39,D:40,H:84},draw(s,p){return boxRack(s,p,[[.1,.42],[.5,.82]])}},
   {key:"cabinet",label:"櫃子",size:{W:80,D:40,H:90},draw(s,{W,D,H}){
     const top=H*.2,m=W/2,hw=Math.min(W*.13,H*.15),hl=(H-top)*.2,hy=H-top-(H-top)*.2;
     s.box(0,0,0,W,H,D);
@@ -179,6 +249,8 @@ function figureParams(fig,dims={}){
   for(const k of keys)p[k]=given[k]>0?given[k]:def[k]*scale;
   const longest=Math.max(p.W,p.D,p.H);
   for(const k of keys)p[k]=Math.max(p[k],longest*.2);
+  p.noBack=isBackless(dims);
+  p.round=/圓/.test(dims.name||"")&&!/圓背/.test(dims.name||"");
   if(def.SH)p.SH=Math.min(Math.max(dims.seat>0?dims.seat:def.SH/def.H*p.H,p.H*.2),p.H*.9);
   return p;
 }
@@ -205,15 +277,18 @@ export function dimFigureSvg(key,{seat=false,dims}={}){
 }
 
 // 商品的寬深高（後台填的文字）＋規格列 → 示意圖要用的比例；範圍（例如 81~93）用最大值，讀不懂的當作沒填
-export function figureDimsOf(dimensions,specs){
+// name：品名，自動選圖時用來分辨圓凳、折疊椅、吧檯椅這些同一個分類裡長得不一樣的家具
+export function figureDimsOf(dimensions,specs,name=""){
   const num=v=>{const d=parseDim(v);return d&&d.text===undefined?d.max:0};
   const i=findSeatSpecIndex(specs);
-  return {w:num(dimensions?.width),d:num(dimensions?.depth),h:num(dimensions?.height),seat:i>=0?num(specs[i].h):0};
+  return {w:num(dimensions?.width),d:num(dimensions?.depth),h:num(dimensions?.height),seat:i>=0?num(specs[i].h):0,name:String(name||"")};
 }
 
-// 「自動」：依子分類（對不上再看主分類）的名稱決定。摺疊桌用交叉腳的摺疊桌圖；床邊桌要算桌子，所以「桌」排在「床」前面；
+// 「自動」：先依子分類（對不上再看主分類）的名稱決定大類，再用品名跟尺寸微調：
+// 沒有椅背的椅子畫成凳子（品名有「圓」就用圓凳）、品名有「箱」的鋁架用附箱的圖。圖刻意畫得簡單，只求大致像。
+// 大類：摺疊桌用交叉腳的摺疊桌圖；床邊桌要算桌子，所以「桌」排在「床」前面；
 // 床架的「架」不能當成層架，所以「床」排在「架」前面；「鞋櫃/架」這種兩個字都有的算層架
-export function autoDimFigureKey(subName,mainName){
+function categoryFigureKey(subName,mainName){
   for(const name of [subName,mainName]){
     if(!name)continue;
     if(/藤椅|沙發/.test(name))return "armchair";
@@ -227,11 +302,33 @@ export function autoDimFigureKey(subName,mainName){
   }
   return "box";
 }
+// 沒有椅背：總高不到 55 公分、總高跟座高幾乎一樣，或品名是「圓椅／圓凳」又沒提到靠背
+function isBackless({h=0,seat=0,name=""}={}){
+  return (h>0&&(h<=55||(seat>0&&h-seat<8)))||(/圓(椅|凳)/.test(name)&&!/靠|背|扶手/.test(name));
+}
+// info：figureDimsOf 的結果 {w,d,h,seat,name}（不給就只看分類）
+export function autoDimFigureKey(subName,mainName,info={}){
+  const base=categoryFigureKey(subName,mainName);
+  const name=String(info.name||"");
+  if(base==="chair"||base==="armchair"||base==="stool"){
+    if(base!=="armchair"&&/摺疊|折疊|折合/.test(name+(subName||"")))return "foldchair"; // 有沒有椅背畫的時候再看
+    const backless=base==="stool"||isBackless(info);
+    const round=/圓/.test(name)&&!/圓背/.test(name);
+    if(backless)return round?"roundstool":"stool";
+    return base;
+  }
+  if(base==="rack"){
+    if(/雙箱/.test(name))return "rackbox2";
+    if(/箱/.test(name))return "rackbox";
+    if(/櫃/.test(name)&&!/架/.test(name))return "cabinet"; // 「鞋櫃/架」分類裡品名寫明是櫃子的
+  }
+  return base;
+}
 
 // 商品的 dimFigure 欄位：空白＝自動、"none"＝不顯示、其他＝指定的示意圖；回傳要畫的 key（不畫就回傳 ""）
-export function resolveDimFigureKey(choice,subName,mainName){
+export function resolveDimFigureKey(choice,subName,mainName,info){
   if(choice==="none")return "";
-  return FIGURES.some(f=>f.key===choice)?choice:autoDimFigureKey(subName,mainName);
+  return FIGURES.some(f=>f.key===choice)?choice:autoDimFigureKey(subName,mainName,info);
 }
 
 // 後台的寬深高、規格列都是自由輸入的文字。讀得懂的格式：「60」「33.5」「81~93」「60cm」「60 公分」

@@ -6,7 +6,7 @@
    （分類、標籤、聯繫資訊…）一律從參數傳進來。
    ⚠ 改了這個檔案，記得把 index.html、manage.html 裡 import 網址的 ?v= 數字加一，
    不然瀏覽器可能還在用快取裡的舊版。 */
-import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=3";
+import{dimFigureSvg,figureDimsOf,resolveDimFigureKey,autoDimFigureKey,parseDim,findSeatSpecIndex}from"./dim-figures.js?v=4";
 
 export const SITE_ORIGIN="https://hsintong.cc";
 export const SITE_NAME="信通家俱行";
@@ -401,10 +401,11 @@ export function productSizeHtml(product,site){
   const subName=subNameOf(site.catalog,product.mainCat,product.subCat),mainName=mainNameOf(site.catalog,product.mainCat);
   // 後台可以指定這件商品用哪張示意圖、或不顯示（dimFigure 欄位，空白＝依分類自動）；
   // 「約幾尺」跟著示意圖的種類走，選不顯示時改看依分類自動判斷的種類
-  const figureKey=resolveDimFigureKey(product.dimFigure,subName,mainName);
-  const kind=figureKey||autoDimFigureKey(subName,mainName);
-  const W=parseDim(d.width),D=parseDim(d.depth),H=parseDim(d.height);
   const specs=(product.specs||[]).filter(spec=>spec&&typeof spec==="object");
+  const figureDims=figureDimsOf(d,specs,product.name); // 示意圖要用的比例跟品名（自動選圖也看這個）
+  const figureKey=resolveDimFigureKey(product.dimFigure,subName,mainName,figureDims);
+  const kind=figureKey||autoDimFigureKey(subName,mainName,figureDims);
+  const W=parseDim(d.width),D=parseDim(d.depth),H=parseDim(d.height);
   const seatIndex=findSeatSpecIndex(specs);
   const seatH=seatIndex>=0?parseDim(specs[seatIndex].h):null;
   const hasSeatH=!!seatH&&seatH.text===undefined;
@@ -418,13 +419,13 @@ export function productSizeHtml(product,site){
     return value&&!/洽詢/.test(value)?`<div class="lb-dim-extra"><span>${escapeHTML(spec.label||"尺寸備註")}</span>${escapeHTML(withCm(value))}</div>`:"";
   }).join("");
   const hasLine=hasLineOf(site);
-  const chi=kind!=="chair"&&kind!=="armchair";
+  const chi=!["chair","armchair","foldchair","barstool","office","swivelstool"].includes(kind);
   const rows=dimRowHtml("寬",W,{chi,adj:"可調整"})+dimRowHtml("深",D,{chi,adj:"可調整"})+dimRowHtml("高",H,{chi,adj:"可升降"})
     +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
   let body;
   if(rows){
     // 示意圖照這件商品自己的寬深高比例畫（例如寬 60、深 90 的桌子會畫成比較深）
-    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDimsOf(d,specs)})}</div>`:"";
+    const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDims})}</div>`:"";
     body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
   }else if(extraHtml)body=extraHtml;
   else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，按下方「LINE 詢問這件商品」問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;

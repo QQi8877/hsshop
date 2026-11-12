@@ -12,9 +12,9 @@ import{initializeApp}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-app
 import{getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,writeBatch}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
 import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
-import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=3";
+import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=4";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=9";
+import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=10";
 import{escapeHTML}from"./util.js?v=1";
 import{uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=1";
 import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=2";
@@ -1859,7 +1859,9 @@ window.renderFigurePicker=function(){
   const preview=document.getElementById("pFigurePreview");
   if(!picker||!preview)return;
   const mainId=document.getElementById("pMainCat").value;
-  const autoKey=autoDimFigureKey(getSubName(mainId,document.getElementById("pSubCat").value),getMainName(mainId));
+  // 自動選圖除了分類，也看品名跟寬深高（圓凳、折疊椅、吧檯椅…），跟前台同一套規則
+  const dims=figureDimsOf({width:document.getElementById("pWidth").value,depth:document.getElementById("pDepth").value,height:document.getElementById("pHeight").value},workingSpecs,document.getElementById("pName").value);
+  const autoKey=autoDimFigureKey(getSubName(mainId,document.getElementById("pSubCat").value),getMainName(mainId),dims);
   const seat=hasSeatHeight(workingSpecs);
   const selected=validDimFigure(workingDimFigure); // 不認得的值（例如之後拿掉的示意圖）當成自動
   const figureOf=key=>DIM_FIGURES.find(f=>f.key===key);
@@ -1879,16 +1881,15 @@ window.renderFigurePicker=function(){
     return;
   }
   const notes=[];
-  if(!selected)notes.push("目前是「自動」，依分類選的；想換別張就點上面的圖。");
+  if(!selected)notes.push("目前是「自動」，依分類、品名和尺寸選的；想換別張就點上面的圖。");
   if(seat)notes.push(figureOf(shownKey).seat?"有填「椅面」的高度，圖上會多標座高。":"這張圖沒有座面，座高只會出現在旁邊的數字。");
   // 預覽照這件商品填的寬深高比例畫，跟前台一樣；上面的格子用一般比例，方便認出是哪一種
-  const dims=figureDimsOf({width:document.getElementById("pWidth").value,depth:document.getElementById("pDepth").value,height:document.getElementById("pHeight").value},workingSpecs);
   preview.innerHTML=`${dimFigureSvg(shownKey,{seat,dims})}<div class="figure-preview-text"><strong>前台會顯示這張圖</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>`;
 };
 // 打字時很多次 input 事件併成一次重畫
 let figureRefreshQueued=false;
 // 改寬深高時預覽跟著變
-for(const id of ["pWidth","pDepth","pHeight"])document.getElementById(id).addEventListener("input",()=>scheduleFigureRefresh());
+for(const id of ["pName","pWidth","pDepth","pHeight"])document.getElementById(id).addEventListener("input",()=>scheduleFigureRefresh());
 function scheduleFigureRefresh(){
   if(figureRefreshQueued)return;
   figureRefreshQueued=true;

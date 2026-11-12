@@ -156,6 +156,19 @@ const FIGURES=[
     }
     return {W,D,H,seatY:SH};
   }},
+  {key:"foldchair",label:"折疊椅",seat:true,size:{W:42,D:46,H:78,SH:45},draw(s,{W,D,H,SH,noBack}){
+    // 跟摺疊桌同一種畫法：前後各一組交叉腳，上下兩端都接在椅面跟地面的四個角；後面那組畫淡一點。
+    // 沒有椅背的折疊椅（總高跟座高一樣）就不畫椅背
+    const t=Math.max(H*.045,1.5),i=W*.06,bt=Math.max(D*.07,1.5),top=noBack?H:SH,y=top-t,b0=SH+(H-SH)*.38;
+    s.line([i,0,D-i],[W-i,y,D-i],S.farLeg);s.line([W-i,0,D-i],[i,y,D-i],S.farLeg);
+    s.line([i,0,i],[W-i,y,i],S.leg);s.line([W-i,0,i],[i,y,i],S.leg);
+    s.box(0,y,0,W,t,D);
+    if(!noBack){
+      for(const x of [i,W-i])s.line([x,SH,D-i],[x,H-t,D-i],S.leg);
+      s.box(0,b0,D-bt,W,H-b0,bt);
+    }
+    return {W,D,H,seatY:top};
+  }},
   {key:"roundstool",label:"圓凳",seat:true,size:{W:30,D:30,H:50},draw(s,{W,D,H}){
     // 圓椅面＋四支直腳：腳直接接在椅面的圓邊底下（照椅面畫出來的橢圓找位置，才不會對不上）
     const t=Math.max(H*.08,2),r=Math.min(W,D)/2,cx=W/2,cz=D/2;
@@ -219,6 +232,7 @@ function figureParams(fig,dims={}){
   for(const k of keys)p[k]=given[k]>0?given[k]:def[k]*scale;
   const longest=Math.max(p.W,p.D,p.H);
   for(const k of keys)p[k]=Math.max(p[k],longest*.2);
+  p.noBack=isBackless(dims);
   if(def.SH)p.SH=Math.min(Math.max(dims.seat>0?dims.seat:def.SH/def.H*p.H,p.H*.2),p.H*.9);
   return p;
 }
@@ -270,14 +284,17 @@ function categoryFigureKey(subName,mainName){
   }
   return "box";
 }
+// 沒有椅背：總高不到 55 公分、總高跟座高幾乎一樣，或品名是「圓椅／圓凳」又沒提到靠背
+function isBackless({h=0,seat=0,name=""}={}){
+  return (h>0&&(h<=55||(seat>0&&h-seat<8)))||(/圓(椅|凳)/.test(name)&&!/靠|背|扶手/.test(name));
+}
 // info：figureDimsOf 的結果 {w,d,h,seat,name}（不給就只看分類）
 export function autoDimFigureKey(subName,mainName,info={}){
   const base=categoryFigureKey(subName,mainName);
   const name=String(info.name||"");
-  const h=info.h>0?info.h:0,seat=info.seat>0?info.seat:0;
   if(base==="chair"||base==="armchair"||base==="stool"){
-    // 沒有椅背：總高不到 55 公分、總高跟座高幾乎一樣，或品名是「圓椅／圓凳」又沒提到靠背
-    const backless=base==="stool"||(h>0&&(h<=55||(seat>0&&h-seat<8)))||(/圓(椅|凳)/.test(name)&&!/靠|背|扶手/.test(name));
+    if(base!=="armchair"&&/摺疊|折疊|折合/.test(name+(subName||"")))return "foldchair"; // 有沒有椅背畫的時候再看
+    const backless=base==="stool"||isBackless(info);
     const round=/圓/.test(name)&&!/圓背/.test(name);
     if(backless)return round?"roundstool":"stool";
     return base;

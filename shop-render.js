@@ -419,7 +419,7 @@ export function productSizeHtml(product,site){
     return value&&!/洽詢/.test(value)?`<div class="lb-dim-extra"><span>${escapeHTML(spec.label||"尺寸備註")}</span>${escapeHTML(withCm(value))}</div>`:"";
   }).join("");
   const hasLine=hasLineOf(site);
-  const chi=kind!=="chair"&&kind!=="armchair";
+  const chi=!["chair","armchair","foldchair"].includes(kind);
   const rows=dimRowHtml("寬",W,{chi,adj:"可調整"})+dimRowHtml("深",D,{chi,adj:"可調整"})+dimRowHtml("高",H,{chi,adj:"可升降"})
     +(hasSeatH?dimRowHtml("座高",seatH,{key:true,adj:"可升降"}):"");
   let body;

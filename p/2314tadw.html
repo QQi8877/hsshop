@@ -13,18 +13,18 @@
 <meta property="og:url" content="https://hsintong.cc/p/2314tadw">
 <!-- 分享到 LINE／Facebook 時的預覽圖（1200×630）。每件商品自己的網頁（/p/商品編號）會換成那件商品的照片，
      見 _tools/build-pages.mjs -->
-<meta property="og:image" content="https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1789458339/hm1km5hikmsdwb3rbast.jpg">
+<meta property="og:image" content="https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1794736946/jsea6fnunkunjqa8fg7d.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="圓皮腰靠折疊椅">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="圓皮腰靠折疊椅｜信通家俱行">
 <meta name="twitter:description" content="椅背貼合腰部設計，坐感較一般折疊椅舒適，摺疊收納不佔空間。貼腰椅背，久坐較舒適，摺疊設計，收納方便，綠、黑兩色">
-<meta name="twitter:image" content="https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1789458339/hm1km5hikmsdwb3rbast.jpg">
+<meta name="twitter:image" content="https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1794736946/jsea6fnunkunjqa8fg7d.jpg">
 <link rel="canonical" href="https://hsintong.cc/p/2314tadw">
 <!-- 給 Google 看的店家資料（地址、電話、營業時間）。直接寫在網頁裡，Google 不用等程式跑完就讀得到；
      內容由每小時的 _tools/build-pages.mjs 照後台「聯繫資訊」重新產生，不用手改 -->
-<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1794489634/ux1rkwrfvpe6eakvmw4k.png","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"106 台北市大安區文昌街184號","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
+<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://hsintong.cc/og-image.jpg","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"106 台北市大安區文昌街184號","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
 <!-- 網站小圖示：Google 搜尋結果左邊的小圖示要真的檔案（48 的倍數），不能是寫在網頁裡的圖 -->
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -1585,6 +1585,13 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
   .sec-head h2,.listing-title{font-size:22px}
   .sec-head h2::before,.listing-title::before{width:20px}
   .p-card__title,.product-name{font-size:15px}
+  /* 手機的卡片小，照片本身下緣的留白（商品只佔照片七成左右）加上文字的上邊距，照片跟品名看起來離太遠：
+     文字區往上疊進照片下緣的留白裡。去背照下緣至少有一成多的白邊，疊 12px 不會蓋到商品 */
+  .product-info{padding-top:0;margin-top:-12px;position:relative;z-index:3}
+  .img-count-badge{bottom:16px}
+  .p-card{gap:0}
+  .p-card__title{margin-top:6px} /* 本月選品的照片有自己的圓角底色框，文字不能疊進去，只縮小間距 */
+  .p-card__foot{margin-top:9px}
   .fx-line{display:flex}
   .hero-photo::before{display:none}
   .hero-photo::after{width:30px;height:30px}
@@ -1841,7 +1848,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
   <button class="lb-arrow" id="lbNext" style="display:none" onclick="lbNav(1)" aria-label="下一張">›</button>
   <div class="lb-layout">
     <div class="lb-left">
-      <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1789458339/hm1km5hikmsdwb3rbast.jpg" alt="圓皮腰靠折疊椅 商品照片 1" fetchpriority="high"></div>
+      <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1794736946/jsea6fnunkunjqa8fg7d.jpg" alt="圓皮腰靠折疊椅 商品照片 1" fetchpriority="high"></div>
       <div class="lb-thumbs" id="lbThumbs"></div>
       <div class="lb-counter" id="lbCounter"></div>
       <div class="lb-hint">滑鼠移到圖片上會局部放大；縮圖、方向鍵可切換照片，ESC 關閉。</div>
@@ -1862,7 +1869,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
     LINE 詢問這件商品
   </a>
-      <div class="lb-spec-title lb-similar-title">同類商品</div><div class="lb-similar"><a class="lb-sim" href="/p/w7tbjdkb" data-similar="w7tbjdkb"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1789458470/aomlyt6ujhx3tpzmsbci.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">高腳圓皮腰靠折疊椅</span></a><a class="lb-sim" href="/p/ppjix1as" data-similar="ppjix1as"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1789458428/x0iqhuagtzxujxdzxwur.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">圓皮面摺疊椅</span></a><a class="lb-sim" href="/p/tutqn7hy" data-similar="tutqn7hy"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1789458451/dgb5begavrlemca8moav.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">圓板面摺疊椅</span></a><a class="lb-sim" href="/p/kacbc36d" data-similar="kacbc36d"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1789458414/sxdwildh8oiygwet1fdz.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">摺疊小木椅</span></a></div>
+      <div class="lb-spec-title lb-similar-title">同類商品</div><div class="lb-similar"><a class="lb-sim" href="/p/w7tbjdkb" data-similar="w7tbjdkb"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794737012/flvgdiqseg7bmwmis8m0.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">高腳圓皮腰靠折疊椅</span></a><a class="lb-sim" href="/p/ppjix1as" data-similar="ppjix1as"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794736994/xaga0nulm2mccxf66uqb.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">圓皮面摺疊椅</span></a><a class="lb-sim" href="/p/tutqn7hy" data-similar="tutqn7hy"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794737005/scgfonfrqfzb7ujkb3dk.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">圓板面摺疊椅</span></a><a class="lb-sim" href="/p/kacbc36d" data-similar="kacbc36d"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794736985/rylazjvpcqkdfnmwowoq.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">摺疊小木椅</span></a></div>
     </div>
   </div>
 </div>

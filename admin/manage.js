@@ -16,7 +16,7 @@ import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
 import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=10";
 import{escapeHTML}from"./util.js?v=1";
-import{uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=1";
+import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=2";
 import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=2";
 import{CSV_HEADERS,csvEscapeCell,parseCSV}from"./csv.js?v=1";
 
@@ -861,7 +861,7 @@ async function currentGallery(p){
 async function uploadBulkPhoto(file){
   try{
     const url=await uploadToCloudinary(file);
-    return{photo:url,original:url,local:false};
+    return{photo:await autoUniformUrl(url),original:url,local:false};
   }catch(e){
     console.warn("批次上傳：圖床上傳失敗，改用本機暫存",file.name,e);
     const dataUrl=await fileToDataUrl(file);
@@ -948,6 +948,160 @@ async function handleBulkFiles(event){
 }
 document.getElementById("bulkFileInput").addEventListener("change",handleBulkFiles);
 document.getElementById("bulkFolderInput").addEventListener("change",handleBulkFiles);
+
+/* ── 統一照片大小 ──────────────────────────────────────────────
+   每張照片裡商品佔畫面的比例不一樣，排在一起就忽大忽小。這裡把去背照的商品主體統一縮放成
+   佔畫面固定比例、放正中間（規則在 image-tools.js 的 uniformSubject）。
+   - 上傳照片時自動做（autoUniformUrl）；
+   - 「商品工具 → 統一照片大小」一次處理全部商品：可以先預覽（不存檔），確定再套用；
+     套用前的照片網址記在這台裝置（localStorage），可以按「復原」換回去（圖床上的舊照片不會刪）。 */
+// 剛傳上圖床的照片：是去背照就再傳一張置中好的版本、回傳新網址；不是去背照或處理不了就用原本那張
+async function autoUniformUrl(url){
+  try{
+    const result=await uniformSubject(normalizePhotoUrl(url));
+    if(result.status!=="ok")return url;
+    return await uploadToCloudinary(await(await fetch(result.dataUrl)).blob());
+  }catch(e){
+    console.warn("自動置中失敗，用原本的照片",e);
+    return url;
+  }
+}
+const UNIFORM_BACKUP_KEY="hs_uniform_backup_v1";
+const UNIFORM_STATUS_TEXT={same:"本來就一致",nobg:"不是去背照（背景不是米白或白色），沒有動",nosubject:"找不到商品主體，沒有動",error:"照片讀不到，沒有動"};
+let uniformBusy=false;
+function uniformTargets(){return products.filter(p=>p.status!=="trashed"&&(p.photos||[]).some(Boolean))}
+function readUniformBackup(){
+  try{const b=JSON.parse(localStorage.getItem(UNIFORM_BACKUP_KEY)||"null");return b&&Array.isArray(b.items)&&b.items.length?b:null}catch(e){return null}
+}
+function updateUniformUndo(){
+  const backup=readUniformBackup(),box=document.getElementById("uniformUndoBox");
+  box.hidden=!backup;
+  if(backup)document.getElementById("uniformUndoText").textContent=`上次統一（${clockText(backup.time)}）改了 ${backup.items.length} 件商品的照片，不滿意可以整批換回去。`;
+}
+function setUniformBusy(busy){
+  uniformBusy=busy;
+  document.querySelectorAll("#uniformModal .uniform-action").forEach(btn=>btn.disabled=busy);
+}
+window.openUniformModal=function(){
+  if(!uniformBusy){document.getElementById("uniformLog").innerHTML="";document.getElementById("uniformPreview").innerHTML=""}
+  updateUniformUndo();
+  openModal("uniformModal");
+};
+// 預覽：只算每件商品的封面照，把「現在 → 統一後」並排給老闆看，不上傳、不存檔
+window.previewUniform=async function(){
+  if(uniformBusy)return;
+  const targets=uniformTargets(),log=document.getElementById("uniformLog"),grid=document.getElementById("uniformPreview");
+  if(!targets.length){log.textContent="沒有有照片的商品。";return}
+  setUniformBusy(true);
+  grid.innerHTML="";
+  const counts={ok:0,same:0,skip:0};
+  try{
+    for(let i=0;i<targets.length;i++){
+      const p=targets[i],src=normalizePhotoUrl(p.photos.find(Boolean));
+      log.textContent=`預覽中…（${i+1}/${targets.length}）「${p.name||""}」`;
+      const result=await uniformSubject(src);
+      if(result.status==="same"){counts.same++;continue}
+      const cell=document.createElement("div");
+      cell.className="uniform-cell";
+      if(result.status==="ok"){
+        counts.ok++;
+        cell.innerHTML=`<div class="uniform-pair"><img alt="現在"><span>→</span><img alt="統一後"></div><div class="uniform-name"></div>`;
+        const [before,after]=cell.querySelectorAll("img");
+        before.src=src;after.src=result.dataUrl;
+      }else{
+        counts.skip++;
+        cell.innerHTML=`<div class="uniform-pair"><img alt="現在"></div><div class="uniform-name"></div><div class="uniform-skip"></div>`;
+        cell.querySelector("img").src=src;
+        cell.querySelector(".uniform-skip").textContent=UNIFORM_STATUS_TEXT[result.status];
+      }
+      cell.querySelector(".uniform-name").textContent=p.name||"";
+      grid.appendChild(cell);
+    }
+    log.textContent=`預覽完成（只看封面照，還沒存檔）：${counts.ok} 件會調整、${counts.same} 件本來就一致${counts.skip?`、${counts.skip} 件不會動（原因寫在下面）`:""}。左邊是現在、右邊是統一後。`;
+  }finally{setUniformBusy(false)}
+};
+// 套用：每件商品的每張照片都處理，有變的傳上圖床、存回商品；一件一件存，中途斷掉已經做好的不會白費
+window.runUniform=async function(){
+  if(uniformBusy)return;
+  const targets=uniformTargets(),log=document.getElementById("uniformLog");
+  if(!targets.length){log.textContent="沒有有照片的商品。";return}
+  if(!confirm(`要把 ${targets.length} 件商品的照片統一大小嗎？\n\n會改到正式網站上的照片；做完可以按「復原」換回原本的。處理時請不要關掉這個頁面。`))return;
+  setUniformBusy(true);
+  const backup={time:Date.now(),items:[]};
+  const counts={changed:0,photos:0,same:0,skipped:0,failed:0};
+  const notes=[];
+  try{
+    for(let i=0;i<targets.length;i++){
+      const p=targets[i];
+      log.textContent=`處理中…（${i+1}/${targets.length}）「${p.name||""}」`;
+      try{
+        const gallery=await currentGallery(p);
+        const next=gallery.photos.slice();
+        const skipped=[];
+        for(let k=0;k<next.length;k++){
+          const result=await uniformSubject(normalizePhotoUrl(next[k]));
+          if(result.status==="ok")next[k]=await uploadToCloudinary(await(await fetch(result.dataUrl)).blob());
+          else if(result.status!=="same")skipped.push(`第 ${k+1} 張${UNIFORM_STATUS_TEXT[result.status]}`);
+        }
+        if(skipped.length){counts.skipped++;notes.push(`－ 「${escapeHTML(p.name||"")}」${escapeHTML(skipped.join("；"))}`)}
+        const changedCount=next.filter((url,k)=>url!==gallery.photos[k]).length;
+        if(!changedCount){if(!skipped.length)counts.same++;continue}
+        await ensureNoConflict([p]);
+        await saveGallery(p.id,next,gallery.originals);
+        const updated={...p,photos:[await thumbFor(next[0])],photoCount:next.length};
+        await patchProducts([updated],["photos","photoCount"]);
+        Object.assign(p,updated);
+        backup.items.push({id:p.id,photos:gallery.photos});
+        try{localStorage.setItem(UNIFORM_BACKUP_KEY,JSON.stringify(backup))}catch(e){}
+        counts.changed++;counts.photos+=changedCount;
+      }catch(e){
+        if(e instanceof SaveCancelled){notes.push(`－ 「${escapeHTML(p.name||"")}」剛被別的裝置改過，這件先跳過`);counts.skipped++;continue}
+        counts.failed++;
+        console.warn("統一照片失敗",p.name,e);
+        notes.push(`✗ 「${escapeHTML(p.name||"")}」沒有處理成功：${escapeHTML(e.message||String(e))}`);
+      }
+    }
+  }finally{setUniformBusy(false)}
+  const summary=[`調整了 ${counts.changed} 件商品、共 ${counts.photos} 張照片`,`${counts.same} 件本來就一致`,counts.skipped&&`${counts.skipped} 件有照片沒動`,counts.failed&&`${counts.failed} 件失敗`].filter(Boolean).join("，");
+  log.innerHTML=`完成：${summary}。前台大約一小時內會跟著更新。${notes.length?"<br><br>"+notes.join("<br>"):""}`;
+  document.getElementById("uniformPreview").innerHTML="";
+  updateUniformUndo();
+  renderTable();
+};
+window.undoUniform=async function(){
+  if(uniformBusy)return;
+  const backup=readUniformBackup(),log=document.getElementById("uniformLog");
+  if(!backup)return;
+  if(!confirm(`要把 ${backup.items.length} 件商品的照片換回統一之前的樣子嗎？`))return;
+  setUniformBusy(true);
+  const left=[];
+  let restored=0;
+  try{
+    for(let i=0;i<backup.items.length;i++){
+      const item=backup.items[i],p=products.find(x=>x.id===item.id);
+      if(!p)continue; // 商品已經刪掉了
+      log.textContent=`復原中…（${i+1}/${backup.items.length}）「${p.name||""}」`;
+      try{
+        const gallery=await currentGallery(p);
+        await saveGallery(p.id,item.photos,item.photos.map((_,k)=>gallery.originals[k]||""));
+        const updated={...p,photos:[await thumbFor(item.photos[0])],photoCount:item.photos.length};
+        await patchProducts([updated],["photos","photoCount"]);
+        Object.assign(p,updated);
+        restored++;
+      }catch(e){
+        console.warn("復原照片失敗",p.name,e);
+        left.push(item);
+      }
+    }
+  }finally{setUniformBusy(false)}
+  try{
+    if(left.length)localStorage.setItem(UNIFORM_BACKUP_KEY,JSON.stringify({...backup,items:left}));
+    else localStorage.removeItem(UNIFORM_BACKUP_KEY);
+  }catch(e){}
+  log.textContent=`已換回 ${restored} 件商品原本的照片${left.length?`，還有 ${left.length} 件沒成功，可以再按一次復原`:""}。`;
+  updateUniformUndo();
+  renderTable();
+};
 
 /* ── 頂部工具列的「網站設定」「商品工具」下拉選單 ───────────────── */
 window.toggleHeaderDropdown=function(id){
@@ -2133,6 +2287,10 @@ function handleSlotFile(slotIdx,event){
     // 原圖這份維持不動，才能隨時回去重新調整。
     workingPhotosOriginal[slotIdx]=url;
     workingPhotos[slotIdx]=url;
+    // 去背照自動置中、統一大小（原圖那份不動，之後還能回去重新裁切）；處理完使用者沒換掉這格才放進去
+    return autoUniformUrl(url).then(uniform=>{
+      if(editingProductId===openedFor&&workingPhotos[slotIdx]===url)workingPhotos[slotIdx]=uniform;
+    });
   }).catch(async e=>{
     console.warn("Cloudinary 上傳失敗，改用本機暫存",e);
     if(editingProductId!==openedFor)return;
@@ -2168,7 +2326,7 @@ async function promptUrlForSlot(slotIdx){
     const url=await uploadToCloudinary(fetchable);
     if(editingProductId===openedFor){
       workingPhotosOriginal[slotIdx]=url;
-      workingPhotos[slotIdx]=url;
+      workingPhotos[slotIdx]=await autoUniformUrl(url);
       toast("圖片已設定");
     }
   }catch(e){
@@ -2209,7 +2367,8 @@ async function addWorkingPhoto(raw){
     const url=await uploadToCloudinary(raw);
     if(editingProductId===openedFor){
       workingPhotosOriginal[empty]=url;
-      workingPhotos[empty]=url;
+      const uniform=await autoUniformUrl(url);
+      if(editingProductId===openedFor)workingPhotos[empty]=uniform;
       toast("圖片已新增");
     }
   }catch(e){

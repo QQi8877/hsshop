@@ -17,7 +17,7 @@
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="admin/manage.css?v=2">
+<link rel="stylesheet" href="admin/manage.css?v=3">
 </head>
 <body>
 
@@ -56,6 +56,7 @@
           <div class="menu-label">一次處理很多件</div>
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 批次操作</button>
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
+          <button onclick="closeHeaderDropdowns();openUniformModal()">📐 統一照片大小</button>
           <div class="menu-label">匯出／匯入</div>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
@@ -539,6 +540,32 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="uniformModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('uniformModal')">×</button>
+    <div class="modal-scroll">
+    <div class="modal-title">統一照片大小</div>
+    <p class="catmgr-hint">
+      把每張照片裡的商品縮放成一樣大、放在正中間，前台排在一起才不會忽大忽小。<br>
+      只會處理<strong>去背照</strong>（背景是米白或白色）；店內實拍這類有背景的照片不會動。新上傳的照片之後會自動做，不用再按。
+    </p>
+    <div class="uniform-steps">
+      <button class="btn-secondary uniform-action" onclick="previewUniform()">① 先看預覽（不會存檔）</button>
+      <button class="btn-primary uniform-action" onclick="runUniform()">② 開始統一全部商品</button>
+    </div>
+    <div class="uniform-undo" id="uniformUndoBox" hidden>
+      <span id="uniformUndoText"></span>
+      <button class="btn-secondary uniform-action" onclick="undoUniform()">↩ 復原</button>
+    </div>
+    <div class="uniform-log" id="uniformLog" aria-live="polite"></div>
+    <div class="uniform-preview" id="uniformPreview"></div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closeModal('uniformModal')">關閉</button>
+    </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="bulkUploadModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('bulkUploadModal')">×</button>
@@ -564,6 +591,6 @@
   </div>
 </div>
 
-<script type="module" src="admin/manage.js?v=4"></script>
+<script type="module" src="admin/manage.js?v=5"></script>
 </body>
 </html>

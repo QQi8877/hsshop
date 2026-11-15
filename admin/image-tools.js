@@ -42,9 +42,9 @@ const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1200;
    最長邊佔畫面固定比例，商品有大有小拍出來的照片看起來就會一致大小。 */
 const SUBJECT_BG_COLOR={r:255,g:250,b:243}; // #fffaf3
 const SUBJECT_TARGET_FRACTION=0.72; // 主體最長邊要佔畫面的比例，愈小代表四周留白愈多
-function detectSubjectBBox(img){
+function detectSubjectBBox(img,MAX_DIM=300){ // MAX_DIM：分析用的縮圖大小；愈大愈準、愈慢
   const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
-  const MAX_DIM=300; // 用縮圖分析就夠了，不用掃整張原圖的像素，速度快很多
+  // 用縮圖分析就夠了，不用掃整張原圖的像素，速度快很多
   const scale=Math.min(1,MAX_DIM/Math.max(iw,ih));
   const w=Math.max(1,Math.round(iw*scale)),h=Math.max(1,Math.round(ih*scale));
   const canvas=document.createElement("canvas");
@@ -71,6 +71,58 @@ function detectSubjectBBox(img){
   if(maxX<minX||maxY<minY)return null; // 整張都接近背景色，偵測不到主體
   const inv=1/scale;
   return {x:minX*inv,y:minY*inv,w:(maxX-minX+1)*inv,h:(maxY-minY+1)*inv};
+}
+
+/* ── 統一照片大小（「一鍵統一全部照片」跟上傳時自動置中共用）──────────────
+   把商品主體縮放成最長邊佔畫面 SUBJECT_TARGET_FRACTION、放在正中間，四周補上網站的照片底色。
+   跟裁切視窗的「自動置中」不同的是可以縮小：商品頂到照片邊緣的（例如高的書櫃）也能留出一樣的白邊。
+   只處理「去背照」：四個角落都接近底色（米白或白）才動手，一般的生活照、店內實拍整張都是主體，
+   縮小只會多出一圈邊框，所以原樣留著。回傳 {status, dataUrl?}：
+     ok＝處理好了（dataUrl 是新照片）　same＝本來就一致，不用動
+     nobg＝不是去背照，或底色跟網站的差太多（補邊會看得出接縫）　nosubject＝找不到商品　error＝照片讀不到 */
+const BG_SEAM_LIMIT=8; // 照片底色跟網站底色差多少以內，補邊才看不出接縫
+function cornerBackgroundDistance(img){
+  const size=48,canvas=document.createElement("canvas");
+  canvas.width=size;canvas.height=size;
+  const ctx=canvas.getContext("2d",{willReadFrequently:true});
+  ctx.drawImage(img,0,0,size,size);
+  let data;
+  try{data=ctx.getImageData(0,0,size,size).data}catch(e){return null}
+  let worst=0;
+  for(const [cx,cy] of [[0,0],[size-4,0],[0,size-4],[size-4,size-4]]){
+    let r=0,g=0,b=0;
+    for(let y=cy;y<cy+4;y++)for(let x=cx;x<cx+4;x++){const i=(y*size+x)*4;r+=data[i];g+=data[i+1];b+=data[i+2]}
+    const dr=r/16-SUBJECT_BG_COLOR.r,dg=g/16-SUBJECT_BG_COLOR.g,db=b/16-SUBJECT_BG_COLOR.b;
+    worst=Math.max(worst,Math.sqrt(dr*dr+dg*dg+db*db));
+  }
+  return worst;
+}
+async function uniformSubject(src){
+  let img;
+  try{img=await loadImage(src)}catch(e){return{status:"error"}}
+  const bgDist=cornerBackgroundDistance(img);
+  if(bgDist===null)return{status:"error"};
+  if(bgDist>28)return{status:"nobg"}; // 跟 detectSubjectBBox 的容許值一樣：角落不是底色就不是去背照
+  const bbox=detectSubjectBBox(img,600); // 比裁切視窗的自動置中準一點：小件商品差一個像素，大小就差好幾 %
+  if(!bbox)return{status:"nosubject"};
+  const iw=img.naturalWidth,ih=img.naturalHeight,longest=Math.max(bbox.w,bbox.h);
+  const cx=bbox.x+bbox.w/2,cy=bbox.y+bbox.h/2;
+  const square=Math.abs(iw-ih)/Math.max(iw,ih)<.01;
+  if(square&&Math.abs(longest/iw-SUBJECT_TARGET_FRACTION)<.015&&Math.abs(cx/iw-.5)<.012&&Math.abs(cy/ih-.5)<.012)return{status:"same"};
+  const W=PHOTO_TARGET_W,H=PHOTO_TARGET_H,scale=SUBJECT_TARGET_FRACTION*W/longest;
+  const x0=W/2-cx*scale,y0=H/2-cy*scale;
+  const covers=x0<=.5&&y0<=.5&&x0+iw*scale>=W-.5&&y0+ih*scale>=H-.5;
+  if(!covers&&bgDist>BG_SEAM_LIMIT)return{status:"nobg"};
+  try{
+    const canvas=document.createElement("canvas");
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext("2d");
+    ctx.fillStyle="#fffaf3";
+    ctx.fillRect(0,0,W,H);
+    ctx.imageSmoothingQuality="high";
+    ctx.drawImage(img,x0,y0,iw*scale,ih*scale);
+    return{status:"ok",dataUrl:canvas.toDataURL("image/jpeg",0.9)};
+  }catch(e){return{status:"error"}}
 }
 
 function resizeImageToUniform(src){
@@ -182,4 +234,4 @@ function normalizePhotoUrl(url){
   return url;
 }
 
-export{uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl};
+export{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl};

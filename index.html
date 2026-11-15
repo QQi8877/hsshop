@@ -1585,6 +1585,13 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
   .sec-head h2,.listing-title{font-size:22px}
   .sec-head h2::before,.listing-title::before{width:20px}
   .p-card__title,.product-name{font-size:15px}
+  /* 手機的卡片小，照片本身下緣的留白（商品只佔照片七成左右）加上文字的上邊距，照片跟品名看起來離太遠：
+     文字區往上疊進照片下緣的留白裡。去背照下緣至少有一成多的白邊，疊 12px 不會蓋到商品 */
+  .product-info{padding-top:0;margin-top:-12px;position:relative;z-index:3}
+  .img-count-badge{bottom:16px}
+  .p-card{gap:0}
+  .p-card__title{margin-top:6px} /* 本月選品的照片有自己的圓角底色框，文字不能疊進去，只縮小間距 */
+  .p-card__foot{margin-top:9px}
   .fx-line{display:flex}
   .hero-photo::before{display:none}
   .hero-photo::after{width:30px;height:30px}

@@ -1717,11 +1717,8 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
       <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
       <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
       <div class="hero-actions">
-        <a class="hero-line-cta" id="lineFab" href="#" target="_blank" rel="noopener" data-lead="line_friend">
-          <svg viewBox="0 0 24 24" width="17" height="17" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          LINE 詢問商品
-        </a>
-        <a href="#categories" class="hero-cta" data-page-field="heroCta">探索商品</a>
+        <!-- 首頁大圖只留「看商品」一顆按鈕（實心的主要按鈕樣式）；LINE 詢問在手機底部浮動按鈕、商品頁、聯絡區塊都還有 -->
+        <a href="#categories" class="hero-line-cta" data-page-field="heroCta">探索商品</a>
       </div>
     </div>
     <figure class="hero-photo" id="heroPhoto">
@@ -3425,7 +3422,7 @@ function renderBuyInfo(){
 function renderContact(){
   renderBuyInfo();
   const c=state.contact;
-  document.getElementById("lineFab").href=c.lineUrl||"#";
+  document.body.dataset.lineUrl=c.lineUrl||""; // 手機底部的 LINE 浮動按鈕（siteFx）從這裡拿網址
   const actionsHtml=contactActionsHtml(c);
   const actionsEl=document.getElementById("contactActions");
   if(actionsEl.innerHTML!==actionsHtml)actionsEl.innerHTML=actionsHtml;
@@ -3602,7 +3599,7 @@ function openRoutedProduct(final){
   top.type="button";top.setAttribute("aria-label","回到頂端");
   top.addEventListener("click",()=>scrollTo({top:0,behavior:reduce?"auto":"smooth"}));
   const line=document.body.appendChild(el("a","fx-line","LINE 詢問老闆"));
-  line.target="_blank";line.rel="noopener";
+  line.target="_blank";line.rel="noopener";line.dataset.lead="line_friend"; // 跟其他 LINE 按鈕一樣算一次詢問
   const hero=document.getElementById("hero"),contact=document.getElementById("contact");
   let ticking=false;
   const onScroll=()=>{
@@ -3610,8 +3607,7 @@ function openRoutedProduct(final){
     const max=document.documentElement.scrollHeight-innerHeight;
     bar.style.setProperty("--p",max>0?Math.min(1,scrollY/max):0);
     top.classList.toggle("show",scrollY>innerHeight*.8);
-    const src=document.getElementById("lineFab");
-    if(src&&src.getAttribute("href")&&src.getAttribute("href")!=="#")line.href=src.href;
+    if(document.body.dataset.lineUrl)line.href=document.body.dataset.lineUrl;
     const pastHero=hero?hero.getBoundingClientRect().bottom<60:scrollY>400;
     const atContact=contact?contact.getBoundingClientRect().top<innerHeight-80:false;
     line.classList.toggle("show",pastHero&&!atContact&&!!line.getAttribute("href"));

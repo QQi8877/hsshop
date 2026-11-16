@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/shop-render.js?v=10">
+<link rel="modulepreload" href="/shop-render.js?v=11">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -1369,9 +1369,6 @@ footer a:hover{color:var(--color-on-dark)}
   .lb-info{max-height:none;width:100%;overflow:visible}
   .lb-hint{display:none}
 }
-@media(max-width:470px){
-  .lb-arrow{display:none!important}
-}
 /* ── 設計系統 2.0：元件樣式 ─────────────────────────────────────
    放在最後面，蓋過上面舊的寫法；色票和尺寸都來自 :root 的 2.0 變數。
    要退回舊版樣子：刪掉這一整段，再把 :root 換回舊色票即可。 */
@@ -1501,7 +1498,7 @@ footer a:hover{color:var(--color-on-dark)}
       只有店名、首頁大標、載入中的店名保留明體（--font-brand，用的還是 fonts/ 裡瘦身過的 HS Serif）
    2. 小字放大加深；商品名稱中等粗細（500），左邊商品目錄跟分類按鈕粗體（600）
    3. 互動（JS 在檔案最後的 siteFx）：捲動進度條、首頁大圖跟著滑鼠微動、
-      卡片滑過出現「看看這件」、回到頂端、手機捲過大圖後底部的 LINE 按鈕 */
+      卡片滑過出現「看看這件」、回到頂端、手機底部的「已收藏 N 件」長條 */
 :root{
   --font-brand:"HS Serif","Noto Serif TC",serif;
   --font-heading:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
@@ -1606,6 +1603,69 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
 .lb-dim-k{font-size:13.5px;font-weight:500;color:var(--text-secondary)}
 .lb-dim-extra,.lb-dim-note{font-size:14px;font-weight:500}
 .lb-dim-extra span{color:var(--text-secondary)}
+/* ══ 視覺 2.2（2026-11）：商品詳情從「暗色背景上的彈出視窗」改成「整頁式」═══════════
+   點商品像換到另一頁：最上面一條固定的「回商品列表」，電腦左邊大照片固定不動、右邊資訊跟著頁面捲；
+   手機照片滿版在上、資訊在下。HTML 結構見 #lightbox（照片箭頭、張數移進 .lb-stage-wrap 疊在照片上）。
+   換照片的方式沒變：照片兩側箭頭、下面的小圖、鍵盤左右鍵、手機左右滑（lbNav）。 */
+#lightbox{display:block;overflow-y:auto;overscroll-behavior:contain;padding:0;background:var(--bg)}
+.lb-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;padding:10px max(16px,calc((100% - 1180px)/2 + 24px));background:rgba(250,246,239,.96);border-bottom:1px solid var(--line);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.lb-close{position:static;display:inline-flex;align-items:center;gap:6px;width:auto;height:42px;padding:0 16px;border:1px solid var(--line);border-radius:6px;background:#fff;box-shadow:none;font-size:14.5px;font-weight:600;color:var(--text)}
+.lb-close:hover{background:var(--bg-sunken);color:var(--text)}
+.lb-layout{width:min(1180px,100%);margin:0 auto;padding:28px 24px 72px;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px}
+.lb-left{position:sticky;top:86px;align-items:stretch}
+.lb-stage-wrap{position:relative}
+.lb-stage{height:auto;aspect-ratio:1/1;max-height:calc(100vh - 210px);box-shadow:none;border:1px solid var(--line)}
+.lb-arrow{position:absolute;top:50%;width:44px;height:44px;border:1px solid var(--line);background:rgba(255,253,249,.94);box-shadow:var(--shadow-sm)}
+#lbPrev{left:12px}
+#lbNext{right:12px}
+.lb-counter{position:absolute;right:12px;bottom:12px;z-index:2;padding:3px 10px;border-radius:999px;background:rgba(34,29,24,.72);color:#fff;font-size:12.5px;font-variant-numeric:tabular-nums;pointer-events:none}
+.lb-counter:empty{display:none}
+.lb-thumbs{gap:10px}
+.lb-thumb{width:68px;height:68px;flex:none;object-fit:contain;background:var(--paper);border:1.5px solid var(--line);border-radius:6px;opacity:1;cursor:pointer}
+.lb-thumb:hover{border-color:var(--brand)}
+.lb-thumb.active{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.lb-hint{font-size:12.5px;color:var(--text-tertiary);text-align:left}
+.lb-thumbs:empty+.lb-hint{display:none} /* 只有一張照片就不用說明怎麼換照片 */
+.lb-info{max-height:none;overflow:visible;border:0;border-radius:0;padding:0;background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.lb-product-title{font-size:30px}
+@media(max-width:760px){
+  #lightbox{padding:0}
+  .lb-bar{padding:8px 12px}
+  .lb-layout{width:100%;max-height:none;overflow:visible;margin:0;padding:0 0 72px;grid-template-columns:minmax(0,1fr);gap:0}
+  .lb-left{position:static;gap:0}
+  .lb-stage{max-height:none;border:0;border-bottom:1px solid var(--line);border-radius:0}
+  .lb-stage img{border-radius:0}
+  .lb-arrow{width:40px;height:40px}
+  .lb-thumbs{padding:12px 16px 0}
+  .lb-thumb{width:60px;height:60px}
+  .lb-info{width:auto;padding:18px 18px 0}
+  .lb-product-title{font-size:24px}
+}
+/* ── 詢問方式：不到處放 LINE 按鈕，引導客人先收藏、再從收藏清單一次問（規則說明在 shop-render.js 的 askListHtml 上面）── */
+.lb-bar{justify-content:space-between;gap:10px}
+.lb-bar-fav{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 12px 0 14px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--text);font-size:14.5px;font-weight:600}
+.lb-bar-fav:hover{background:var(--bg-sunken)}
+.lb-ask{margin-top:22px;padding:16px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.lb-ask-btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;min-height:var(--control-lg);padding:0 18px;border:0;border-radius:6px;background:var(--brand);color:#fff;font-size:16px;font-weight:600;letter-spacing:.04em;transition:background .15s,transform .14s}
+.lb-ask-btn svg{width:19px;height:19px;flex:none}
+.lb-ask-btn:hover{background:var(--brand-hover,#743a1b)}
+.lb-ask-btn:active{transform:scale(.98)}
+.lb-ask-btn.is-added{background:#fff;color:var(--brand);box-shadow:inset 0 0 0 1.5px var(--brand)}
+.lb-ask-btn.is-added svg path{fill:currentColor}
+.lb-ask-btn.is-added:hover{background:var(--brand-subtle)}
+.lb-ask-note{margin-top:10px;font-size:13.5px;line-height:1.7;color:var(--text-secondary)}
+.lb-ask-note strong{font-weight:600;color:var(--text)}
+button.cat-tile{font:inherit;width:100%}
+.fx-line{border:0}
+/* 按愛心之後的小提示（favSnack）：在商品頁（z-index 600）上面、收藏清單（620）下面 */
+.fav-snack{position:fixed;left:50%;bottom:22px;z-index:615;display:flex;align-items:center;gap:12px;width:max-content;max-width:min(560px,calc(100vw - 24px));padding:12px 12px 12px 16px;border-radius:8px;background:rgba(34,29,24,.94);color:#fff;font-size:14px;line-height:1.55;box-shadow:0 10px 30px rgba(34,29,24,.28);opacity:0;visibility:hidden;transform:translate(-50%,14px);transition:opacity .25s,transform .25s,visibility 0s linear .25s}
+.fav-snack.show{opacity:1;visibility:visible;transform:translate(-50%,0);transition-delay:0s}
+.fav-snack button{flex:none;height:36px;padding:0 14px;border:0;border-radius:6px;background:#fff;color:var(--text);font-size:14px;font-weight:600}
+@media(max-width:760px){
+  .lb-bar-fav{padding:0 10px 0 12px}
+  .fav-snack{bottom:78px}
+  .fav-snack.first{flex-direction:column;align-items:stretch;width:calc(100vw - 24px)}
+}
 </style>
 <script>
 /* 第一次來的客人（這台瀏覽器還沒存過商品資料）：馬上去抓每小時自動更新的商品資料
@@ -1691,7 +1751,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
       <li class="nav-buy" hidden><a href="#buyInfo">購買須知</a></li>
       <li><a href="#contact">聯繫</a></li>
     </ul>
-    <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="喜愛清單">
+    <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="收藏清單">
       <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       <span class="fav-label">收藏</span>
       <span class="favorites-count" id="favoritesCount">0</span>
@@ -1718,11 +1778,8 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
       <p class="hero-sub" data-page-field="heroSub">讓家，更有溫度</p>
       <p class="hero-desc" data-page-field="heroDesc">用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。</p>
       <div class="hero-actions">
-        <a class="hero-line-cta" id="lineFab" href="#" target="_blank" rel="noopener" data-lead="line_friend">
-          <svg viewBox="0 0 24 24" width="17" height="17" data-icon fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-          LINE 詢問商品
-        </a>
-        <a href="#categories" class="hero-cta" data-page-field="heroCta">探索商品</a>
+        <!-- 首頁大圖只留「看商品」一顆按鈕（實心的主要按鈕樣式）；LINE 詢問在手機底部浮動按鈕、商品頁、聯絡區塊都還有 -->
+        <a href="#categories" class="hero-line-cta" data-page-field="heroCta">探索商品</a>
       </div>
     </div>
     <figure class="hero-photo" id="heroPhoto">
@@ -1781,7 +1838,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
     <div class="buyinfo-list" id="buyInfoList"></div>
     <div class="buyinfo-ask" id="buyInfoAsk" hidden>
       <span>運費、送貨或其他問題，歡迎直接問我們</span>
-      <a id="buyInfoLine" href="#" target="_blank" rel="noopener" data-lead="line_friend">LINE 直接問我們</a>
+      <a id="buyInfoLine" href="#contact">到「聯絡我們」詢問</a>
     </div>
   </div>
 </section>
@@ -1845,15 +1902,18 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
 </div>
 
 <div id="lightbox" class="open" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="false" tabindex="-1" data-prerendered="dfe9k46d">
-  <button class="lb-close" onclick="closeLightbox()" aria-label="關閉商品詳細資訊">×</button>
-  <button class="lb-arrow" id="lbPrev" style="display:none" onclick="lbNav(-1)" aria-label="上一張">‹</button>
-  <button class="lb-arrow" id="lbNext" style="display:none" onclick="lbNav(1)" aria-label="下一張">›</button>
+  <!-- 整頁式的商品詳情（視覺 2.2）：最上面一條「回商品列表」，左邊照片、右邊資訊；照片的上一張／下一張箭頭跟張數疊在照片上 -->
+  <div class="lb-bar"><button class="lb-close" onclick="closeLightbox()"><span aria-hidden="true">←</span> 回商品列表</button><button class="lb-bar-fav" onclick="toggleFavoritesPanel(true)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>收藏清單 <span class="favorites-count" id="lbBarFavCount">0</span></button></div>
   <div class="lb-layout">
     <div class="lb-left">
-      <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1794736973/zhjkod3bev0xjiexjgw8.jpg" alt="兩尺板凳 商品照片 1" fetchpriority="high"></div>
+      <div class="lb-stage-wrap">
+        <div class="lb-stage" id="lbStage"><img id="lbImg" src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_600/v1794736973/zhjkod3bev0xjiexjgw8.jpg" alt="兩尺板凳 商品照片 1" fetchpriority="high"></div>
+        <button class="lb-arrow" id="lbPrev" style="display:none" onclick="lbNav(-1)" aria-label="上一張">‹</button>
+        <button class="lb-arrow" id="lbNext" style="display:none" onclick="lbNav(1)" aria-label="下一張">›</button>
+        <div class="lb-counter" id="lbCounter"></div>
+      </div>
       <div class="lb-thumbs" id="lbThumbs"></div>
-      <div class="lb-counter" id="lbCounter"></div>
-      <div class="lb-hint">滑鼠移到圖片上會局部放大；縮圖、方向鍵可切換照片，ESC 關閉。</div>
+      <div class="lb-hint">有多張照片時：點下面的小圖、按照片兩側的箭頭或鍵盤左右鍵換照片；滑鼠移到照片上會放大。</div>
     </div>
     <div class="lb-info" id="lbInfo">
       <div class="lb-cat-row">
@@ -1867,10 +1927,10 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
       
       <div class="lb-spec-title">尺寸</div><div class="lb-dim"><div class="lb-dim-fig"><svg data-figure="stool" viewBox="-41.3 -106.7 140 130" width="140" height="130" aria-hidden="true" focusable="false"><line x1="16.5" y1="-8.2" x2="16.5" y2="-74.6" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="53.6" y1="-8.2" x2="53.6" y2="-74.6" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="16.5" y1="-30.3" x2="53.6" y2="-30.3" stroke="#201e1d" stroke-width="1" stroke-linecap="round"/><line x1="3.7" y1="-22.9" x2="16.5" y2="-30.3" stroke="#201e1d" stroke-width="1" stroke-linecap="round"/><line x1="40.9" y1="-22.9" x2="53.6" y2="-30.3" stroke="#201e1d" stroke-width="1" stroke-linecap="round"/><line x1="3.7" y1="-0.7" x2="3.7" y2="-67.2" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="40.9" y1="-0.7" x2="40.9" y2="-67.2" stroke="#201e1d" stroke-width="1.8" stroke-linecap="round"/><line x1="3.7" y1="-22.9" x2="40.9" y2="-22.9" stroke="#201e1d" stroke-width="1" stroke-linecap="round"/><polygon points="0,-66.5 42.2,-66.5 42.2,-73.8 0,-73.8" fill="#fffaf3" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="42.2,-66.5 57.4,-75.3 57.4,-82.7 42.2,-73.8" fill="#ece1ce" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><polygon points="0,-73.8 42.2,-73.8 57.4,-82.7 15.2,-82.7" fill="#f5ecdd" stroke="#201e1d" stroke-width="1.2" stroke-linejoin="round"/><line x1="-3.8" y1="2.2" x2="38.4" y2="2.2" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="-5.3" y1="3.1" x2="-2.4" y2="1.4" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="36.9" y1="3.1" x2="39.8" y2="1.4" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="17.3" y="16.2" text-anchor="middle" fill="#8c491a" font-size="13" font-weight="600">寬</text><line x1="50.2" y1="0" x2="65.4" y2="-8.9" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="47.2" y1="0" x2="53.2" y2="0" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="62.4" y1="-8.9" x2="68.4" y2="-8.9" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="63.8" y="5.1" text-anchor="start" fill="#8c491a" font-size="13" font-weight="600">深</text><line x1="65.4" y1="-8.9" x2="65.4" y2="-82.7" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><line x1="62.4" y1="-82.7" x2="68.4" y2="-82.7" stroke="#905229" stroke-width="1.1" stroke-linecap="round"/><text x="71.4" y="-40.3" text-anchor="start" fill="#8c491a" font-size="13" font-weight="600">高</text></svg></div><div class="lb-dim-rows"><div class="lb-dim-row"><span class="lb-dim-k">寬</span><span class="lb-dim-v">36<small>cm</small><span class="lb-dim-chi">約 1.2 尺</span></span></div><div class="lb-dim-row"><span class="lb-dim-k">深</span><span class="lb-dim-v">27<small>cm</small><span class="lb-dim-chi">約 0.9 尺</span></span></div><div class="lb-dim-row"><span class="lb-dim-k">高</span><span class="lb-dim-v">63<small>cm</small><span class="lb-dim-chi">約 2.1 尺</span></span></div></div></div>
       
-      <a class="lb-inquire-btn" href="https://line.me/R/oaMessage/%40833pzizi/?%E6%82%A8%E5%A5%BD%EF%BC%8C%E6%88%91%E6%83%B3%E8%A9%A2%E5%95%8F%E9%80%99%E4%BB%B6%E5%95%86%E5%93%81%EF%BC%9A%E5%85%A9%E5%B0%BA%E6%9D%BF%E5%87%B3%0Ahttps%3A%2F%2Fhsintong.cc%2Fp%2Fdfe9k46d" target="_blank" rel="noopener" data-lead="line">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-    LINE 詢問這件商品
-  </a>
+      <div class="lb-ask">
+    <button type="button" class="lb-ask-btn" id="lbAskBtn" onclick="lbAskClick()"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg><span>收藏這件，選好一起問</span></button>
+    <p class="lb-ask-note">想問的商品先按愛心收藏，選好後到「收藏清單」<strong>一次用 LINE 傳給老闆</strong>，不用一件一件問。</p>
+  </div>
       <div class="lb-spec-title lb-similar-title">同類商品</div><div class="lb-similar"><a class="lb-sim" href="/p/c8qdui04" data-similar="c8qdui04"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794736970/hgio8nscfl4ukfiwgsvw.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">70公分板凳</span></a><a class="lb-sim" href="/p/tkb984h2" data-similar="tkb984h2"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794737003/kbjzoeqlbbjme7mxpyd2.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">進口31公分矮凳</span></a><a class="lb-sim" href="/p/axxlc3hw" data-similar="axxlc3hw"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794736967/pipl6hvujx9r4tlhev6c.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">進口兩尺板凳</span></a><a class="lb-sim" href="/p/q8kiur2o" data-similar="q8kiur2o"><span class="lb-sim-img"><img src="https://res.cloudinary.com/oqcmekau/image/upload/f_auto,q_auto,w_300/v1794736997/lkif9ezptkhbfwth94kq.jpg" alt="" loading="lazy"></span><span class="lb-sim-name">進口45公分板凳</span></a></div>
     </div>
   </div>
@@ -1903,7 +1963,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=10";
+import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainCatOf,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=11";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -2358,7 +2418,7 @@ function renderProducts(animate=true){
     const fav=document.createElement("button");
     fav.className="favorite-btn"+(isFavorite(product.id)?" active":"");
     fav.dataset.favId=product.id;
-    fav.title="加入喜愛清單";
+    fav.title="加入收藏清單";
     fav.innerHTML='<svg viewBox="0 0 24 24"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
     fav.addEventListener("click",event=>{
       event.stopPropagation();
@@ -2660,10 +2720,10 @@ function renderCategoryTiles(){
       </a>
     `;
   }).join("")+`
-    <a class="cat-tile cat-tile--cta reveal" id="catCta" href="#" target="_blank" rel="noopener" data-lead="line_friend" style="transition-delay:${cats.length*60}ms">
-      <span class="cat-tile__name">不確定<br>就問</span>
-      <span class="cta-link">LINE 問老闆 →</span>
-    </a>
+    <button type="button" class="cat-tile cat-tile--cta reveal" id="catCta" onclick="toggleFavoritesPanel(true)" style="transition-delay:${cats.length*60}ms">
+      <span class="cat-tile__name">喜歡的<br>先按 ♡ 收藏</span>
+      <span class="cta-link">選好再一次問老闆 →</span>
+    </button>
   `;
   grid.querySelectorAll(".cat-tile[data-cat]").forEach(link=>{
     link.addEventListener("click",event=>{
@@ -2674,8 +2734,6 @@ function renderCategoryTiles(){
     });
   });
   grid.querySelectorAll(".cat-tile__thumb img").forEach(img=>fadeInOnLoad(img));
-  const cta=document.getElementById("catCta");
-  if(cta)cta.href=state.contact?.lineUrl||"#";
   initRevealOnScroll();
 }
 function renderHeroPhoto(){
@@ -2818,10 +2876,10 @@ function toggleFavorite(id,sourceBtn){
   const adding=!isFavorite(id);
   if(adding){
     state.favorites.push({id,qty:1,note:"",addedAt:Date.now()});
-    toast("已加入喜愛清單");
+    favSnack();
   }else{
     state.favorites=state.favorites.filter(f=>f.id!==id);
-    toast("已從喜愛清單移除");
+    toast("已從收藏清單移除");
   }
   saveFavoritesLocal();
   updateFavoriteButtons(id);
@@ -2902,11 +2960,14 @@ function renderFavorites(){
   const allProducts=favoriteProductsWithMeta();
   const totalQty=allProducts.reduce((sum,p)=>sum+p._qty,0);
   if(!favCountHolds)setFavoritesCount(allProducts.length);
+  const barCount=document.getElementById("lbBarFavCount");
+  if(barCount)barCount.textContent=allProducts.length;
+  updateLbFavoriteBtn(); // 在收藏清單裡移除了正在看的那件，商品頁的按鈕要跟著變回來
   subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 30 天`:"";
   renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
     footer.style.display="none";
-    list.innerHTML='<div class="favorites-empty">尚未加入商品。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
+    list.innerHTML='<div class="favorites-empty">還沒有收藏。<br>逛商品時按 ♡ 把想問的都收進來，<br>選好後在這裡一次用 LINE 傳給老闆。</div>';
     return;
   }
   footer.style.display="block";
@@ -3183,7 +3244,41 @@ function updateLbFavoriteBtn(){
   if(!btn||!lbProduct)return;
   const active=isFavorite(lbProduct.id);
   btn.classList.toggle("active",active);
-  btn.setAttribute("aria-label",active?"從喜愛清單移除":"加入喜愛清單");
+  btn.setAttribute("aria-label",active?"從收藏清單移除":"加入收藏清單");
+  // 下面那顆大的收藏按鈕（shop-render.js 的 askListHtml）：還沒收藏＝收藏這件；收藏了＝打開收藏清單去詢問
+  const ask=document.getElementById("lbAskBtn");
+  if(ask){
+    ask.classList.toggle("is-added",active);
+    ask.querySelector("span").textContent=active?`已收藏・看收藏清單（共 ${favoriteProductsWithMeta().length} 件）→`:"收藏這件，選好一起問";
+  }
+}
+function lbAskClick(){
+  if(!lbProduct)return;
+  if(isFavorite(lbProduct.id))toggleFavoritesPanel(true);
+  else toggleLbFavorite();
+}
+window.lbAskClick=lbAskClick;
+/* 按了愛心之後的小提示：告訴客人「收藏起來，選好再一次用 LINE 問」，旁邊一顆「看清單」。
+   第一次按的時候講完整一點、停久一點（這台裝置記得講過了），之後只報目前幾件。 */
+const FAV_TIP_KEY="hs_fav_tip_seen_v1";
+let favSnackTimer=0;
+function favSnack(){
+  let el=document.getElementById("favSnack");
+  if(!el){
+    el=document.createElement("div");
+    el.id="favSnack";el.className="fav-snack";el.setAttribute("role","status");
+    el.innerHTML='<span></span><button type="button">看清單</button>';
+    el.querySelector("button").addEventListener("click",()=>{el.classList.remove("show");toggleFavoritesPanel(true)});
+    document.body.appendChild(el);
+  }
+  let first=false;
+  try{first=!localStorage.getItem(FAV_TIP_KEY);localStorage.setItem(FAV_TIP_KEY,"1")}catch(e){}
+  const count=favoriteProductsWithMeta().length;
+  el.querySelector("span").textContent=first?"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。":`已收藏，清單裡有 ${count} 件。選好後一次問老闆。`;
+  el.classList.toggle("first",first);
+  el.classList.add("show");
+  clearTimeout(favSnackTimer);
+  favSnackTimer=setTimeout(()=>el.classList.remove("show"),first?8000:3800);
 }
 function toggleLbFavorite(){
   if(!lbProduct)return;
@@ -3419,7 +3514,8 @@ lbStage.addEventListener("touchend",event=>{
   if(Math.abs(deltaX)>40&&Math.abs(deltaX)>Math.abs(deltaY))lbNav(deltaX<0?1:-1);
 },{passive:true});
 document.getElementById("lightbox").addEventListener("click",event=>{
-  if(event.target.id==="lightbox")closeLightbox();
+  // 整頁式之後沒有「點旁邊的暗色背景關閉」：頁面兩側的空白只是版面留白，點到不該跳走
+
 });
 document.addEventListener("keydown",event=>{
   if(!document.getElementById("lightbox").classList.contains("open"))return;
@@ -3438,12 +3534,10 @@ function renderBuyInfo(){
   document.querySelectorAll(".nav-buy").forEach(li=>{li.hidden=!items.length}); // 選單的「購買須知」跟著這一區
   const lineUrl=state.contact?.lineUrl;
   document.getElementById("buyInfoAsk").hidden=!lineUrl;
-  document.getElementById("buyInfoLine").href=lineUrl||"#";
 }
 function renderContact(){
   renderBuyInfo();
   const c=state.contact;
-  document.getElementById("lineFab").href=c.lineUrl||"#";
   const actionsHtml=contactActionsHtml(c);
   const actionsEl=document.getElementById("contactActions");
   if(actionsEl.innerHTML!==actionsHtml)actionsEl.innerHTML=actionsHtml;
@@ -3614,13 +3708,17 @@ function openRoutedProduct(final){
 (function(){
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const el=(tag,cls,html)=>{const n=document.createElement(tag);n.className=cls;if(html)n.innerHTML=html;return n};
-  // 1. 捲動進度條、回到頂端、手機底部 LINE 按鈕
+  // 1. 捲動進度條、回到頂端、手機底部的「已收藏 N 件」長條（有收藏才出現，點了打開收藏清單去一次詢問）
   const bar=document.body.appendChild(el("div","fx-progress"));
   const top=document.body.appendChild(el("button","fx-top",'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>'));
   top.type="button";top.setAttribute("aria-label","回到頂端");
   top.addEventListener("click",()=>scrollTo({top:0,behavior:reduce?"auto":"smooth"}));
-  const line=document.body.appendChild(el("a","fx-line","LINE 詢問老闆"));
-  line.target="_blank";line.rel="noopener";
+  const line=document.body.appendChild(el("button","fx-line"));
+  line.type="button";
+  line.addEventListener("click",()=>document.querySelector(".favorites-fab")?.click());
+  // 收藏件數從導覽列的數字讀（那個數字由主程式更新），變了就重算要不要顯示
+  const favCountEl=document.getElementById("favoritesCount"),favPanel=document.getElementById("favoritesPanel");
+  const favCount=()=>Number(favCountEl?.textContent)||0;
   const hero=document.getElementById("hero"),contact=document.getElementById("contact");
   let ticking=false;
   const onScroll=()=>{
@@ -3628,12 +3726,16 @@ function openRoutedProduct(final){
     const max=document.documentElement.scrollHeight-innerHeight;
     bar.style.setProperty("--p",max>0?Math.min(1,scrollY/max):0);
     top.classList.toggle("show",scrollY>innerHeight*.8);
-    const src=document.getElementById("lineFab");
-    if(src&&src.getAttribute("href")&&src.getAttribute("href")!=="#")line.href=src.href;
-    const pastHero=hero?hero.getBoundingClientRect().bottom<60:scrollY>400;
+    const count=favCount();
+    line.textContent=`已收藏 ${count} 件・一次問老闆 →`;
     const atContact=contact?contact.getBoundingClientRect().top<innerHeight-80:false;
-    line.classList.toggle("show",pastHero&&!atContact&&!!line.getAttribute("href"));
+    line.classList.toggle("show",count>0&&!atContact&&!favPanel?.classList.contains("open"));
   };
+  if(window.MutationObserver){
+    const watch=new MutationObserver(onScroll);
+    if(favCountEl)watch.observe(favCountEl,{childList:true,characterData:true,subtree:true});
+    if(favPanel)watch.observe(favPanel,{attributes:true,attributeFilter:["class"]});
+  }
   addEventListener("scroll",()=>{if(!ticking){ticking=true;requestAnimationFrame(onScroll)}},{passive:true});
   addEventListener("resize",onScroll);onScroll();
 

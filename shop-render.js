@@ -392,7 +392,7 @@ function customNoteHtml(product,tagDefs,hasLine){
   if(!(product.badges||[]).includes("custom"))return "";
   const def=tagDefsOf(tagDefs).find(d=>d.key==="custom");
   if(!def)return "";
-  return `<div class="lb-dim-note">${tagBadgeHtml(def)}<span>${hasLine?"這款可以依你家的空間訂做尺寸，傳 LINE 告訴老闆需要的寬、深、高。":"這款可以依你家的空間訂做尺寸，歡迎告訴我們需要的寬、深、高。"}</span></div>`;
+  return `<div class="lb-dim-note">${tagBadgeHtml(def)}<span>${hasLine?"這款可以依你家的空間訂做尺寸，收藏後在收藏清單的備註寫上需要的寬、深、高，再一起用 LINE 問老闆。":"這款可以依你家的空間訂做尺寸，歡迎告訴我們需要的寬、深、高。"}</span></div>`;
 }
 // site：{catalog, tagDefs, contact}（後台存的網站設定）
 const hasLineOf=site=>!!String(site?.contact?.line||"").trim();
@@ -428,7 +428,7 @@ export function productSizeHtml(product,site){
     const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDims})}</div>`:"";
     body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
   }else if(extraHtml)body=extraHtml;
-  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，按下方「LINE 詢問這件商品」問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;
+  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，先按下方的收藏，再從收藏清單用 LINE 問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;
   return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,site.tagDefs,hasLine)}`;
 }
 
@@ -464,6 +464,17 @@ export function lineInquireBtnHtml(url){
 
 /* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、LINE 詢問）────
    opts：{option:目前選的款式（-1＝沒選）, productUrl:這件商品的網址, now:判斷特價有沒有過期用的時間} */
+/* ── 詢問方式（2026-11 起的規則）─────────────────────────────────────
+   網站上不到處放 LINE 按鈕。客人逛的時候按愛心收藏，選好後到收藏清單「整份用 LINE 詢價」一次問；
+   直接用 LINE 的入口只留兩個：收藏清單裡的送出按鈕、頁尾「聯絡我們」。
+   商品頁原本的「LINE 詢問這件商品」換成下面這塊：一顆收藏按鈕＋一句話說明之後怎麼問。
+   按鈕的字跟「已收藏」的樣子由 index.html 的 updateLbFavoriteBtn 接手更新。 */
+export function askListHtml(hasLine=true){
+  return `<div class="lb-ask">
+    <button type="button" class="lb-ask-btn" id="lbAskBtn" onclick="lbAskClick()">${HEART_SVG}<span>收藏這件，選好一起問</span></button>
+    <p class="lb-ask-note">想問的商品先按愛心收藏，選好後到「收藏清單」${hasLine?"<strong>一次用 LINE 傳給老闆</strong>":"<strong>一次把清單傳給我們</strong>"}，不用一件一件問。</p>
+  </div>`;
+}
 const HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
 /* ── 購買須知（後台「購買須知」填的問答：運送、安裝、付款、退換貨…）──────
    [{q:標題,a:內容}]，標題或內容空白的不顯示；內容是純文字，換行照樣換行 */
@@ -503,7 +514,6 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
   const cat=subNameOf(site.catalog,product.mainCat,product.subCat)||mainNameOf(site.catalog,product.mainCat);
   const desc=productDescHtml(product);
   const price=priceHtml(product,now);
-  const lineUrl=lineInquireUrl(site.contact?.line,product,{option:productOptions(product)[option]||null,productUrl});
   return `
       <div class="lb-cat-row">
         <div class="lb-product-cat">${escapeHTML(cat)}</div>
@@ -516,7 +526,7 @@ export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Da
       ${optionsHtml(product,option)}
       ${productSizeHtml(product,site)}
       ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
-      ${lineInquireBtnHtml(lineUrl)}
+      ${askListHtml(hasLineOf(site))}
       ${similarHtml(similar,now)}
     `;
 }
@@ -570,7 +580,7 @@ export function categoryIntro(page,contact){
   const area=storeArea(contact);
   const names=page.products.slice(0,3).map(p=>String(p.name||"").trim()).filter(Boolean);
   return `${SITE_NAME}的${page.name}共 ${page.products.length} 款${names.length>1?`，像是${names.join("、")}${page.products.length>names.length?"等":""}`:""}。`
-    +`點商品可以看照片和尺寸${area?`；${area.city}${area.district}的門市可以看實品`:""}，喜歡哪一件直接 LINE 詢問。`;
+    +`點商品可以看照片和尺寸${area?`；${area.city}${area.district}的門市可以看實品`:""}，喜歡的先按愛心收藏，選好再一次用 LINE 詢問。`;
 }
 // 分類按鈕：手機版上方兩排、電腦版左側清單。都是連到分類頁的連結（Google 跟著連結找到分類頁），
 // 前台點了不換頁，直接切換分類（index.html 攔下點擊）。

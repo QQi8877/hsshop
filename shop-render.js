@@ -445,32 +445,13 @@ export function optionsHtml(product,selected=-1){
   </div>`;
 }
 
-/* ── LINE 詢問（單件商品直接問）────────────────────────────────────────
-   商品頁已經不放這顆按鈕了（見下面「詢問方式」），下面兩個函式目前只有示範頁 demo.html 在用；
-   之後如果要加回「只想問這一件」的連結可以直接拿來用。 */
-// LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
-export function lineInquireUrl(lineId,product,{option=null,productUrl="",intro="您好，我想詢問這件商品："}={}){
-  const id=String(lineId||"").trim();
-  if(!id)return "";
-  const msg=`${intro}${product.name||""}${option?`（${option.name}）`:""}\n${productUrl}`;
-  return `https://line.me/R/oaMessage/${encodeURIComponent(id)}/?${encodeURIComponent(msg)}`;
-}
-// data-lead：前台的流量統計用來記「有人按了詢問」（見 index.html 的 GA 那段）
-export function lineInquireBtnHtml(url){
-  if(!url)return "";
-  return `<a class="lb-inquire-btn" href="${escapeHTML(url)}" target="_blank" rel="noopener" data-lead="line">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-    LINE 詢問這件商品
-  </a>`;
-}
-
 /* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、收藏按鈕、同類商品）────
    opts：{option:目前選的款式（-1＝沒選）, now:判斷特價有沒有過期用的時間, similar:同類商品} */
 /* ── 詢問方式（2026-11 起的規則）─────────────────────────────────────
    網站上不到處放 LINE 按鈕。客人逛的時候按愛心收藏，選好後到收藏清單「整份用 LINE 詢價」一次問；
    直接用 LINE 的入口只留兩個：收藏清單裡的送出按鈕、頁尾「聯絡我們」。
    商品頁原本的「LINE 詢問這件商品」換成下面這塊：一顆收藏按鈕＋一句話說明之後怎麼問。
-   按鈕的字跟「已收藏」的樣子由 index.html 的 updateLbFavoriteBtn 接手更新。 */
+   按鈕的字跟「已收藏」的樣子由 site.js 的 updateLbFavoriteBtn 接手更新。 */
 export function askListHtml(hasLine=true){
   return `<div class="lb-ask">
     <button type="button" class="lb-ask-btn" id="lbAskBtn" onclick="lbAskClick()">${HEART_SVG}<span>收藏這件，選好一起問</span></button>
@@ -569,9 +550,12 @@ export function categoryPages(catalog,listed){
   return out;
 }
 // 地址裡的「○○市○○區」，分類頁的介紹、標題用（後台改地址就跟著變）
+// 地址拆成縣市、區、街道；開頭的郵遞區號（例如「106 台北市…」）先拿掉，不然抓不到縣市
 export function storeArea(contact){
-  const m=String(contact?.addr||"").match(/^(.{2,3}?[市縣])(.{1,4}?[區鄉鎮市])/);
-  return m?{city:m[1],district:m[2]}:null;
+  const raw=String(contact?.addr||"").trim(),zip=(raw.match(/^\d{3,6}/)||[""])[0];
+  const addr=raw.slice(zip.length).trim();
+  const m=addr.match(/^(.{2,3}?[市縣])(.{1,4}?[區鄉鎮市])/);
+  return m?{city:m[1],district:m[2],street:addr.slice(m[0].length),zip}:null;
 }
 export function categoryPageTitle(page,contact){
   const area=storeArea(contact);
@@ -698,8 +682,8 @@ export function storeJsonLd(contact,{image}={}){
     telephone:intlPhone(c.phone),
     email:c.email||undefined,
     address:c.addr?{"@type":"PostalAddress",
-      streetAddress:area?String(c.addr).slice(area.city.length+area.district.length):c.addr,
-      addressLocality:area?.district,addressRegion:area?.city,addressCountry:"TW"}:undefined,
+      streetAddress:area?area.street:c.addr,
+      addressLocality:area?.district,addressRegion:area?.city,postalCode:area?.zip||undefined,addressCountry:"TW"}:undefined,
     geo:{"@type":"GeoCoordinates",...STORE_GEO},
     openingHoursSpecification:openingHoursSpec(c.hours),
     hasMap:c.mapUrl||undefined,

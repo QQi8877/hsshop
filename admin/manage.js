@@ -14,10 +14,10 @@ import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https:
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=4";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=12";
+import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=13";
 import{escapeHTML}from"./util.js?v=1";
 import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=2";
-import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=4";
+import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=5";
 import{CSV_HEADERS,csvEscapeCell,parseCSV}from"./csv.js?v=1";
 
 const firebaseConfig={
@@ -2630,11 +2630,8 @@ function getSizeSummary(dimensions,size){
   return parts.length?`${parts.join(" x ")} cm`:(size||"");
 }
 
-// 提醒：前台 index.html 的 Google Fonts 網址有做「字型子集」優化，只包含當初產生時
-// 網站文字＋商品資料裡出現過的中文字（約 831 個），藉此縮小字型檔案大小。這裡新增/修改的
-// 商品名稱、說明如果用到全新的字，前台不會壞掉，只是那個字會自動改用瀏覽器內建字型顯示，
-// 字體會跟其他文字不太一樣。商品種類變多、或想確保新字都涵蓋到的話，可以請 Claude
-// 「重新產生字型子集」，掃一次目前的商品資料重新產生 index.html 那三個字型網址。
+// 提醒：前台的標題字型只收網站用得到的字（每小時自動更新時 _tools/subset-fonts.py 重新瘦身）。
+// 商品名稱用到新字也不會壞：在下一次更新前，那個字會先用完整字型補上。
 let productSaving=false; // 儲存中：擋掉連按，新增商品時才不會建立兩件一樣的
 window.saveProduct=async function(){
   if(productSaving)return;

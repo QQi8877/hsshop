@@ -445,7 +445,9 @@ export function optionsHtml(product,selected=-1){
   </div>`;
 }
 
-/* ── LINE 詢問 ──────────────────────────────────────────────────── */
+/* ── LINE 詢問（單件商品直接問）────────────────────────────────────────
+   商品頁已經不放這顆按鈕了（見下面「詢問方式」），下面兩個函式目前只有示範頁 demo.html 在用；
+   之後如果要加回「只想問這一件」的連結可以直接拿來用。 */
 // LINE 的訊息預帶網址不支援夾帶圖片，改成附上商品連結，賣家點開就能直接看到照片
 export function lineInquireUrl(lineId,product,{option=null,productUrl="",intro="您好，我想詢問這件商品："}={}){
   const id=String(lineId||"").trim();
@@ -462,8 +464,8 @@ export function lineInquireBtnHtml(url){
   </a>`;
 }
 
-/* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、LINE 詢問）────
-   opts：{option:目前選的款式（-1＝沒選）, productUrl:這件商品的網址, now:判斷特價有沒有過期用的時間} */
+/* ── 商品頁右側那一欄（分類、品名、價格、交期、款式、尺寸、說明、收藏按鈕、同類商品）────
+   opts：{option:目前選的款式（-1＝沒選）, now:判斷特價有沒有過期用的時間, similar:同類商品} */
 /* ── 詢問方式（2026-11 起的規則）─────────────────────────────────────
    網站上不到處放 LINE 按鈕。客人逛的時候按愛心收藏，選好後到收藏清單「整份用 LINE 詢價」一次問；
    直接用 LINE 的入口只留兩個：收藏清單裡的送出按鈕、頁尾「聯絡我們」。
@@ -510,7 +512,7 @@ function lbBadgesHtml(product,site){
   return html?`<div class="lb-badges">${html}</div>`:"";
 }
 // similar：同類商品（similarProducts 算好的）
-export function productInfoHtml(product,site,{option=-1,productUrl="",now=new Date(),similar=[]}={}){
+export function productInfoHtml(product,site,{option=-1,now=new Date(),similar=[]}={}){
   const cat=subNameOf(site.catalog,product.mainCat,product.subCat)||mainNameOf(site.catalog,product.mainCat);
   const desc=productDescHtml(product);
   const price=priceHtml(product,now);

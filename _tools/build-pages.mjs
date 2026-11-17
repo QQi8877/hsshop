@@ -270,7 +270,7 @@ function productPage(template,product,site,gallery,listed){
   html=replaceOnce(html,`<img id="lbImg" src="" alt="">`,
     `<img id="lbImg" src="${escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):"")}" alt="${escapeHTML(photoAlt(product,site.catalog,1))}" fetchpriority="high">`,"#lbImg");
   html=replaceOnce(html,`<div class="lb-info" id="lbInfo"></div>`,
-    `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{productUrl:url,similar:similarProducts(product,listed,site.catalog)})}</div>`,"#lbInfo");
+    `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{similar:similarProducts(product,listed,site.catalog)})}</div>`,"#lbInfo");
   return html;
 }
 

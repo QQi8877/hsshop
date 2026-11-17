@@ -1,50 +1,40 @@
 # 信通家俱行網站（hsintong.cc）
 
-## 關於店家與合作方式
-- 店家：信通家俱行，台北市大安區文昌街184號。老闆自己一個人經營網站，不是工程師。
-- 一律用繁體中文回覆，用白話解釋，不要丟一堆技術名詞。
-- 有好幾種做法時，先給建議並說明原因。
+改程式前先讀 `_docs/ARCHITECTURE.md`（檔案分工、會壞的接點、版本號、改完怎麼驗）。這份只放一定要遵守的規則。
 
-## 專案架構
-- GitHub Pages 從 `main` 發佈，網域 hsintong.cc。
-- 前台：`index.html` ＋ `shop-render.js`（前台、後台、自動產生頁面共用的顯示規則，不能用 document／window）。
-- 後台：`manage.html` ＋ `admin/`（manage.css、manage.js、image-tools.js、rich-text.js、csv.js、util.js）。
-- 資料：Firebase Firestore（商品、分類、聯繫資訊）；照片：Cloudinary 圖床。
-- 每小時自動更新（`.github/workflows/build-pages.yml` → `_tools/build-pages.mjs`）：
-  - 產生商品頁 `p/*.html`、分類頁 `c/*.html`、`sitemap.xml`、`data/site.json`、`llms.txt`。
-  - 把店家資料（structuredData）、聯繫資訊（contactItems、contactActions）、分類按鈕（categoriesBar、catSidebar）填進 `index.html`；改版型照常直接改 index.html。
-  - `_tools/subset-fonts.py` 會把標題字型瘦身成只含網站用到的字。
-- 改了 `shop-render.js` 或 `admin/` 底下的檔案，引用它的地方 `?v=` 數字要加一（目前 shop-render.js 是 v=12）。
-- 改版前先讀最近的 PR（#28、#29、#30）和程式裡的註解，了解目前的做法。
+## 店家與溝通
+- 信通家俱行，台北市大安區文昌街184號。老闆一個人經營網站，不是工程師。
+- 一律用繁體中文、白話回覆，不丟技術名詞。有好幾種做法時，先給建議和原因。
+
+## 架構一句話
+GitHub Pages 從 `main` 發佈。前台 `index.html`（HTML＋樣式）＋ `site.js`（主程式）＋ `shop-render.js`（共用顯示規則，不能碰 document／window）；
+後台 `manage.html` ＋ `admin/`；資料在 Firestore、照片在 Cloudinary；`_tools/build-pages.mjs` 每小時產生 `p/`、`c/` 等檔案（不要手改）。
 
 ## 工作流程
-1. 老闆說要改什麼：先在工作分支上改好，截圖給他看，等他確認。
+1. 老闆說要改什麼：在工作分支改好，用 `_tools/tests` 驗證，截圖給他看，等他確認。
 2. 他沒說「push」之前：只推到工作分支，不動 main、不開 PR。
 3. 他說「push」時：
-   1. 先把工作分支 rebase 到最新的 `origin/main`（自動更新的機器人每小時會往 main 提交）。
-   2. 開 PR，用 squash 合併，`expectedHeadSha` 填完整 40 碼。
-   3. 幾分鐘後確認 GitHub Pages 部署和「更新商品頁」workflow 都成功（合併當下那次 Pages 顯示 cancelled 是正常的，會被機器人那次取代）。
+   1. 工作分支 rebase 到最新 `origin/main`（機器人每小時會往 main 提交）。
+   2. 開 PR，squash 合併，`expectedHeadSha` 填完整 40 碼。
+   3. 幾分鐘後確認 GitHub Pages 部署和「更新商品頁」workflow 都成功（合併當下那次 Pages 顯示 cancelled 是正常的）。
    4. 確認機器人的「自動更新商品頁」commit 內容正確。
-   5. 把工作分支重設到最新的 `origin/main`。
-   6. 用白話跟老闆回報結果。
+   5. 工作分支重設到最新 `origin/main`。
+   6. 用白話跟老闆回報。
 
 ## 一定要遵守
-- 不要寫入正式的 Firestore 資料；測試請用模擬資料（`data/site.json` 可以當測試資料，`FIRESTORE_BASE` 可以讓 build-pages 讀本機的假資料庫）。
-- 絕對不要 force push 到 main。
-- 不要刪除專案以外的東西。
-- 收藏清單的保存時間（4 小時，`FAVORITES_TTL_MS`）不要改。
-- 字重限制：標題字型只有 400／500／600。
-- 視覺 2.1（2026-11）：標題改用裝置內建的黑體，只有店名、首頁大標保留明體（`--font-brand`）；調整都集中在 index.html `<style>` 最後「視覺 2.1」那段，互動在檔案最後的 siteFx。
-- 視覺 2.2（2026-11）：商品詳情（#lightbox）是「整頁式」：最上面「回商品列表」，左照片右資訊；沒有「上一件／下一件商品」的箭頭（老闆不要），照片上的箭頭只換同一件商品的照片。
-- 詢問方式（2026-11，老闆定的規則）：網站上不要到處放 LINE 按鈕。客人按愛心收藏、選好後從收藏清單「整份用 LINE 詢價」一次問；直接連 LINE 的入口只留收藏清單的送出按鈕和頁尾「聯絡我們」。新增功能時不要再加 LINE 按鈕。
+- 不寫入正式 Firestore；測試用 `_tools/tests`（假資料庫、假照片）。
+- 絕對不要 force push 到 main。不要刪除專案以外的東西。
+- 收藏清單保存時間 4 小時（`FAVORITES_TTL_MS`）不要改。
+- 標題字型字重只有 400／500／600。
+- 改了被引用的檔案，引用它的地方 `?v=` 要加一（對照表在 ARCHITECTURE 第 4 節）。
+- 老闆定的畫面規則：
+  - 標題用裝置內建黑體，只有店名、首頁大標用明體（`--font-brand`）。
+  - 商品頁是整頁式：頂端「回商品列表」，左照片右資訊；**沒有**「上一件／下一件商品」箭頭，照片上的箭頭只換同一件商品的照片。
+  - 詢問方式：**不要到處放 LINE 按鈕**。客人按愛心收藏、選好後從收藏清單一次用 LINE 問；直接連 LINE 的入口只留收藏清單的送出按鈕和頁尾「聯絡我們」。
+  - 首頁大圖只放一張圖（後台「首頁版面設定」上傳），不輪播；大圖區只有「探索商品」一顆按鈕。
+  - 手機版商品列表：左邊兩層分類欄、右邊兩欄商品卡。
 
-## 目前狀態（2026 年 11 月初）
-已完成：設計系統 2.0、商品卡片價格格式（特價與原價同一行，原價 10px 加刪除線）、頁面速度優化、
-後台拆檔、兩台裝置同時編輯的提醒、每個商品可自訂 Google 搜尋說明、照片替代文字、
-16 個分類頁、店家結構化資料（含經緯度 25.032357, 121.554016，寫在 shop-render.js 的 STORE_GEO）、網站小圖示、llms.txt。
-
-還沒做、等老闆決定：
-- 57 件商品沒有標價，Google 的商品搜尋結果不顯示，要決定要不要標參考價。
-- 21 頁商品說明重複、說明普遍太短，要補寫。
-- 大多數商品只有 1 張照片，建議補到 3 張。
-- Google 商家檔案、Bing 地標（Bing Places）是老闆自己要處理的。
+## 還沒做、等老闆決定
+- 57 件商品沒有標價（Google 商品搜尋不顯示），要不要標參考價。
+- 商品說明重複、太短，要補寫；大多數商品只有 1 張照片，建議補到 3 張。
+- Google 商家檔案、Bing Places 由老闆自己處理。

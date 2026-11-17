@@ -13,9 +13,11 @@ on:
     branches: [main]
     paths:   # 網站版型或產生程式改了：馬上重新產生，商品頁才會跟著新版型
       - index.html
+      - site.js
       - shop-render.js
       - dim-figures.js
       - _tools/**
+      - "!_tools/tests/**"   # 測試檔改了不用重新產生頁面
       - .github/workflows/build-pages.yml
 
 permissions:

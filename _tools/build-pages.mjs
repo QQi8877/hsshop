@@ -9,7 +9,7 @@
      其他地方不動，所以改版型照常直接改 index.html。
    - llms.txt：給 AI 搜尋（ChatGPT、Perplexity…）看的網站簡介、分類、商品清單。
    - sitemap.xml：告訴 Google 有哪些網址、什麼時候更新過。
-   - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 index.html 的啟動流程）。
+   - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 site.js 的「啟動」段落）。
    - fonts/heading-chars.txt：網站標題可能用到的所有字（版型裡的字＋分類、頁面文字、商品名稱），
      _tools/subset-fonts.py 照這份字單把標題字型瘦身成只含這些字的小檔案。
    由 .github/workflows/build-pages.yml 每小時跑一次（index.html 等版型檔案改了也會馬上跑），店家照常在
@@ -27,7 +27,7 @@ const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
 const OUT=outArg>0?path.resolve(process.argv[outArg+1]):ROOT;
 const PROJECT="hsshop-10bd9",SITE_DOC="hsshop-10bd9";
-const API_KEY="AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw"; // 跟 index.html 的 firebaseConfig 同一把公開金鑰
+const API_KEY="AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw"; // 跟 site.js 的 firebaseConfig 同一把公開金鑰
 const BASE=(process.env.FIRESTORE_BASE||"https://firestore.googleapis.com").replace(/\/$/,"");
 const DOCS=`${BASE}/v1/projects/${PROJECT}/databases/(default)/documents`;
 // 首頁先用的資料只放前台用得到的設定欄位
@@ -130,22 +130,69 @@ function categoryCrumbs(mainId,subId,catalog,listed){
 }
 // 商品頁、分類頁的主題是商品／分類，最大的標題（h1）給它們；首頁大圖那行店名改成一般文字
 function demoteHeroHeading(html){
-  return replaceOnce(html,/<h1 class="hero-title"([^>]*)>([\s\S]*?)<\/h1>/,(_,attrs,inner)=>`<p class="hero-title"${attrs}>${inner}</p>`,"hero <h1>");
+  return retag(html,{attr:["data-page-field","heroTitle"]},"p","首頁大標 heroTitle");
 }
-// 換掉某個 id 的元素裡面的內容（元素本身、其他屬性不動）
-function fillById(html,tag,id,inner,label){
-  return replaceOnce(html,new RegExp(`(<${tag}\\b[^>]*\\bid="${id}"[^>]*>)[\\s\\S]*?(<\\/${tag}>)`),(_,open,close)=>open+inner+close,label);
+/* ── 改版型的工具：只認元素的 id（或某個屬性），不管屬性順序、class 怎麼寫 ──────────
+   index.html 的版面可以照常改，只要下面用到的 id 還在（清單見 _docs/ARCHITECTURE.md「產生頁面靠的 id」）。
+   找不到、或找到不只一個，就停下來不產生頁面（不會產生壞掉的頁面）。 */
+const escRe=t=>String(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+// 找開頭標籤：by 是 {id:"x"}、{attr:["name","value"]} 或 {tag:"body"}；回傳位置、標籤名、屬性
+function findTag(html,by,label){
+  const re=by.tag?new RegExp(`<(${by.tag})(\\s[^>]*)?>`,"g")
+    :new RegExp(`<([a-zA-Z][\\w-]*)(?=[^>]*\\s${escRe(by.id?"id":by.attr[0])}="${escRe(by.id||by.attr[1])}")(\\s[^>]*)>`,"g");
+  const hits=[...html.matchAll(re)];
+  if(hits.length!==1)throw new Error(`index.html 裡找不到（或不只一處）：${label}`);
+  const m=hits[0];
+  const attrs=[...(m[2]||"").matchAll(/\s([^\s=>]+)(?:="([^"]*)")?/g)].map(a=>[a[1],a[2]===undefined?true:a[2]]);
+  return {tag:m[1],start:m.index,end:m.index+m[0].length,attrs};
 }
+const tagHtml=(tag,attrs)=>`<${tag}${attrs.map(([k,v])=>v===true?` ${k}`:` ${k}="${v}"`).join("")}>`;
+// 改開頭標籤的屬性：值是字串就設定（已有的原地換、沒有的加在最後）、true 是沒有值的屬性、null 是拿掉
+function setAttrs(html,by,changes,label){
+  const t=findTag(html,by,label);
+  let attrs=t.attrs.slice();
+  for(const [k,v] of Object.entries(changes)){
+    const i=attrs.findIndex(([n])=>n===k);
+    if(v===null){if(i>=0)attrs.splice(i,1)}
+    else if(i>=0)attrs[i]=[k,v];
+    else attrs.push([k,v]);
+  }
+  return html.slice(0,t.start)+tagHtml(t.tag,attrs)+html.slice(t.end);
+}
+// 從開頭標籤往後找對應的結尾標籤（裡面有同名的標籤也算得對）
+function closeOf(html,t,label){
+  const re=new RegExp(`<(/?)${t.tag}\\b[^>]*>`,"g");re.lastIndex=t.end;
+  let depth=1,m;
+  while((m=re.exec(html))){depth+=m[1]?-1:1;if(!depth)return {start:m.index,end:m.index+m[0].length}}
+  throw new Error(`index.html 裡找不到結尾標籤：${label}`);
+}
+// 換掉元素裡面的內容（元素本身、屬性不動）
+function fillById(html,id,inner,label=id){
+  const t=findTag(html,{id},label),c=closeOf(html,t,label);
+  return html.slice(0,t.end)+inner+html.slice(c.start);
+}
+// 換標籤名（例如 h2 換成 h1），屬性、內容不動
+function retag(html,by,newTag,label){
+  const t=findTag(html,by,label),c=closeOf(html,t,label);
+  return html.slice(0,t.start)+tagHtml(newTag,t.attrs)+html.slice(t.end,c.start)+`</${newTag}>`+html.slice(c.end);
+}
+// 換掉某個標籤（例如 <title>）裡面的文字
+function fillTag(html,tag,inner){
+  const t=findTag(html,{tag},`<${tag}>`),c=closeOf(html,t,`<${tag}>`);
+  return html.slice(0,t.end)+inner+html.slice(c.start);
+}
+// <meta> 的 content：key 是 ["name","description"] 或 ["property","og:title"]
+const setMeta=(html,key,content)=>setAttrs(html,{attr:key},{content:escapeHTML(content)},key[1]);
 
 /* ── 首頁：店家資料、聯繫資訊、分類按鈕直接寫好 ───────────────────── */
 function homePage(template,site,listed){
   let html=template;
-  html=fillById(html,"script","structuredData",jsonForScript(storeJsonLd(site.contact,{image:shareImageUrl(site.layout?.heroImage||"")||undefined})),"structuredData");
-  html=fillById(html,"dl","contactItems",contactItemsHtml(site.contact),"contactItems");
-  html=fillById(html,"div","contactActions",contactActionsHtml(site.contact),"contactActions");
+  html=fillById(html,"structuredData",jsonForScript(storeJsonLd(site.contact,{image:shareImageUrl(site.layout?.heroImage||"")||undefined})));
+  html=fillById(html,"contactItems",contactItemsHtml(site.contact));
+  html=fillById(html,"contactActions",contactActionsHtml(site.contact));
   const nav=categoryNavHtml(site.catalog,listed);
-  html=fillById(html,"div","categoriesBar",nav.bar,"categoriesBar");
-  html=fillById(html,"aside","catSidebar",nav.side,"catSidebar");
+  html=fillById(html,"categoriesBar",nav.bar);
+  html=fillById(html,"catSidebar",nav.side);
   return html;
 }
 
@@ -159,17 +206,18 @@ function categoryPage(home,page,site,listed){
   const image=shareImageUrl(cover)||`${SITE_ORIGIN}/og-image.jpg`;
   const homeTitle=(home.match(/<title>([^<]*)<\/title>/)||[])[1]||SITE_NAME;
   let html=home;
-  html=replaceOnce(html,/<title>[^<]*<\/title>/,`<title data-home-title="${escapeHTML(homeTitle)}">${escapeHTML(title)}</title>`,"<title>");
-  html=replaceOnce(html,/<meta name="description" content="[^"]*">/,`<meta name="description" content="${escapeHTML(description)}">`,"meta description");
-  html=replaceOnce(html,/<meta property="og:title" content="[^"]*">/,`<meta property="og:title" content="${escapeHTML(title)}">`,"og:title");
-  html=replaceOnce(html,/<meta property="og:description" content="[^"]*">/,`<meta property="og:description" content="${escapeHTML(description)}">`,"og:description");
-  html=replaceOnce(html,/<meta property="og:url" content="[^"]*">/,`<meta property="og:url" content="${escapeHTML(url)}">`,"og:url");
-  html=replaceOnce(html,/<meta property="og:image" content="[^"]*">/,`<meta property="og:image" content="${escapeHTML(image)}">`,"og:image");
-  html=replaceOnce(html,/<meta property="og:image:alt" content="[^"]*">/,`<meta property="og:image:alt" content="${escapeHTML(title)}">`,"og:image:alt");
-  html=replaceOnce(html,/<meta name="twitter:title" content="[^"]*">/,`<meta name="twitter:title" content="${escapeHTML(title)}">`,"twitter:title");
-  html=replaceOnce(html,/<meta name="twitter:description" content="[^"]*">/,`<meta name="twitter:description" content="${escapeHTML(description)}">`,"twitter:description");
-  html=replaceOnce(html,/<meta name="twitter:image" content="[^"]*">/,`<meta name="twitter:image" content="${escapeHTML(image)}">`,"twitter:image");
-  html=replaceOnce(html,/<link rel="canonical" href="[^"]*">/,`<link rel="canonical" href="${escapeHTML(url)}">`,"canonical");
+  html=setAttrs(html,{tag:"title"},{"data-home-title":escapeHTML(homeTitle)},"<title>");
+  html=fillTag(html,"title",escapeHTML(title));
+  html=setMeta(html,["name","description"],description);
+  html=setMeta(html,["property","og:title"],title);
+  html=setMeta(html,["property","og:description"],description);
+  html=setMeta(html,["property","og:url"],url);
+  html=setMeta(html,["property","og:image"],image);
+  html=setMeta(html,["property","og:image:alt"],title);
+  html=setMeta(html,["name","twitter:title"],title);
+  html=setMeta(html,["name","twitter:description"],description);
+  html=setMeta(html,["name","twitter:image"],image);
+  html=setAttrs(html,{attr:["rel","canonical"]},{href:escapeHTML(url)},"canonical");
   // 這個分類的商品清單（每件商品頁的網址）＋麵包屑
   const list={"@context":"https://schema.org","@type":"CollectionPage",name:title,url,description,
     mainEntity:{"@type":"ItemList",numberOfItems:page.products.length,
@@ -177,16 +225,16 @@ function categoryPage(home,page,site,listed){
   const crumbs=breadcrumbs([[SITE_NAME,`${SITE_ORIGIN}/`],...categoryCrumbs(page.main,page.sub,site.catalog,listed)]);
   html=replaceOnce(html,"</head>",`<script type="application/ld+json">${jsonForScript(list)}</script>\n<script type="application/ld+json">${jsonForScript(crumbs)}</script>\n</head>`,"</head>");
   // 一進來就是這個分類的商品（本月選品、分類磚先不放，前台換回「全部」才出現）
-  html=replaceOnce(html,"<body>",`<body class="cat-landing">`,"<body>");
+  html=setAttrs(html,{tag:"body"},{class:"cat-landing"},"<body>");
   html=demoteHeroHeading(html);
-  html=replaceOnce(html,/<h2 class="listing-title" id="listingTitle">[^<]*<\/h2>/,`<h1 class="listing-title" id="listingTitle">${escapeHTML(page.name)}</h1>`,"#listingTitle");
-  html=replaceOnce(html,/<p class="listing-intro" id="listingIntro" hidden><\/p>/,`<p class="listing-intro" id="listingIntro">${escapeHTML(intro)}</p>`,"#listingIntro");
+  html=fillById(retag(html,{id:"listingTitle"},"h1","#listingTitle"),"listingTitle",escapeHTML(page.name));
+  html=fillById(setAttrs(html,{id:"listingIntro"},{hidden:null},"#listingIntro"),"listingIntro",escapeHTML(intro));
   const nav=categoryNavHtml(site.catalog,listed,page.main,page.sub);
-  html=fillById(html,"div","categoriesBar",nav.bar,"categoriesBar");
-  html=fillById(html,"aside","catSidebar",nav.side,"catSidebar");
-  html=replaceOnce(html,/<div class="sub-categories-bar" id="subCategoriesBar"><\/div>/,`<div class="sub-categories-bar" id="subCategoriesBar"${nav.sub?' style="display:flex"':""}>${nav.sub}</div>`,"#subCategoriesBar");
-  html=replaceOnce(html,/(<div class="products-grid" id="productsGrid">)[\s\S]*?(<\/div>\s*<\/div>\s*<\/section>)/,
-    (_,open,close)=>`${open}${page.products.map(p=>staticProductCardHtml(p,site.catalog)).join("")}\n    ${close}`,"#productsGrid");
+  html=fillById(html,"categoriesBar",nav.bar);
+  html=fillById(html,"catSidebar",nav.side);
+  if(nav.sub)html=setAttrs(html,{id:"subCategoriesBar"},{style:"display:flex"},"#subCategoriesBar");
+  html=fillById(html,"subCategoriesBar",nav.sub);
+  html=fillById(html,"productsGrid",`${page.products.map(p=>staticProductCardHtml(p,site.catalog)).join("")}\n    `);
   return html;
 }
 
@@ -223,18 +271,19 @@ function productPage(template,product,site,gallery,listed){
   const image=shareImageUrl(cover)||`${SITE_ORIGIN}/og-image.jpg`;
   const homeTitle=(template.match(/<title>([^<]*)<\/title>/)||[])[1]||SITE_NAME;
   let html=template;
-  html=replaceOnce(html,/<title>[^<]*<\/title>/,`<title data-home-title="${escapeHTML(homeTitle)}">${escapeHTML(title)}</title>`,"<title>");
-  html=replaceOnce(html,/<meta name="description" content="[^"]*">/,`<meta name="description" content="${escapeHTML(description)}">`,"meta description");
-  html=replaceOnce(html,/<meta property="og:type" content="[^"]*">/,`<meta property="og:type" content="product">`,"og:type");
-  html=replaceOnce(html,/<meta property="og:title" content="[^"]*">/,`<meta property="og:title" content="${escapeHTML(title)}">`,"og:title");
-  html=replaceOnce(html,/<meta property="og:description" content="[^"]*">/,`<meta property="og:description" content="${escapeHTML(description)}">`,"og:description");
-  html=replaceOnce(html,/<meta property="og:url" content="[^"]*">/,`<meta property="og:url" content="${escapeHTML(url)}">`,"og:url");
-  html=replaceOnce(html,/<meta property="og:image" content="[^"]*">/,`<meta property="og:image" content="${escapeHTML(image)}">`,"og:image");
-  html=replaceOnce(html,/<meta property="og:image:alt" content="[^"]*">/,`<meta property="og:image:alt" content="${escapeHTML(name)}">`,"og:image:alt");
-  html=replaceOnce(html,/<meta name="twitter:title" content="[^"]*">/,`<meta name="twitter:title" content="${escapeHTML(title)}">`,"twitter:title");
-  html=replaceOnce(html,/<meta name="twitter:description" content="[^"]*">/,`<meta name="twitter:description" content="${escapeHTML(description)}">`,"twitter:description");
-  html=replaceOnce(html,/<meta name="twitter:image" content="[^"]*">/,`<meta name="twitter:image" content="${escapeHTML(image)}">`,"twitter:image");
-  html=replaceOnce(html,/<link rel="canonical" href="[^"]*">/,`<link rel="canonical" href="${escapeHTML(url)}">`,"canonical");
+  html=setAttrs(html,{tag:"title"},{"data-home-title":escapeHTML(homeTitle)},"<title>");
+  html=fillTag(html,"title",escapeHTML(title));
+  html=setMeta(html,["name","description"],description);
+  html=setMeta(html,["property","og:type"],"product");
+  html=setMeta(html,["property","og:title"],title);
+  html=setMeta(html,["property","og:description"],description);
+  html=setMeta(html,["property","og:url"],url);
+  html=setMeta(html,["property","og:image"],image);
+  html=setMeta(html,["property","og:image:alt"],name);
+  html=setMeta(html,["name","twitter:title"],title);
+  html=setMeta(html,["name","twitter:description"],description);
+  html=setMeta(html,["name","twitter:image"],image);
+  html=setAttrs(html,{attr:["rel","canonical"]},{href:escapeHTML(url)},"canonical");
   // 給 Google 看的商品資料（價格、照片、分類），搜尋結果可以直接顯示價格
   const offers=priceNumber?{"@type":"Offer",url,priceCurrency:"TWD",price:priceNumber,
     availability:(product.badges||[]).includes("preorder")?"https://schema.org/PreOrder":"https://schema.org/InStock",
@@ -259,18 +308,15 @@ function productPage(template,product,site,gallery,listed){
   ].filter(Boolean).join("\n");
   html=replaceOnce(html,"</head>",`${head}\n</head>`,"</head>");
   // 商品頁一開始就是打開的（照片、名稱、價格、尺寸、說明都已經畫好），前台的程式載入後接手
-  html=replaceOnce(html,"<body>",`<body class="lightbox-open">`,"<body>");
+  html=setAttrs(html,{tag:"body"},{class:"lightbox-open"},"<body>");
   html=demoteHeroHeading(html);
-  html=replaceOnce(html,/<div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">/,
-    `<div id="lightbox" class="open" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="false" tabindex="-1" data-prerendered="${escapeHTML(id)}">`,"#lightbox");
-  html=replaceOnce(html,`<button class="lb-arrow" id="lbPrev"`,`<button class="lb-arrow" id="lbPrev" style="display:none"`,"#lbPrev");
-  html=replaceOnce(html,`<button class="lb-arrow" id="lbNext"`,`<button class="lb-arrow" id="lbNext" style="display:none"`,"#lbNext");
+  html=setAttrs(html,{id:"lightbox"},{class:"open","aria-hidden":"false","data-prerendered":escapeHTML(id)},"#lightbox");
+  html=setAttrs(html,{id:"lbPrev"},{style:"display:none"},"#lbPrev");
+  html=setAttrs(html,{id:"lbNext"},{style:"display:none"},"#lbNext");
   // 跟前台打開商品時第一張照片用的網址一樣（600 寬），前台接手時不用重新下載
   const coverUrl=(product.photos||[]).filter(Boolean)[0];
-  html=replaceOnce(html,`<img id="lbImg" src="" alt="">`,
-    `<img id="lbImg" src="${escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):"")}" alt="${escapeHTML(photoAlt(product,site.catalog,1))}" fetchpriority="high">`,"#lbImg");
-  html=replaceOnce(html,`<div class="lb-info" id="lbInfo"></div>`,
-    `<div class="lb-info" id="lbInfo">${productInfoHtml(product,site,{similar:similarProducts(product,listed,site.catalog)})}</div>`,"#lbInfo");
+  html=setAttrs(html,{id:"lbImg"},{src:escapeHTML(coverUrl?normalizePhotoUrl(coverUrl,600):""),alt:escapeHTML(photoAlt(product,site.catalog,1)),fetchpriority:"high"},"#lbImg");
+  html=fillById(html,"lbInfo",productInfoHtml(product,site,{similar:similarProducts(product,listed,site.catalog)}));
   return html;
 }
 
@@ -295,7 +341,7 @@ async function writeIfChanged(file,content){
 }
 
 /* ── 標題字型要留哪些字 ────────────────────────────────────────
-   版型（index.html、shop-render.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、購買須知、
+   版型（index.html、shop-render.js、site.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、購買須知、
    標籤，跟每件商品的名稱。程式註解裡的字不算（只是說明，畫面上不會出現）。多收幾個字沒關係，
    少收的字前台會自動改用完整字型補上。 */
 const stripComments=src=>src.replace(/<!--[\s\S]*?-->/g,"").replace(/\/\*[\s\S]*?\*\//g,"").replace(/(^|[^:\\"'`])\/\/[^\n]*/g,"$1");
@@ -362,8 +408,8 @@ async function main(){
     meta:Object.fromEntries(META_FIELDS.filter(k=>k in meta.data).map(k=>[k,meta.data[k]])),
     products:rows.map(r=>r.data).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
   if(await writeIfChanged(path.join(OUT,"data","site.json"),JSON.stringify(sortKeys(siteData))+"\n"))changed++;
-  const shopRender=await readFile(path.join(ROOT,"shop-render.js"),"utf8");
-  const chars=headingChars([stripComments(sourceHome),stripComments(shopRender),
+  const [shopRender,siteJs]=await Promise.all(["shop-render.js","site.js"].map(f=>readFile(path.join(ROOT,f),"utf8")));
+  const chars=headingChars([stripComments(sourceHome),stripComments(shopRender),stripComments(siteJs),
     ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]]))),...products.map(p=>p.name)]);
   if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),chars))changed++;
   console.log(`上架中 ${rows.length} 件，產生商品頁 ${listed.length} 件；更新 ${changed} 個檔案，移除 ${removed} 個舊頁面`);

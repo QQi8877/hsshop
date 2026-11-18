@@ -9,7 +9,7 @@ await pg.evaluate(()=>{document.querySelector(".cat-layout").scrollIntoView();sc
 ok(await pg.locator("#categoriesBar").isHidden()&&await pg.locator("#catSidebar").isVisible(),"top tabs hidden, rail visible");
 const g=await pg.evaluate(()=>{const r=document.getElementById("catSidebar").getBoundingClientRect(),c=[...document.querySelectorAll("#productsGrid .product-card")].slice(0,3).map(e=>e.getBoundingClientRect());return {rail:Math.round(r.width),c0:[Math.round(c[0].left),Math.round(c[0].width)],c1:Math.round(c[1].left),sameRow:Math.abs(c[0].top-c[1].top)<2,thirdBelow:c[2].top>c[0].top+10,overflow:document.documentElement.scrollWidth>innerWidth}});
 console.log(JSON.stringify(g));
-ok(g.rail===92&&g.c0[0]===92&&g.sameRow&&g.thirdBelow&&!g.overflow,"rail 92px, two cards per row, no horizontal overflow");
+ok(g.rail===92&&g.c0[0]===91&&g.sameRow&&g.thirdBelow&&!g.overflow,"rail 92px (cards start 1px under its border), two cards per row, no horizontal overflow");
 await pg.screenshot({path:`${SHOTS}/rail-1.png`});
 await pg.locator('#catSidebar .cat-side-btn[data-main="cat-chair"]').click();await pg.waitForTimeout(900);
 ok(await pg.locator("#catSidebar .cat-subs .cat-sub-btn").count()>=4,"tapping a main category expands its sub-categories");

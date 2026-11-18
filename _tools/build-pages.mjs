@@ -21,7 +21,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{listingTitleHtml,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -227,7 +227,7 @@ function categoryPage(home,page,site,listed){
   // 一進來就是這個分類的商品（本月選品、分類磚先不放，前台換回「全部」才出現）
   html=setAttrs(html,{tag:"body"},{class:"cat-landing"},"<body>");
   html=demoteHeroHeading(html);
-  html=fillById(retag(html,{id:"listingTitle"},"h1","#listingTitle"),"listingTitle",escapeHTML(page.name));
+  html=fillById(retag(html,{id:"listingTitle"},"h1","#listingTitle"),"listingTitle",listingTitleHtml(site.catalog,page.main,page.sub));
   html=fillById(setAttrs(html,{id:"listingIntro"},{hidden:null},"#listingIntro"),"listingIntro",escapeHTML(intro));
   const nav=categoryNavHtml(site.catalog,listed,page.main,page.sub);
   html=fillById(html,"categoriesBar",nav.bar);

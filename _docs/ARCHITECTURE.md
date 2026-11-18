@@ -72,7 +72,7 @@ siteFx 不要去讀主程式的變數或盯它的畫面。
 | `admin/*.js`、`manage.css` | 引用它的那一行（`manage.html` 或 `admin/manage.js`） |
 
 一個檔案的 import 網址變了，它自己的內容也算改了，要再往上加一層（例如 `shop-render.js` 改版號 → `admin/rich-text.js` 內容變了 → `admin/manage.js` 裡 `rich-text.js?v=` 也要加）。
-目前版本：site 1、shop-render 13、dim-figures 4、manage.js 8、rich-text 5、image-tools 2、manage.css 3、csv 1、util 1。
+目前版本：site 2、shop-render 14、dim-figures 4、manage.js 9、rich-text 6、image-tools 2、manage.css 3、csv 1、util 1。
 
 **(5) 每小時更新的觸發**：`.github/workflows/build-pages.yml` 的 `paths`。新增一個「產生頁面會用到」的檔案要加進去。
 

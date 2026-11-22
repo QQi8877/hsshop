@@ -37,8 +37,8 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/site.js?v=1">
-<link rel="modulepreload" href="/shop-render.js?v=13">
+<link rel="modulepreload" href="/site.js?v=2">
+<link rel="modulepreload" href="/shop-render.js?v=14">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -659,6 +659,9 @@ img.img-fade:not(.is-loaded){opacity:0}
 .listing-title{font-family:var(--font-heading);font-size:26px;font-weight:600;color:var(--charcoal)}
 .listing-head{row-gap:6px}
 .listing-intro{flex:0 0 100%;font-size:13.5px;line-height:1.75;color:var(--muted);text-wrap:pretty}
+/* 標題「主分類 » 子分類」（shop-render.js 的 listingTitleHtml）：主分類可以點回整個主分類 */
+.lt-main{color:var(--text-secondary);font-weight:500;text-decoration:none}
+.lt-sep{color:var(--brand);font-weight:400}
 /* 分類按鈕現在是連結（Google 才找得到分類頁），樣式照舊 */
 a.cat-tab,a.sub-tab,a.cat-side-btn,a.cat-sub-btn{text-decoration:none}
 /* 商品名稱是連到商品頁的連結；點卡片任何地方一樣是打開商品 */
@@ -1568,43 +1571,42 @@ button.cat-tile{font:inherit;width:100%}
 /* ══ 手機版商品列表（2026-11）：左邊兩層分類、右邊兩欄小卡 ═══════════════════
    760px 以下：上方兩排分類鈕收起來，改用電腦版那份左側分類清單（#catSidebar，大分類點了展開小分類），
    變成一條跟著畫面固定的窄欄；右邊商品格維持兩欄。清單的 HTML、點擊切換都跟電腦版共用，這裡只有樣式。
-   欄寬改 --m-rail 一個地方就好。 */
+   老闆選的樣子（示意頁 G）：左欄底色往右慢慢淡掉、沒有分界線；選中的大分類是木色圓角塊；
+   不顯示件數、字不斷行；小分類用一條細線串起來；右邊是有間距的圓角卡片。欄寬改 --m-rail 一個地方就好。 */
 @media(max-width:760px){
-  :root{--m-rail:92px}
+  :root{--m-rail:104px}
   .categories-bar,.sub-categories-bar{display:none!important}
   .cat-toolbar{padding:22px 15px 0}
-  /* 左欄的底色跟右邊界線畫在外框上，欄本身只有按鈕那麼高、可以黏在畫面上 */
+  /* 左欄底色畫在外框上（欄本身只有按鈕那麼高、可以黏在畫面上），往右淡進頁面底色 */
   .cat-layout{
     display:grid;grid-template-columns:var(--m-rail) minmax(0,1fr);align-items:start;
-    padding:0;margin-top:0;scroll-margin-top:52px;border-top:1px solid var(--line);
-    background:linear-gradient(90deg,var(--bg-sunken) calc(var(--m-rail) - 1px),var(--line) 0,var(--line) var(--m-rail),transparent 0);
+    padding:0;margin-top:0;scroll-margin-top:52px;
+    background:linear-gradient(90deg,var(--bg-sunken) 0,var(--bg-sunken) calc(var(--m-rail) - 40px),var(--bg) calc(var(--m-rail) + 14px));
   }
   .cat-sidebar{
     display:flex;flex-direction:column;position:sticky;top:52px; /* 52px＝往下捲之後導覽列的高度 */
     max-height:calc(100dvh - 52px);overflow-y:auto;overscroll-behavior:contain;
-    padding-bottom:84px; /* 最下面留空，不要被底部的浮動按鈕蓋住 */
+    padding:6px 0 84px; /* 最下面留空，不要被底部的浮動按鈕蓋住 */
     scrollbar-width:none;
   }
   .cat-sidebar::-webkit-scrollbar{display:none}
-  /* 選中的大分類：白底＋左邊一條木色（.tab-pill 是會滑動的那塊底；還沒有它的時候直接畫在按鈕上） */
-  .cat-sidebar>.tab-pill{background:var(--bg);box-shadow:inset 4px 0 0 var(--brand)}
-  .cat-sidebar:not(.has-pill)>.cat-side-btn.active{background:var(--bg);box-shadow:inset 4px 0 0 var(--brand)}
-  .cat-side-btn{display:block;padding:14px 6px 14px 13px;border-bottom:1px solid rgba(226,214,195,.6);font-size:15px;line-height:1.35;color:var(--text-secondary)}
-  .cat-side-btn span{display:block}
-  .cat-side-btn .mono{margin-top:2px;font-size:11.5px!important;font-weight:400!important}
-  .cat-side-btn .mono::after{content:" 件"}
-  .cat-side-btn.active{color:var(--text)}
-  .cat-side-btn.active .mono{color:var(--text-tertiary)!important}
-  /* 小分類：展開在選中的大分類下面 */
-  .cat-subs{display:flex;flex-direction:column;padding:2px 0 6px;background:var(--bg);border-bottom:1px solid rgba(226,214,195,.6)}
-  .cat-sub-btn{position:relative;display:block;padding:9px 6px 9px 22px;font-size:13.5px;font-weight:500;line-height:1.3;color:var(--text-secondary)}
+  /* 選中的大分類：木色圓角塊（.tab-pill 是會滑動的那塊底，圓角照抄按鈕；還沒有它的時候直接畫在按鈕上） */
+  .cat-sidebar>.tab-pill,.cat-sidebar:not(.has-pill)>.cat-side-btn.active{background:var(--brand)}
+  .cat-side-btn{display:block;margin:3px 6px;padding:10px 6px 10px 10px;border-radius:12px;font-size:14.5px;line-height:1.35;white-space:nowrap;color:var(--text-secondary)}
+  .cat-side-btn .mono{display:none}
+  .cat-sidebar.has-pill>.cat-side-btn.active,.cat-sidebar:not(.has-pill)>.cat-side-btn.active{color:#fff}
+  /* 小分類：展開在選中的大分類下面，左邊一條細線，選中的那段變粗、木色 */
+  .cat-subs{display:flex;flex-direction:column;padding:2px 0 8px 10px}
+  .cat-sub-btn{display:block;padding:6px 4px 6px 12px;border-left:1px solid var(--line);font-size:13px;font-weight:500;line-height:1.3;white-space:nowrap;color:var(--text-secondary)}
   .cat-sub-btn .mono{display:none}
-  .cat-sub-btn.active{color:var(--brand);font-weight:600}
-  .cat-sub-btn.active::before{content:"";position:absolute;left:11px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--brand)}
-  /* 右邊：兩欄小卡，字跟愛心縮一點配合變窄的卡片 */
-  .products-grid{border-top:0;border-left:0}
-  .product-card:nth-child(2n of .product-card){border-right:0}
-  .products-section-head{padding:10px 12px}
+  .cat-sub-btn.active{border-left:2px solid var(--brand);padding-left:11px;color:var(--brand);font-weight:600}
+  /* 右邊：有間距的圓角卡片，字跟愛心縮一點配合變窄的卡片 */
+  .listing-intro{text-align:justify;text-wrap:wrap}
+  .listing-title{flex-wrap:wrap;row-gap:2px}
+  .products-grid{border:0;gap:12px 8px;padding:6px 10px 0 4px}
+  .product-card{width:calc(50% - 4px);border:0;border-radius:10px}
+  .product-img-wrap{border-radius:10px;overflow:hidden}
+  .products-section-head{padding:14px 2px 2px;border:0;background:transparent}
   .product-info{padding-left:9px;padding-right:9px}
   .product-name{font-size:14px}
   .product-size{font-size:11.5px}
@@ -1906,6 +1908,6 @@ button.cat-tile{font:inherit;width:100%}
 
 
 
-<script type="module" src="/site.js?v=1"></script>
+<script type="module" src="/site.js?v=2"></script>
 </body>
 </html>

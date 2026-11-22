@@ -6,7 +6,7 @@
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=13";
+import{listingTitleHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=14";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -570,7 +570,8 @@ function renderProducts(animate=true){
 function renderListingTitle(){
   const el=document.getElementById("listingTitle");
   if(!el)return;
-  el.textContent=state.activeSub?getSubName(state.activeMain,state.activeSub):getMainName(state.activeMain);
+  const html=listingTitleHtml(state.catalog,state.activeMain,state.activeSub);
+  if(el.innerHTML!==html)el.innerHTML=html;
   // 分類的簡介（跟分類頁一開始寫好的同一段，shop-render.js）；「全部」、搜尋中不放
   const intro=document.getElementById("listingIntro");
   const page=searchQuery.trim()?null:currentCategoryPage();

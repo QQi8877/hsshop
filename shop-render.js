@@ -568,6 +568,14 @@ export function categoryIntro(page,contact){
   return `${SITE_NAME}的${page.name}共 ${page.products.length} 款${names.length>1?`，像是${names.join("、")}${page.products.length>names.length?"等":""}`:""}。`
     +`點商品可以看照片和尺寸${area?`；${area.city}${area.district}的門市可以看實品`:""}，喜歡的先按愛心收藏，選好再一次用 LINE 詢問。`;
 }
+// 商品列表的大標題：選了子分類時是「主分類 » 子分類」（主分類可以點，回到整個主分類）。
+// 電腦版只顯示子分類（index.html 用 CSS 藏起前兩段），手機版三段都顯示。前台、分類頁共用。
+export function listingTitleHtml(catalog,main,sub){
+  const mainName=escapeHTML(mainNameOf(catalog,main));
+  if(!sub)return mainName;
+  return `<a class="lt-main" href="${escapeHTML(categoryPath(main))}" data-main="${escapeHTML(main)}">${mainName}</a>`
+    +`<span class="lt-sep" aria-hidden="true">»</span><span class="lt-sub">${escapeHTML(subNameOf(catalog,main,sub))}</span>`;
+}
 // 分類按鈕：手機版上方兩排、電腦版左側清單。都是連到分類頁的連結（Google 跟著連結找到分類頁），
 // 前台點了不換頁，直接切換分類（index.html 攔下點擊）。
 export function categoryNavHtml(catalog,listed,activeMain="全部",activeSub=null){

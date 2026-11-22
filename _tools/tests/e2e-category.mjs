@@ -22,7 +22,8 @@ async function page(vp={width:1400,height:900},opts={}){
   ok(await pg.locator("h1").count()===1&&(await pg.textContent("h1")).includes("信通家俱行"),"home single h1 = shop");
   ok(await pg.title()===HOME_TITLE,"home title with location");
   await pg.goto(ORIGIN+"/c/sub-vsz2vbta");
-  ok(await pg.locator("h1").count()===1&&(await pg.textContent("h1")).trim()==="摺疊桌","category h1");
+  // 子分類頁的大標題是「桌子 » 摺疊桌」（電腦版只顯示子分類那段）
+  ok(await pg.locator("h1").count()===1&&(await pg.textContent("h1 .lt-sub")).trim()==="摺疊桌"&&(await pg.textContent("h1 .lt-main")).trim()==="桌子","category h1 = 桌子 » 摺疊桌");
   const cards=await pg.$$eval("#productsGrid .product-card a",a=>a.map(x=>x.getAttribute("href")));
   ok(cards.length===9&&cards.every(h=>/^\/p\//.test(h)),"category static product links "+cards.length);
   ok((await pg.textContent("#listingIntro")).includes("摺疊桌共 9 款"),"category intro static");
@@ -69,7 +70,7 @@ async function page(vp={width:1400,height:900},opts={}){
   ok(await pg.evaluate(()=>document.body.classList.contains("cat-landing")),"landing class");
   ok(await pg.isHidden("#picks")&&await pg.isHidden("#catTiles"),"picks/tiles hidden on landing");
   ok(await pg.locator("#productsGrid .product-card").count()===9,"JS keeps category (9)");
-  ok((await pg.textContent("#listingTitle")).trim()==="摺疊桌","title element kept");
+  ok((await pg.textContent("#listingTitle .lt-sub")).trim()==="摺疊桌","title element kept");
   ok(await pg.locator('#subCategoriesBar a.sub-tab.active[data-sub="sub-vsz2vbta"]').count()===1,"active sub tab");
   // open a product then close → back to the category url/title
   await pg.locator("#productsGrid .product-card").first().click();await pg.waitForTimeout(600);

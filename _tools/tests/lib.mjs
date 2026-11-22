@@ -1,7 +1,7 @@
 import {readFile} from "node:fs/promises";
 import path from "node:path";
 import {createRequire} from "node:module";
-import {mkdirSync} from "node:fs";
+import {mkdirSync,existsSync} from "node:fs";
 import os from "node:os";
 // Playwright：先找專案自己裝的，找不到再用雲端環境預先裝好的那份
 function loadPlaywright(){
@@ -82,7 +82,9 @@ export async function setup(context,{store,blockSiteJson=false}={}){
   });
   return store;
 }
-export async function launch(){return chromium.launch({executablePath:"/opt/pw-browsers/chromium-1194/chrome-linux/chrome",args:["--no-proxy-server"]})}
+// 雲端環境的瀏覽器放在 /opt/pw-browsers/chromium（固定捷徑，版本更新也不用改）；其他電腦用 Playwright 自己裝的
+const CHROME="/opt/pw-browsers/chromium";
+export async function launch(){return chromium.launch({...(existsSync(CHROME)?{executablePath:CHROME}:{}),args:["--no-proxy-server"]})}
 export function checker(){
   let pass=0,fail=0;const fails=[];
   const ok=(cond,msg)=>{if(cond){pass++;}else{fail++;fails.push(msg);console.log("FAIL:",msg)}};

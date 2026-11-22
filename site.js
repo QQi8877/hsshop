@@ -199,7 +199,6 @@ function primaryTagBadgeHtml(product){
 }
 let searchQuery="";
 let productsLoadFailed=false;
-let favoritesRoomFilter="全部";
 // 依實際版面大小提供多種寬度，讓瀏覽器依裝置螢幕寬度/DPR自己挑最合適的檔案，
 // 避免手機版小卡片還是抓桌面版用的大尺寸圖（PageSpeed「圖片解析度過大」建議）。
 // 商品卡片（列表封面／滑鼠移過的第二張）跟首頁大圖分別對應兩組不同的顯示尺寸，
@@ -811,7 +810,7 @@ function placeholderMarkup(text){
 }
 function showBrokenImage(wrap,img){
   img.style.display="none";
-  if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片無法載入<br><small>請確認 Drive 已公開分享</small></div></div>`);
+  if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片暫時無法顯示</div></div>`);
 }
 function loadFavoritesLocal(){
   try{
@@ -981,26 +980,6 @@ function favoriteProductsWithMeta(){
     return product&&product.status==="active"?{...product,_qty:f.qty||1,_note:f.note||""}:null;
   }).filter(Boolean);
 }
-function renderFavoritesRoomTabs(allProducts){
-  const tabsWrap=document.getElementById("favoritesRoomTabs");
-  const rooms=[...new Set(allProducts.map(p=>p.room).filter(Boolean))];
-  const hasUnassigned=allProducts.some(p=>!p.room);
-  if(!rooms.length){
-    tabsWrap.style.display="none";
-    tabsWrap.innerHTML="";
-    return;
-  }
-  const tabs=["全部",...rooms,...(hasUnassigned?["未分類"]:[])];
-  if(!tabs.includes(favoritesRoomFilter))favoritesRoomFilter="全部";
-  tabsWrap.style.display="flex";
-  tabsWrap.innerHTML=tabs.map(room=>{
-    const n=room==="全部"?allProducts.length:allProducts.filter(p=>(p.room||"未分類")===room).length;
-    return `<button class="favorites-room-tab${favoritesRoomFilter===room?" active":""}" data-room="${escapeHTML(room)}">${escapeHTML(room)}<span class="mono" style="margin-left:5px">${n}</span></button>`;
-  }).join("");
-  tabsWrap.querySelectorAll(".favorites-room-tab").forEach(btn=>{
-    btn.onclick=()=>{favoritesRoomFilter=btn.dataset.room;renderFavorites()};
-  });
-}
 function renderFavorites(){
   const list=document.getElementById("favoritesList");
   const footer=document.getElementById("favoritesFooter");
@@ -1014,20 +993,15 @@ function renderFavorites(){
   if(barCount)barCount.textContent=allProducts.length;
   updateLbFavoriteBtn(); // 在收藏清單裡移除了正在看的那件，商品頁的按鈕要跟著變回來
   subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 4 小時`:"";
-  renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
     footer.style.display="none";
     list.innerHTML=`<div class="favorites-empty">${textHtml(state.pageText,"favEmpty")}</div>`;
     return;
   }
   footer.style.display="block";
-  const products=favoritesRoomFilter==="全部"?allProducts:allProducts.filter(p=>(p.room||"未分類")===favoritesRoomFilter);
+  const products=allProducts;
   const total=products.reduce((sum,p)=>{const price=parsePriceNumber(activeSalePrice(p)||p.price);return price!=null?sum+price*p._qty:sum},0);
   document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>$ ${total.toLocaleString()}</span>`:"";
-  if(!products.length){
-    list.innerHTML='<div class="favorites-empty">這個房間還沒收藏。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
-    return;
-  }
   list.innerHTML="";
   products.forEach(product=>{
     const item=document.createElement("div");
@@ -1464,7 +1438,6 @@ async function inquireAllFavorites(){
   showFavoritesPreview(msg);
 }
 function showFavoritesPreview(msg){
-  document.getElementById("favoritesRoomTabs").style.display="none";
   document.getElementById("favoritesList").style.display="none";
   document.getElementById("favoritesFooter").style.display="none";
   document.getElementById("favoritesPreviewBubble").textContent=msg;

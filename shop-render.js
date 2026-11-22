@@ -45,7 +45,6 @@ export const TEXT_FIELDS=[
   {key:"askBtnDone",group:"商品頁",label:"收藏按鈕（已收藏時）",def:"已收藏・看收藏清單（共 {n} 件）→",hint:"{n} 會換成收藏的件數"},
   {key:"askNote",group:"商品頁",label:"收藏按鈕下面的說明",def:"想問的商品先按愛心收藏，選好後到「收藏清單」**一次用 LINE 傳給老闆**，不用一件一件問。",long:true,hint:"用 **兩個星號** 包起來的字會變粗體"},
   {key:"similarTitle",group:"商品頁",label:"「同類商品」標題",def:"同類商品"},
-  {key:"photoHint",group:"商品頁",label:"照片下面的操作提示（電腦版）",def:"有多張照片時：點下面的小圖、按照片兩側的箭頭或鍵盤左右鍵換照片；滑鼠移到照片上會放大。",long:true},
   {key:"favSnackFirst",group:"按愛心之後的提示",label:"第一次按愛心",def:"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。",long:true},
   {key:"favSnackMore",group:"按愛心之後的提示",label:"之後再按愛心",def:"已收藏，清單裡有 {n} 件。選好後一次問老闆。",hint:"{n} 會換成收藏的件數"},
   {key:"favSnackBtn",group:"按愛心之後的提示",label:"提示旁的按鈕",def:"看清單"},

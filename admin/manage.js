@@ -600,11 +600,11 @@ function openPageTextManage(){
 }
 window.openPageTextManage=openPageTextManage;
 async function savePageTextManage(){
-  // 清單以外的舊欄位（以前存過、現在不用的）照樣留著，不會因為存一次就被刪掉
-  const next={...pageText};
+  // 只留清單上的字：以前存過、網站已經不用的舊欄位（例如舊版的「Facebook」「LINE」「精選商品」標題）存一次就清掉
+  const next={};
   document.querySelectorAll("#pageTextFields [data-pt]").forEach(el=>{
     const value=el.value.trim();
-    if(value)next[el.dataset.pt]=value;else delete next[el.dataset.pt];
+    if(value)next[el.dataset.pt]=value;
   });
   pageText=next;
   if(!await saveMeta())return;
@@ -2203,7 +2203,6 @@ window.setUploadMethod=function(method,el){
   el.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active")); // 只換這一排，批次上傳視窗那排不要動到
   el.classList.add("active");
   document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
-  document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
   renderPhotoSlots();
 };
 function renderPhotoSlots(){
@@ -2357,11 +2356,10 @@ function handleSlotFile(slotIdx,event){
   });
 }
 async function promptUrlForSlot(slotIdx){
-  const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
-  const raw=document.getElementById(inputId).value.trim();
+  const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請先在上方輸入連結");return}
-  // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到
-  const fetchable=uploadMethod==="gdrive"?convertGdriveUrl(raw):raw;
+  // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到（一般網址原樣不動）
+  const fetchable=convertGdriveUrl(raw);
   const openedFor=editingProductId;
   slotsUploading.add(slotIdx);
   renderPhotoSlots();
@@ -2387,13 +2385,8 @@ async function promptUrlForSlot(slotIdx){
 
 window.addPhotoByUrl=async function(){
   const raw=document.getElementById("urlInput").value.trim();
-  if(!raw){toast("請輸入圖片網址");return}
-  await addWorkingPhoto(raw);
-};
-window.addPhotoByGdrive=async function(){
-  const raw=document.getElementById("gdriveInput").value.trim();
-  if(!raw){toast("請輸入 Google Drive 連結");return}
-  await addWorkingPhoto(convertGdriveUrl(raw));
+  if(!raw){toast("請貼上照片網址");return}
+  await addWorkingPhoto(convertGdriveUrl(raw)); // Google 雲端分享連結會轉成讀得到圖片的網址，一般網址原樣不動
 };
 async function addWorkingPhoto(raw){
   // 排除 slotsUploading 裡「正在上傳、畫面上還沒填值」的格子，避免兩個上傳
@@ -2569,7 +2562,6 @@ window.openProductModal=async function(id,{copy=false}={}){
   viewLink.hidden=!(id&&!copy&&source?.status==="active");
   viewLink.href=`index.html#product-${encodeURIComponent(id||"")}`;
   document.getElementById("urlInput").value="";
-  document.getElementById("gdriveInput").value="";
   setUploadMethod("file",document.querySelector(".upload-method-btn"));
   renderCatSelect();
   rteInit("pDesc");
@@ -2588,6 +2580,8 @@ window.openProductModal=async function(id,{copy=false}={}){
     // 複製出來的新商品不帶搜尋說明：兩頁一模一樣的說明，Google 容易當成重複內容
     document.getElementById("pSeoDesc").value=copy?"":product.seoDesc||"";
     workingOptions=(product.options||[]).map(o=>({name:o.name||"",color:o.color||"#d8cbb8",photo:Number.isInteger(o.photo)?o.photo:null}));
+    // 「進階設定」平常收起來；這件商品有填交期、款式或搜尋說明就打開，免得看不到已經填的內容
+    document.getElementById("advFields").open=!!(product.leadTime||workingOptions.length||(!copy&&product.seoDesc));
     renderBadgeCheckboxes(product.badges||[]);
     const dims=product.dimensions||{};
     document.getElementById("pWidth").value=dims.width||"";
@@ -2626,6 +2620,7 @@ window.openProductModal=async function(id,{copy=false}={}){
     updateSubSelect();
     ["pName","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
     ["pSaleEnd","pLeadTime","pSeoDesc"].forEach(fid=>document.getElementById(fid).value="");
+    document.getElementById("advFields").open=false;
     setPriceField("pPrice","");
     setPriceField("pSalePrice","");
     renderBadgeCheckboxes([]);

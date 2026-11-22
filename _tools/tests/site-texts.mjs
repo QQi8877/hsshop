@@ -113,6 +113,7 @@ const b=await launch();const errs=[];
   await pg.evaluate(()=>savePageTextManage());await pg.waitForTimeout(600);
   const meta=store.get("sitedata/hsshop-10bd9");
   ok(meta.pageText.askBtn==="喜歡就收藏"&&!("heroCta" in meta.pageText),"saved texts (blank = default, not stored)");
+  ok(!("fbTitle" in meta.pageText)&&!("productsTitle" in meta.pageText),"old unused text fields are cleaned on save");
   // 分類介紹
   await pg.evaluate(()=>openCategoryManage());await pg.waitForTimeout(300);
   const row=pg.locator('.catmgr-main-row[data-cat-id="cat-table"]');

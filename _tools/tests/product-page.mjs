@@ -34,7 +34,7 @@ for(const [name,vp] of [["desk",{width:1366,height:820}],["mob",{width:390,heigh
   ok(await pg.locator("#lightbox.open").count()===0,name+" back closes");
   // 只有一張照片的商品：沒有箭頭、張數、說明
   await pg.locator("#productsGrid .product-card").first().click();await pg.waitForTimeout(1500);
-  ok(await pg.locator("#lbNext").isHidden()&&await pg.locator("#lbCounter").isHidden()&&await pg.locator(".lb-hint").isHidden(),name+" single photo: no arrows/counter/hint");
+  ok(await pg.locator("#lbNext").isHidden()&&await pg.locator("#lbCounter").isHidden(),name+" single photo: no arrows/counter");
   await pg.keyboard.press("Escape");await pg.waitForTimeout(500);
   ok(await pg.locator("#lightbox.open").count()===0,name+" esc closes");
   await ctx.close();

@@ -12,6 +12,9 @@ const id=[...store.keys()].filter(k=>k.startsWith(KEY)&&!k.includes("/gallery"))
 const prod=store.get(KEY+id);
 await pg.evaluate(id=>openProductModal(id),id);await pg.waitForSelector("#productModal.open");await pg.waitForTimeout(500);
 ok(await pg.inputValue("#pSeoDesc")==="","empty initially");
+// 搜尋說明收在「進階設定」：沒填過時收起來，點開才看得到
+ok(!(await pg.evaluate(()=>document.getElementById("advFields").open)),"advanced section folded when nothing is filled");
+await pg.click("#advFields > summary");
 ok((await pg.textContent("#pSeoCount")).includes("自動產生"),"auto label");
 ok((await pg.textContent("#pSeoTitle")).startsWith(prod.name)&&(await pg.textContent("#pSeoTitle")).endsWith("｜信通家俱行"),"title preview "+await pg.textContent("#pSeoTitle"));
 ok((await pg.textContent("#pSeoId"))===id,"url shows id");
@@ -31,6 +34,7 @@ ok(store.get(KEY+id).seoDesc===custom,"saved trimmed");
 // reopen shows it; closing without change → no unsaved prompt; changing it → prompt
 await pg.evaluate(id=>openProductModal(id),id);await pg.waitForSelector("#productModal.open");await pg.waitForTimeout(500);
 ok(await pg.inputValue("#pSeoDesc")===custom,"loads saved");
+ok(await pg.evaluate(()=>document.getElementById("advFields").open),"advanced section opens by itself when this product has a Google description");
 await pg.fill("#pSeoDesc",custom+"改");dialogs.length=0;
 await pg.evaluate(()=>requestCloseProductModal());await pg.waitForTimeout(300);
 ok(dialogs.length===1,"dirty tracking includes SEO field");
@@ -44,6 +48,7 @@ await pg.evaluate(()=>openProductModal(null));await pg.waitForSelector("#product
 await pg.fill("#pName","測試餐椅");await pg.fill("#pWidth","45");
 ok((await pg.textContent("#pSeoTitle")).startsWith("測試餐椅"),"live title");
 ok((await pg.textContent("#pSeoPreview")).includes("測試餐椅")&&(await pg.textContent("#pSeoPreview")).includes("45"),"fallback desc uses name+size: "+await pg.textContent("#pSeoPreview"));
+await pg.click("#advFields > summary"); // 新商品的進階設定是收起來的
 await pg.locator(".seo-preview").screenshot({path:`${SHOTS}/seo-preview.png`});
 ok(!errs.length,"no errors "+errs);
 await b.close();ok.done();

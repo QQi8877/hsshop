@@ -18,8 +18,9 @@ export function escapeHTML(str=""){
 /* ── 網站文字（後台「網站文字」可以改的字）──────────────────────────────────
    每一項：key＝存在網站設定 pageText 裡的名字、group＝後台分組、label＝後台看到的名稱、def＝預設文字、
    long＝後台用多行的輸入框、hint＝後台輸入框下面的小提示。後台沒填（空白）就用預設文字。
-   用法：HTML 上整段文字是固定的，元素加 data-page-field="key"（前台 site.js、每小時產生頁面時都會換成後台的字，
-   HTML 裡寫的字要跟 def 一樣，_tools/tests/site-texts.mjs 會檢查）；程式畫出來的字用 textOf()／textHtml() 取。
+   用法：HTML 上整段文字是固定的，元素加 data-page-field="key"（前台 site.js、每小時產生頁面時都會換成後台的字；
+   改程式時 HTML 裡寫 def 的字，每小時更新會把根目錄 index.html 換成老闆的字，_tools/tests/site-texts.mjs 兩種都接受）；
+   程式畫出來的字用 textOf()／textHtml() 取。換行、**粗體** 在兩種地方都有效。
    新增一項：這裡加一筆、HTML 或程式改用它，後台表單會自動多一格。分類介紹不在這裡，在「分類管理」每個分類裡。 */
 export const TEXT_FIELDS=[
   {key:"heroTag",group:"首頁大圖",label:"英文小標",def:"HSIN TONG FURNITURE"},

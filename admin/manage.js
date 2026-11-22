@@ -413,8 +413,7 @@ function renderCatMgrList(){
   wrap.innerHTML="";
   catalog.forEach((cat)=>{
     const row=document.createElement("div");
-    row.className="catmgr-main-row";
-    row.draggable=true;
+    row.className="catmgr-main-row"; // 能不能拖由下面的拖曳把手決定（按住 ⠿ 才打開 draggable）
     row.dataset.catId=cat.id;
     const top=document.createElement("div");
     top.className="catmgr-row-top";
@@ -438,7 +437,6 @@ function renderCatMgrList(){
     (cat.subs||[]).forEach((sub)=>{
       const subRow=document.createElement("div");
       subRow.className="catmgr-sub-row";
-      subRow.draggable=true;
       subRow.dataset.mainId=cat.id;
       subRow.dataset.subId=sub.id;
       subRow.innerHTML=`
@@ -484,7 +482,15 @@ catmgrListEl.addEventListener("dragstart",e=>{
   dragMainCatId=row.dataset.catId;
   row.classList.add("dragging");
 });
+// 只有按住「⠿」才能拖：整列都能拖的話，在名稱、介紹的輸入框裡反白文字（Firefox 特別明顯）會變成拖動整列、誤改順序
+catmgrListEl.addEventListener("pointerdown",e=>{
+  const row=e.target.closest(".drag-handle")?.closest(".catmgr-sub-row,.catmgr-main-row");
+  if(row)row.draggable=true;
+});
+const stopCatRowDrag=()=>catmgrListEl.querySelectorAll('[draggable="true"]').forEach(r=>r.draggable=false);
+document.addEventListener("pointerup",stopCatRowDrag);
 catmgrListEl.addEventListener("dragend",e=>{
+  stopCatRowDrag();
   const subRow=e.target.closest(".catmgr-sub-row");
   if(subRow){
     catmgrListEl.querySelectorAll(".catmgr-sub-row").forEach(r=>r.classList.remove("dragging","drag-over"));
@@ -2358,8 +2364,7 @@ function handleSlotFile(slotIdx,event){
 async function promptUrlForSlot(slotIdx){
   const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請先在上方輸入連結");return}
-  // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到（一般網址原樣不動）
-  const fetchable=convertGdriveUrl(raw);
+  const fetchable=driveToImageUrl(raw);
   const openedFor=editingProductId;
   slotsUploading.add(slotIdx);
   renderPhotoSlots();
@@ -2383,10 +2388,17 @@ async function promptUrlForSlot(slotIdx){
   renderPhotoSlots();
 }
 
+// Google 雲端的分享連結要先轉成可以直接讀取圖片的網址，Cloudinary 才抓得到。
+// 只認 drive.google.com／docs.google.com：別的網站的網址也可能有 ?id= 或 /d/，那些照原樣用
+function driveToImageUrl(raw){
+  let host="";
+  try{host=new URL(raw).hostname}catch(e){}
+  return /(^|\.)(drive|docs)\.google\.com$/i.test(host)?convertGdriveUrl(raw):raw;
+}
 window.addPhotoByUrl=async function(){
   const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請貼上照片網址");return}
-  await addWorkingPhoto(convertGdriveUrl(raw)); // Google 雲端分享連結會轉成讀得到圖片的網址，一般網址原樣不動
+  await addWorkingPhoto(driveToImageUrl(raw));
 };
 async function addWorkingPhoto(raw){
   // 排除 slotsUploading 裡「正在上傳、畫面上還沒填值」的格子，避免兩個上傳

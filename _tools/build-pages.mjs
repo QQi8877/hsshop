@@ -21,7 +21,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{listingTitleHtml,textOf,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{listingTitleHtml,textHtml,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -187,7 +187,7 @@ function fillPageText(html,pageText){
   const hits=[...html.matchAll(/<([a-zA-Z][\w-]*)(?=[^>]*\sdata-page-field="([^"]+)")[^>]*>/g)].reverse();
   for(const m of hits){
     const t={tag:m[1],start:m.index,end:m.index+m[0].length},c=closeOf(html,t,`data-page-field="${m[2]}"`);
-    html=html.slice(0,t.end)+escapeHTML(textOf(pageText,m[2]))+html.slice(c.start);
+    html=html.slice(0,t.end)+textHtml(pageText,m[2])+html.slice(c.start);
   }
   return html;
 }

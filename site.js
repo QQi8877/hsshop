@@ -235,7 +235,9 @@ function closeModal(id){document.getElementById(id).classList.remove("open")}
 // HTML 上標了 data-page-field 的字換成後台「網站文字」填的（沒填＝預設文字，清單在 shop-render.js 的 TEXT_FIELDS）
 function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
-    const val=textOf(state.pageText,el.dataset.pageField);
+    const key=el.dataset.pageField,val=textOf(state.pageText,key);
+    // 有換行或 **粗體** 的字要用 HTML 寫（換行變 <br>）；一般的字照舊用純文字寫
+    if(/\n|\*\*/.test(val)){const html=textHtml(state.pageText,key);if(el.innerHTML!==html)el.innerHTML=html;return}
     // 值跟畫面上現有的文字一樣就不要動：textContent= 就算寫入相同的字串，
     // 也會整個文字節點砍掉重建，逼瀏覽器重新畫一次——如果這時候自架字型
     // 剛好已經下載完成，就會從「開頁瞬間的備援字體」變成「Noto 字型」，
@@ -1205,7 +1207,8 @@ function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   const prerendered=lightbox.dataset.prerendered===id;
   delete lightbox.dataset.prerendered;
   // 每次打開、換一件商品都從最上面開始看（商品頁本身和右邊資訊欄都會捲，不然會停在上一件捲到的地方）
-  if(!wasOpen||isProductSwitch){lightbox.scrollTop=0;document.getElementById("lbInfo").scrollTop=0}
+  // 例外：一打開就畫好的商品靜態頁（從 Google 點進來），客人可能已經往下捲了，資料到了不要把他拉回頂端
+  if(!prerendered&&(!wasOpen||isProductSwitch)){lightbox.scrollTop=0;document.getElementById("lbInfo").scrollTop=0}
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
   document.body.classList.add("lightbox-open");
@@ -1672,7 +1675,8 @@ function openRoutedProduct(final){
 
   const meta=await metaPromise;
   if(meta)Object.assign(state,meta);
-  applyPageText();
+  // 網站設定讀不到時不要動：頁面上的字已經是每小時更新時寫好的老闆文字，換成預設反而不對
+  if(meta)applyPageText();
   applyLayoutVisibility();
   renderContact();
   renderHeroPhoto();

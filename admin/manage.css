@@ -870,7 +870,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 }
 .photo-slot.dragging{opacity:.4}
 .modal-actions{display:flex;gap:10px;margin-top:26px}
-.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--cream);cursor:grab}
+.catmgr-main-row{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--cream)}
 .catmgr-main-row.dragging{opacity:.4}
 .catmgr-main-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .catmgr-row-top{display:flex;align-items:center;gap:6px}
@@ -886,7 +886,7 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .catmgr-icon-btn.danger:hover{border-color:var(--danger);color:var(--danger)}
 .catmgr-icon-btn.on{background:var(--sage);border-color:var(--sage);color:var(--white)}
 .catmgr-subs{margin:8px 0 0 18px;display:flex;flex-direction:column;gap:6px}
-.catmgr-sub-row{display:flex;align-items:center;gap:6px;cursor:grab}
+.catmgr-sub-row{display:flex;align-items:center;gap:6px}
 .catmgr-sub-row.dragging{opacity:.4}
 .catmgr-sub-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .catmgr-sub-row input[type="text"]{flex:1;padding:6px 9px;font-size:13px;border:1px solid var(--line);border-radius:6px}

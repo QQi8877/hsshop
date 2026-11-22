@@ -75,9 +75,9 @@ siteFx 不要去讀主程式的變數或盯它的畫面。
 目前版本：site 3、shop-render 15、dim-figures 4、manage.js 10、rich-text 7、image-tools 2、manage.css 4、csv 1、util 1。
 
 **(5) 網站文字（後台「網站文字」）**：給客人看的固定文字都登記在 `shop-render.js` 的 `TEXT_FIELDS`（key、預設文字、後台分組）。
-HTML 裡整段固定的字加 `data-page-field="key"`（字要跟預設文字一樣），前台 `applyPageText` 和 `build-pages.mjs` 的 `fillPageText` 都會換成後台填的字；
+HTML 裡整段固定的字加 `data-page-field="key"`（改程式時寫預設文字；每小時更新會把根目錄 `index.html` 換成老闆的字，所以 main 上看到的可能是老闆改過的字），前台 `applyPageText` 和 `build-pages.mjs` 的 `fillPageText` 都會換成後台填的字；
 程式畫出來的字用 `textOf(pageText,key)`／`textHtml(...)`。後台表單照 `TEXT_FIELDS` 自動排出來。分類介紹另外存在 catalog 每個分類的 `intro`（後台分類管理的 📝）。
-`_tools/tests/site-texts.mjs` 會檢查 HTML 的字跟預設文字對得上。
+`_tools/tests/site-texts.mjs` 會檢查 HTML 的字是預設文字或老闆的字。
 
 **(6) 每小時更新的觸發**：`.github/workflows/build-pages.yml` 的 `paths`。新增一個「產生頁面會用到」的檔案要加進去。
 

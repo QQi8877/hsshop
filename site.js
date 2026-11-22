@@ -1227,6 +1227,8 @@ function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   // 不要先蓋住照片再顯示，不然畫面會閃一下
   const prerendered=lightbox.dataset.prerendered===id;
   delete lightbox.dataset.prerendered;
+  // 每次打開、換一件商品都從最上面開始看（商品頁本身和右邊資訊欄都會捲，不然會停在上一件捲到的地方）
+  if(!wasOpen||isProductSwitch){lightbox.scrollTop=0;document.getElementById("lbInfo").scrollTop=0}
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
   document.body.classList.add("lightbox-open");
@@ -1347,8 +1349,6 @@ document.getElementById("lbInfo").addEventListener("click",e=>{
     if(!state.products.some(p=>p.id===sim.dataset.similar))return;
     e.preventDefault();
     openProductDetail(sim.dataset.similar,null,{history:"push"});
-    document.getElementById("lbInfo").scrollTop=0;
-    document.getElementById("lightbox").scrollTop=0;
     return;
   }
   const btn=e.target.closest(".lb-opt");

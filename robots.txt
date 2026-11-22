@@ -3,5 +3,6 @@ Allow: /
 Disallow: /manage.html
 Disallow: /admin/
 Disallow: /CLAUDE.md
+Disallow: /demo-ui.html
 
 Sitemap: https://hsintong.cc/sitemap.xml

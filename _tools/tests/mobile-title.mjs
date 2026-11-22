@@ -20,13 +20,14 @@ for(const [name,w] of [["mob",390],["desk",1366]]){
     ok((await pg.locator("#listingTitle").textContent())==="椅子"&&new URL(pg.url()).pathname==="/c/cat-chair","tapping 椅子 goes back to the main category");
     // 全部：椅子區的欄線
     await pg.locator('#catSidebar .cat-side-btn[data-main="全部"]').click();await pg.waitForTimeout(800);
-    const cols=await pg.evaluate(()=>{const g=document.getElementById("productsGrid").getBoundingClientRect();return [...document.querySelectorAll("#productsGrid .product-card")].slice(12,17).map(c=>{const r=c.getBoundingClientRect();return [r.left-g.left<10?"L":"R",getComputedStyle(c).borderLeftWidth,getComputedStyle(c).borderRightWidth,Math.round(r.right)]})});
+    const cols=await pg.evaluate(()=>{const g=document.getElementById("productsGrid").getBoundingClientRect();return [...document.querySelectorAll("#productsGrid .product-card")].slice(12,17).map(c=>{const r=c.getBoundingClientRect();return [r.left-g.left<20?"L":"R",getComputedStyle(c).borderRadius,getComputedStyle(c).borderLeftWidth,Math.round(r.right)]})});
     console.log(JSON.stringify(cols));
-    ok(cols.every(([,bl,br])=>bl==="1px"&&br==="0px")&&cols.every(c=>c[3]<=390),"column lines consistent after an odd-sized category, nothing past the screen edge");
+    // 奇數件分類後面：左右欄照樣交替、每張都是圓角無框線的卡片、不超出螢幕
+    ok(cols.every(([,rad,bl])=>rad==="10px"&&bl==="0px")&&cols.every(c=>c[3]<=390)&&new Set(cols.map(c=>c[0])).size===2,"cards after an odd-sized category keep the same look, nothing past the screen edge");
     await pg.evaluate(()=>{[...document.querySelectorAll("#productsGrid .products-section-head")][1].scrollIntoView({block:"start"});scrollBy(0,-60)});await pg.waitForTimeout(500);
     await pg.screenshot({path:`${S}/cols-mob.png`});
   }else{
-    ok(t.vis.join("")==="藤椅","desktop title unchanged (sub only)");
+    ok(t.vis.join("")==="椅子»藤椅","desktop title also shows 椅子 » 藤椅");
   }
   await ctx.close();
 }

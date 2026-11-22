@@ -26,8 +26,14 @@ await pg.evaluate(()=>scrollBy(0,1600));await pg.waitForTimeout(600);
 const top=await pg.evaluate(()=>Math.round(document.getElementById("catSidebar").getBoundingClientRect().top));
 ok(top===52,"rail sticks under the nav while scrolling (top "+top+")");
 await pg.screenshot({path:`${SHOTS}/rail-4.png`});
-// 捲到一半換分類：畫面回到列表開頭
+// 捲到一半換分類：畫面回到這個分類的標題（標題就在導覽列下面）
 await pg.locator('#catSidebar .cat-side-btn[data-main="cat-storage"]').click();await pg.waitForTimeout(900);
-const lt=await pg.evaluate(()=>Math.round(document.querySelector(".cat-layout").getBoundingClientRect().top));
-ok(lt>=0&&lt<=60,"switching category while scrolled brings the list start into view (top "+lt+")");
+const lt=await pg.evaluate(()=>{const nav=document.querySelector("nav").getBoundingClientRect().bottom,t=document.getElementById("listingTitle").getBoundingClientRect();return [Math.round(nav),Math.round(t.top),document.getElementById("listingTitle").textContent]});
+ok(lt[1]>=lt[0]&&lt[1]<=lt[0]+40&&lt[2]==="收納櫃/架","switching category while scrolled brings its title to the top ("+lt+")");
+await pg.screenshot({path:`${SHOTS}/rail-5.png`});
+// 子分類也一樣：先捲下去再點小分類
+await pg.evaluate(()=>scrollBy(0,1200));await pg.waitForTimeout(500);
+await pg.locator('#catSidebar .cat-sub-btn').first().click();await pg.waitForTimeout(900);
+const st=await pg.evaluate(()=>{const nav=document.querySelector("nav").getBoundingClientRect().bottom,t=document.getElementById("listingTitle").getBoundingClientRect();return [Math.round(nav),Math.round(t.top)]});
+ok(st[1]>=st[0]&&st[1]<=st[0]+40,"tapping a sub-category while scrolled also goes back to the title ("+st+")");
 ok(errs.length===0,"no JS errors "+errs.slice(0,2).join("|"));ok.done();await b.close();

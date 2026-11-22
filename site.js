@@ -404,10 +404,17 @@ document.getElementById("categories").addEventListener("click",event=>{
   if(!link||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
   event.preventDefault();
   setCategory(link.dataset.main,link.dataset.sub||null);
-  // 手機版左邊的分類欄會跟著畫面固定：往下逛到一半換分類，商品格變短了，把畫面帶回商品列表開頭
-  const layout=document.querySelector(".cat-layout");
-  if(layout&&matchMedia("(max-width:760px)").matches&&layout.getBoundingClientRect().top<0)layout.scrollIntoView({block:"start"});
+  scrollToListingTop();
 });
+// 左邊分類欄會跟著畫面固定：往下逛到一半換分類，跟一般購物網站一樣把畫面帶回這個分類的標題，
+// 商品從第一件開始看（手機、電腦都一樣）。標題本來就看得到時不動，免得畫面跳一下。
+function scrollToListingTop(){
+  const head=document.querySelector(".cat-toolbar");
+  if(!head)return;
+  const navBottom=document.querySelector("nav")?.getBoundingClientRect().bottom||0;
+  const top=head.getBoundingClientRect().top;
+  if(top<navBottom)scrollTo({top:scrollY+top-navBottom,behavior:"instant"});
+}
 function renderProducts(animate=true){
   applyRouteCategory();
   const grid=document.getElementById("productsGrid");

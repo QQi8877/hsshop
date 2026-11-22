@@ -36,4 +36,15 @@ await pg.evaluate(()=>scrollBy(0,1200));await pg.waitForTimeout(500);
 await pg.locator('#catSidebar .cat-sub-btn').first().click();await pg.waitForTimeout(900);
 const st=await pg.evaluate(()=>{const nav=document.querySelector("nav").getBoundingClientRect().bottom,t=document.getElementById("listingTitle").getBoundingClientRect();return [Math.round(nav),Math.round(t.top)]});
 ok(st[1]>=st[0]&&st[1]<=st[0]+40,"tapping a sub-category while scrolled also goes back to the title ("+st+")");
+// 手機（沒有滑鼠）：碰過有好幾張照片的卡片，封面照片不能變透明（以前會停在「滑過」的樣子、卡片變空白）
+{
+  const mctx=await b.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});await setup(mctx);
+  const mp=await mctx.newPage();mp.on("pageerror",e=>errs.push(e.message));
+  await mp.goto(ORIGIN+"/c/cat-chair");await mp.waitForTimeout(2500);
+  const multi=mp.locator("#productsGrid .product-card:has(.img-primary.has-secondary)").first();
+  await multi.scrollIntoViewIfNeeded();await multi.hover();await mp.waitForTimeout(500);
+  const op=await multi.evaluate(c=>getComputedStyle(c.querySelector(".img-primary")).opacity);
+  ok(op==="1","phone: cover photo stays visible after the card is touched (opacity "+op+")");
+  await mctx.close();
+}
 ok(errs.length===0,"no JS errors "+errs.slice(0,2).join("|"));ok.done();await b.close();

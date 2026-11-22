@@ -713,9 +713,12 @@ body.cat-landing #picks,body.cat-landing #catTiles{display:none}
 }
 .img-primary{opacity:1;z-index:1}
 .img-secondary{opacity:0;z-index:2}
-.product-card:hover .img-primary.has-secondary{opacity:0}
-.product-card:hover .img-secondary{opacity:1;transform:scale(1.03)}
-.product-card:hover .img-primary:not(.has-secondary){transform:scale(1.04)}
+/* 滑過換第二張照片只給有滑鼠的裝置：手機點過的卡片會一直停在「滑過」的狀態，封面變透明、第二張又還沒載好，卡片會變空白 */
+@media(hover:hover){
+  .product-card:hover .img-primary.has-secondary{opacity:0}
+  .product-card:hover .img-secondary{opacity:1;transform:scale(1.03)}
+  .product-card:hover .img-primary:not(.has-secondary){transform:scale(1.04)}
+}
 .img-count-badge,.img-zoom-hint{
   position:absolute;
   z-index:4;
@@ -735,7 +738,7 @@ body.cat-landing #picks,body.cat-landing #catTiles{display:none}
   opacity:0;
   transition:opacity .2s;
 }
-.product-card:hover .img-zoom-hint{opacity:1}
+@media(hover:hover){.product-card:hover .img-zoom-hint{opacity:1}}
 .placeholder{
   position:absolute;
   inset:0;

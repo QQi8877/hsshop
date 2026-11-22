@@ -11,7 +11,7 @@ await pg.waitForSelector("#tbody tr[data-id]");
 const rows=()=>pg.locator("#tbody tr[data-id]").count();
 ok(await rows()===59,"59 rows");
 const openCount=()=>pg.locator(".modal-overlay.open").count();
-for(const [menu,label,id] of [["settingsDropdown","分類管理","catMgrModal"],["settingsDropdown","標籤管理","tagMgrModal"],["settingsDropdown","聯繫資訊","contactModal"],["settingsDropdown","頁面文字","pageTextModal"],["settingsDropdown","購買須知","buyInfoModal"],["settingsDropdown","首頁版面","layoutModal"],["toolsDropdown","詢價熱度","heatModal"]]){
+for(const [menu,label,id] of [["settingsDropdown","分類管理","catMgrModal"],["settingsDropdown","標籤管理","tagMgrModal"],["settingsDropdown","聯繫資訊","contactModal"],["settingsDropdown","網站文字","pageTextModal"],["settingsDropdown","購買須知","buyInfoModal"],["settingsDropdown","首頁版面","layoutModal"],["toolsDropdown","詢價熱度","heatModal"]]){
   await pg.click(`#${menu} > button`);
   await pg.click(`#${menu} .dropdown-menu button:has-text("${label}")`);
   await pg.waitForTimeout(300);

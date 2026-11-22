@@ -21,7 +21,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{listingTitleHtml,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{listingTitleHtml,textOf,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -181,12 +181,22 @@ function fillTag(html,tag,inner){
   const t=findTag(html,{tag},`<${tag}>`),c=closeOf(html,t,`<${tag}>`);
   return html.slice(0,t.end)+inner+html.slice(c.start);
 }
+// 後台「網站文字」：HTML 上標了 data-page-field="key" 的元素（同一個 key 可以有好幾處，例如導覽列和手機選單）
+// 換成後台填的字，沒填就是預設文字（跟前台 site.js 的 applyPageText 一樣），客人一打開就是對的字、不會閃一下
+function fillPageText(html,pageText){
+  const hits=[...html.matchAll(/<([a-zA-Z][\w-]*)(?=[^>]*\sdata-page-field="([^"]+)")[^>]*>/g)].reverse();
+  for(const m of hits){
+    const t={tag:m[1],start:m.index,end:m.index+m[0].length},c=closeOf(html,t,`data-page-field="${m[2]}"`);
+    html=html.slice(0,t.end)+escapeHTML(textOf(pageText,m[2]))+html.slice(c.start);
+  }
+  return html;
+}
 // <meta> 的 content：key 是 ["name","description"] 或 ["property","og:title"]
 const setMeta=(html,key,content)=>setAttrs(html,{attr:key},{content:escapeHTML(content)},key[1]);
 
 /* ── 首頁：店家資料、聯繫資訊、分類按鈕直接寫好 ───────────────────── */
 function homePage(template,site,listed){
-  let html=template;
+  let html=fillPageText(template,site.pageText);
   html=fillById(html,"structuredData",jsonForScript(storeJsonLd(site.contact,{image:shareImageUrl(site.layout?.heroImage||"")||undefined})));
   html=fillById(html,"contactItems",contactItemsHtml(site.contact));
   html=fillById(html,"contactActions",contactActionsHtml(site.contact));
@@ -200,7 +210,7 @@ function homePage(template,site,listed){
 function categoryPage(home,page,site,listed){
   const url=`${SITE_ORIGIN}${categoryPath(page.id)}`;
   const title=categoryPageTitle(page,site.contact);
-  const intro=categoryIntro(page,site.contact);
+  const intro=categoryIntro(page,site.contact,site.catalog);
   const description=clipText(intro,150);
   const cover=page.products.map(p=>(p.photos||[]).filter(isWebUrl)[0]).find(Boolean)||"";
   const image=shareImageUrl(cover)||`${SITE_ORIGIN}/og-image.jpg`;
@@ -361,7 +371,7 @@ async function main(){
   const [meta,rows]=await Promise.all([loadMeta(),loadActiveProducts()]);
   // 一件商品都沒拿到幾乎一定是讀取出了問題：停下來，不要把現有的商品頁全部刪掉
   if(!rows.length)throw new Error("沒有讀到任何上架中的商品，這次不更新");
-  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{},buyInfo:meta.data.buyInfo||[],layout:meta.data.layout||{}};
+  const site={catalog:meta.data.catalog||[],tagDefs:meta.data.tagDefs||[],contact:meta.data.contact||{},buyInfo:meta.data.buyInfo||[],layout:meta.data.layout||{},pageText:meta.data.pageText||{}};
   const updated=new Map(rows.map(r=>[r.data.id,r.updateTime]));
   const products=rows.map(r=>normalizeProduct({...r.data}));
   const listed=products.filter(p=>isSafeProductId(p.id)&&isListedProduct(p,site.catalog)).sort(catalogOrderCompare(site.catalog));

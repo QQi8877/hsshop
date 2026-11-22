@@ -14,10 +14,10 @@ import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https:
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=4";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=14";
+import{catalogOrderCompare,productPageTitle,productSearchDesc,TEXT_FIELDS,categoryIntro,isListedProduct}from"../shop-render.js?v=15";
 import{escapeHTML}from"./util.js?v=1";
 import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=2";
-import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=6";
+import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=7";
 import{CSV_HEADERS,csvEscapeCell,parseCSV}from"./csv.js?v=1";
 
 const firebaseConfig={
@@ -263,6 +263,37 @@ function renameSubCategory(mainId,subId,value){
   const sub=main?.subs?.find(s=>s.id===subId);
   if(sub)sub.name=value;
 }
+/* 分類介紹：前台分類標題下面那段話。每個主分類、子分類都可以寫自己的；留空＝自動產生
+   （「信通家俱行的椅子共 34 款，像是…」，輸入框裡灰色的字就是自動產生的內容）。存在 catalog 每個分類的 intro。 */
+const catIntroOpen=new Set();
+function autoCategoryIntro(mainId,subId){
+  const main=getMainCat(mainId),sub=subId?main?.subs?.find(s=>s.id===subId):null;
+  // 跟前台同樣的排序，舉例的商品才會跟客人看到的一樣
+  const listed=products.filter(p=>isListedProduct(p,catalog)&&p.mainCat===mainId&&(!subId||p.subCat===subId)).sort(catalogOrderCompare(catalog));
+  if(!main||!listed.length)return "這個分類目前沒有上架的商品，前台不會顯示介紹。";
+  const bare=[{id:main.id,name:main.name,subs:[]}]; // 不帶已寫的介紹，才算得出自動產生的那段
+  return categoryIntro({main:mainId,sub:subId||null,name:(sub||main).name,mainName:main.name,products:listed},contact,bare);
+}
+function catIntroEditor(mainId,subId,target){
+  const key=subId||mainId;
+  const box=document.createElement("div");
+  box.className="catmgr-intro";
+  box.hidden=!catIntroOpen.has(key);
+  box.innerHTML=`<textarea rows="3" placeholder="${escapeHTML(autoCategoryIntro(mainId,subId))}">${escapeHTML(target.intro||"")}</textarea>
+    <div class="pt-hint">分類介紹：客人在這個分類的標題下面看到的話，Google 搜尋結果也會用。留空＝用灰色那段自動產生的。</div>`;
+  box.querySelector("textarea").addEventListener("input",e=>{
+    const v=e.target.value;
+    if(v.trim())target.intro=v.trim();else delete target.intro;
+    btn.classList.toggle("on",!!target.intro);
+  });
+  const btn=document.createElement("button");
+  btn.type="button";
+  btn.className="catmgr-icon-btn"+(target.intro?" on":"");
+  btn.title="分類介紹（標題下面那段話）";
+  btn.textContent="📝";
+  btn.onclick=()=>{box.hidden=!box.hidden;box.hidden?catIntroOpen.delete(key):catIntroOpen.add(key);if(!box.hidden)box.querySelector("textarea").focus()};
+  return {btn,box};
+}
 function toggleMainHidden(mainId){
   const cat=getMainCat(mainId);
   if(cat)cat.hidden=!cat.hidden;
@@ -397,7 +428,10 @@ function renderCatMgrList(){
     nameInput.addEventListener("input",()=>renameMainCategory(cat.id,nameInput.value));
     hideBtn.onclick=()=>toggleMainHidden(cat.id);
     delBtn.onclick=()=>deleteMainCategoryRequest(cat.id);
+    const intro=catIntroEditor(cat.id,null,cat);
+    top.insertBefore(intro.btn,hideBtn);
     row.appendChild(top);
+    row.appendChild(intro.box);
     const subsWrap=document.createElement("div");
     subsWrap.className="catmgr-subs";
     subsWrap.dataset.mainId=cat.id;
@@ -417,7 +451,10 @@ function renderCatMgrList(){
       sName.addEventListener("input",()=>renameSubCategory(cat.id,sub.id,sName.value));
       sHide.onclick=()=>toggleSubHidden(cat.id,sub.id);
       sDel.onclick=()=>deleteSubCategoryRequest(cat.id,sub.id);
+      const sIntro=catIntroEditor(cat.id,sub.id,sub);
+      subRow.insertBefore(sIntro.btn,sHide);
       subsWrap.appendChild(subRow);
+      subsWrap.appendChild(sIntro.box);
     });
     const addSubBtn=document.createElement("button");
     addSubBtn.className="catmgr-add-sub";
@@ -544,29 +581,35 @@ async function saveContactManage(){
 }
 window.saveContactManage=saveContactManage;
 
-/* ── 頁面文字（首頁標語等） ───────────────────────────────────── */
-const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","contactTitle","contactSub"];
-const PAGE_TEXT_INPUT_IDS={
-  heroTag:"ptHeroTag",heroTitle:"ptHeroTitle",heroSub:"ptHeroSub",heroDesc:"ptHeroDesc",heroCta:"ptHeroCta",
-  contactTitle:"ptContactTitle",contactSub:"ptContactSub"
-};
+/* ── 網站文字：前台所有固定的字（標題、按鈕、提示…）──────────────────────
+   要改哪些字、預設是什麼，清單在 shop-render.js 的 TEXT_FIELDS（前台、每小時產生頁面也用同一份），
+   這裡照清單自動排出表單：每一格留空＝用預設文字（灰色的字）。存在網站設定的 pageText。 */
 function openPageTextManage(){
-  PAGE_TEXT_FIELDS.forEach(key=>{
-    document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value=pageText[key]||"";
-  });
+  const wrap=document.getElementById("pageTextFields");
+  let group="";
+  wrap.innerHTML=TEXT_FIELDS.map(f=>{
+    const head=f.group!==group?`<div class="pt-group">${escapeHTML(group=f.group)}</div>`:"";
+    const val=escapeHTML(typeof pageText[f.key]==="string"?pageText[f.key]:"");
+    const ph=escapeHTML(f.def);
+    const input=f.long
+      ?`<textarea data-pt="${f.key}" rows="2" placeholder="${ph}">${val}</textarea>`
+      :`<input type="text" data-pt="${f.key}" placeholder="${ph}" value="${val}">`;
+    return `${head}<label>${escapeHTML(f.label)}</label>${input}${f.hint?`<div class="pt-hint">${escapeHTML(f.hint)}</div>`:""}`;
+  }).join("");
   openModal("pageTextModal");
 }
 window.openPageTextManage=openPageTextManage;
 async function savePageTextManage(){
-  const next={};
-  PAGE_TEXT_FIELDS.forEach(key=>{
-    const value=document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value.trim();
-    if(value)next[key]=value;
+  // 清單以外的舊欄位（以前存過、現在不用的）照樣留著，不會因為存一次就被刪掉
+  const next={...pageText};
+  document.querySelectorAll("#pageTextFields [data-pt]").forEach(el=>{
+    const value=el.value.trim();
+    if(value)next[el.dataset.pt]=value;else delete next[el.dataset.pt];
   });
   pageText=next;
   if(!await saveMeta())return;
   closeModal("pageTextModal");
-  toast("頁面文字已更新 ☁️");
+  toast("網站文字已更新 ☁️");
 }
 window.savePageTextManage=savePageTextManage;
 

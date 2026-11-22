@@ -890,6 +890,11 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .catmgr-sub-row.dragging{opacity:.4}
 .catmgr-sub-row.drag-over{box-shadow:inset 0 2px 0 var(--tan),inset 0 -2px 0 var(--tan)}
 .catmgr-sub-row input[type="text"]{flex:1;padding:6px 9px;font-size:13px;border:1px solid var(--line);border-radius:6px}
+.catmgr-intro{margin:8px 0 2px}
+.catmgr-intro textarea{width:100%;min-height:70px;padding:8px 10px;font-size:13px;line-height:1.6;border:1px solid var(--line);border-radius:6px;background:var(--paper);resize:vertical;cursor:text}
+.pt-group{margin:26px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600;color:var(--ink)}
+.pt-group:first-child{margin-top:6px}
+.pt-hint{margin-top:5px;font-size:11.5px;color:var(--soft);line-height:1.5}
 .catmgr-add-sub{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:6px;padding:6px 10px;font-size:12px;margin-top:4px;align-self:flex-start}
 .btn-secondary,.btn-primary{
   border-radius:7px;

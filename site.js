@@ -6,7 +6,7 @@
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{listingTitleHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=14";
+import{listingTitleHtml,textOf,textHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=15";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -233,19 +233,15 @@ function toast(msg,dur=2200){
 }
 function openModal(id){document.getElementById(id).classList.add("open")}
 function closeModal(id){document.getElementById(id).classList.remove("open")}
+// HTML 上標了 data-page-field 的字換成後台「網站文字」填的（沒填＝預設文字，清單在 shop-render.js 的 TEXT_FIELDS）
 function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
-    const key=el.dataset.pageField;
-    const val=state.pageText?.[key];
-    // val!=null（用寬鬆比較，一次排除 undefined 跟 null）才處理：後台這個欄位
-    // 從來沒設定過時是 undefined，這時候保留 HTML 裡寫死的預設文字；後台如果
-    // 把欄位清空成空字串 ""，這裡要能真的把畫面清空，不能因為 "" 是 falsy
-    // 就被跳過、變成永遠清不掉、卡在舊文字或預設文字。
+    const val=textOf(state.pageText,el.dataset.pageField);
     // 值跟畫面上現有的文字一樣就不要動：textContent= 就算寫入相同的字串，
     // 也會整個文字節點砍掉重建，逼瀏覽器重新畫一次——如果這時候自架字型
     // 剛好已經下載完成，就會從「開頁瞬間的備援字體」變成「Noto 字型」，
     // 造成沒有實際內容變化、卻看起來像字體中途切換的閃爍。
-    if(val!=null&&el.textContent!==val)el.textContent=val;
+    if(el.textContent!==val)el.textContent=val;
   });
 }
 function applyLayoutVisibility(){
@@ -444,7 +440,7 @@ function renderProducts(animate=true){
     const empty=document.createElement("div");
     empty.style.cssText="width:100%;text-align:center;padding:56px 20px;color:var(--soft)";
     empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`
-      :productsLoadFailed?"商品資料暫時載入不了，請稍後重新整理頁面；也可以直接打電話或傳 LINE 詢問。":"此分類尚無商品";
+      :productsLoadFailed?"商品資料暫時載入不了，請稍後重新整理頁面；也可以直接打電話或傳 LINE 詢問。":textOf(state.pageText,"emptyCategory");
     grid.appendChild(empty);
   }
   // 「全部分類」瀏覽（沒有搜尋、也沒選特定分類）才加分區標題：商品本來就已經照
@@ -582,7 +578,7 @@ function renderListingTitle(){
   // 分類的簡介（跟分類頁一開始寫好的同一段，shop-render.js）；「全部」、搜尋中不放
   const intro=document.getElementById("listingIntro");
   const page=searchQuery.trim()?null:currentCategoryPage();
-  const text=page&&page.products.length?categoryIntro(page,state.contact):"";
+  const text=page&&page.products.length?categoryIntro(page,state.contact,state.catalog):"";
   if(intro.textContent!==text)intro.textContent=text;
   intro.hidden=!text;
 }
@@ -773,8 +769,8 @@ function renderCategoryTiles(){
     `;
   }).join("")+`
     <button type="button" class="cat-tile cat-tile--cta reveal" id="catCta" onclick="toggleFavoritesPanel(true)" style="transition-delay:${cats.length*60}ms">
-      <span class="cat-tile__name">喜歡的<br>先按 ♡ 收藏</span>
-      <span class="cta-link">選好再一次問老闆 →</span>
+      <span class="cat-tile__name">${textHtml(state.pageText,"tileFavTitle")}</span>
+      <span class="cta-link">${textHtml(state.pageText,"tileFavCta")}</span>
     </button>
   `;
   grid.querySelectorAll(".cat-tile[data-cat]").forEach(link=>{
@@ -1021,7 +1017,7 @@ function renderFavorites(){
   renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
     footer.style.display="none";
-    list.innerHTML='<div class="favorites-empty">還沒有收藏。<br>逛商品時按 ♡ 把想問的都收進來，<br>選好後在這裡一次用 LINE 傳給老闆。</div>';
+    list.innerHTML=`<div class="favorites-empty">${textHtml(state.pageText,"favEmpty")}</div>`;
     return;
   }
   footer.style.display="block";
@@ -1305,7 +1301,7 @@ function updateLbFavoriteBtn(){
   const ask=document.getElementById("lbAskBtn");
   if(ask){
     ask.classList.toggle("is-added",active);
-    ask.querySelector("span").textContent=active?`已收藏・看收藏清單（共 ${favoriteProductsWithMeta().length} 件）→`:"收藏這件，選好一起問";
+    ask.querySelector("span").textContent=active?textOf(state.pageText,"askBtnDone",{vars:{n:favoriteProductsWithMeta().length}}):textOf(state.pageText,"askBtn");
   }
 }
 function lbAskClick(){
@@ -1322,14 +1318,15 @@ function favSnack(){
   if(!el){
     el=document.createElement("div");
     el.id="favSnack";el.className="fav-snack";el.setAttribute("role","status");
-    el.innerHTML='<span></span><button type="button">看清單</button>';
+    el.innerHTML='<span></span><button type="button"></button>';
     el.querySelector("button").addEventListener("click",()=>{el.classList.remove("show");toggleFavoritesPanel(true)});
     document.body.appendChild(el);
   }
   let first=false;
   try{first=!localStorage.getItem(FAV_TIP_KEY);localStorage.setItem(FAV_TIP_KEY,"1")}catch(e){}
   const count=favoriteProductsWithMeta().length;
-  el.querySelector("span").textContent=first?"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。":`已收藏，清單裡有 ${count} 件。選好後一次問老闆。`;
+  el.querySelector("span").textContent=first?textOf(state.pageText,"favSnackFirst"):textOf(state.pageText,"favSnackMore",{vars:{n:count}});
+  el.querySelector("button").textContent=textOf(state.pageText,"favSnackBtn");
   el.classList.toggle("first",first);
   el.classList.add("show");
   clearTimeout(favSnackTimer);

@@ -15,6 +15,71 @@ export function escapeHTML(str=""){
   return String(str).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
 
+/* ── 網站文字（後台「網站文字」可以改的字）──────────────────────────────────
+   每一項：key＝存在網站設定 pageText 裡的名字、group＝後台分組、label＝後台看到的名稱、def＝預設文字、
+   long＝後台用多行的輸入框、hint＝後台輸入框下面的小提示。後台沒填（空白）就用預設文字。
+   用法：HTML 上整段文字是固定的，元素加 data-page-field="key"（前台 site.js、每小時產生頁面時都會換成後台的字，
+   HTML 裡寫的字要跟 def 一樣，_tools/tests/site-texts.mjs 會檢查）；程式畫出來的字用 textOf()／textHtml() 取。
+   新增一項：這裡加一筆、HTML 或程式改用它，後台表單會自動多一格。分類介紹不在這裡，在「分類管理」每個分類裡。 */
+export const TEXT_FIELDS=[
+  {key:"heroTag",group:"首頁大圖",label:"英文小標",def:"HSIN TONG FURNITURE"},
+  {key:"heroTitle",group:"首頁大圖",label:"大標題",def:"信通家俱行"},
+  {key:"heroSub",group:"首頁大圖",label:"副標",def:"讓家，更有溫度"},
+  {key:"heroDesc",group:"首頁大圖",label:"說明文字",def:"用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。",long:true},
+  {key:"heroCta",group:"首頁大圖",label:"按鈕",def:"探索商品"},
+  {key:"navHome",group:"導覽列（最上面）",label:"首頁",def:"首頁"},
+  {key:"navProducts",group:"導覽列（最上面）",label:"商品",def:"商品"},
+  {key:"navBuy",group:"導覽列（最上面）",label:"購買須知",def:"購買須知"},
+  {key:"navContact",group:"導覽列（最上面）",label:"聯繫",def:"聯繫"},
+  {key:"navFav",group:"導覽列（最上面）",label:"收藏按鈕",def:"收藏"},
+  {key:"picksTitle",group:"首頁",label:"本月選品標題",def:"本月選品"},
+  {key:"tileFavTitle",group:"首頁",label:"分類方塊最後一格（綠色）",def:"喜歡的\n先按 ♡ 收藏",long:true,hint:"換行會照樣換行"},
+  {key:"tileFavCta",group:"首頁",label:"綠色方塊下面那行",def:"選好再一次問老闆 →"},
+  {key:"emptyCategory",group:"商品列表",label:"分類裡沒有商品時",def:"此分類尚無商品"},
+  {key:"lbBack",group:"商品頁",label:"最上面的返回按鈕",def:"回商品列表"},
+  {key:"specTitle",group:"商品頁",label:"「尺寸」標題",def:"尺寸"},
+  {key:"sizeAskTitle",group:"商品頁",label:"沒填尺寸時的標題",def:"尺寸請洽詢"},
+  {key:"sizeAskNote",group:"商品頁",label:"沒填尺寸時的說明",def:"這款的實際尺寸，先按下方的收藏，再從收藏清單用 LINE 問老闆就會告訴你。",long:true},
+  {key:"descTitle",group:"商品頁",label:"「商品說明」標題",def:"商品說明"},
+  {key:"askBtn",group:"商品頁",label:"收藏按鈕（深咖啡色框）",def:"收藏這件，選好一起問"},
+  {key:"askBtnDone",group:"商品頁",label:"收藏按鈕（已收藏時）",def:"已收藏・看收藏清單（共 {n} 件）→",hint:"{n} 會換成收藏的件數"},
+  {key:"askNote",group:"商品頁",label:"收藏按鈕下面的說明",def:"想問的商品先按愛心收藏，選好後到「收藏清單」**一次用 LINE 傳給老闆**，不用一件一件問。",long:true,hint:"用 **兩個星號** 包起來的字會變粗體"},
+  {key:"similarTitle",group:"商品頁",label:"「同類商品」標題",def:"同類商品"},
+  {key:"photoHint",group:"商品頁",label:"照片下面的操作提示（電腦版）",def:"有多張照片時：點下面的小圖、按照片兩側的箭頭或鍵盤左右鍵換照片；滑鼠移到照片上會放大。",long:true},
+  {key:"favSnackFirst",group:"按愛心之後的提示",label:"第一次按愛心",def:"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。",long:true},
+  {key:"favSnackMore",group:"按愛心之後的提示",label:"之後再按愛心",def:"已收藏，清單裡有 {n} 件。選好後一次問老闆。",hint:"{n} 會換成收藏的件數"},
+  {key:"favSnackBtn",group:"按愛心之後的提示",label:"提示旁的按鈕",def:"看清單"},
+  {key:"favTitle",group:"收藏清單",label:"標題",def:"收藏清單"},
+  {key:"favEmpty",group:"收藏清單",label:"還沒收藏時的說明",def:"還沒有收藏。\n逛商品時按 ♡ 把想問的都收進來，\n選好後在這裡一次用 LINE 傳給老闆。",long:true,hint:"換行會照樣換行"},
+  {key:"favSend",group:"收藏清單",label:"送出按鈕",def:"整份用 LINE 詢價"},
+  {key:"favCopy",group:"收藏清單",label:"複製連結按鈕",def:"複製清單連結"},
+  {key:"buyTitle",group:"購買須知",label:"標題",def:"購買須知"},
+  {key:"buyAsk",group:"購買須知",label:"最下面那句",def:"運費、送貨或其他問題，歡迎直接問我們"},
+  {key:"buyAskLink",group:"購買須知",label:"最下面的連結",def:"到「聯絡我們」詢問"},
+  {key:"contactTitle",group:"聯繫我們",label:"標題",def:"聯繫我們"},
+  {key:"contactSub",group:"聯繫我們",label:"英文小標",def:"CONTACT US"},
+  {key:"contactLead",group:"聯繫我們",label:"標題下面那句",def:"歡迎來門市看實品，或直接 LINE 詢問。",long:true},
+  {key:"footerBrand",group:"頁尾",label:"第一行",def:"HSIN TONG FURNITURE｜信通家俱行｜讓家更有溫度"},
+  {key:"footerCopy",group:"頁尾",label:"版權那行",def:"© 2026 信通家俱行"},
+];
+const TEXT_DEFAULTS=Object.fromEntries(TEXT_FIELDS.map(f=>[f.key,f.def]));
+// 店家沒設定 LINE 時，這幾句的預設改成不提 LINE（店家自己改過就照店家的）
+const TEXT_DEFAULTS_NO_LINE={
+  sizeAskNote:"這款的實際尺寸，歡迎聯絡我們詢問。",
+  askNote:"想問的商品先按愛心收藏，選好後到「收藏清單」**一次把清單傳給我們**，不用一件一件問。",
+};
+// 取一段字（純文字）：後台有填就用後台的，沒填用預設；vars 會把 {n} 這類換成值
+export function textOf(pageText,key,{noLine=false,vars={}}={}){
+  const own=pageText?.[key];
+  let t=typeof own==="string"&&own.trim()?own:(noLine&&TEXT_DEFAULTS_NO_LINE[key])||TEXT_DEFAULTS[key]||"";
+  for(const [k,v] of Object.entries(vars))t=t.split(`{${k}}`).join(String(v));
+  return t;
+}
+// 取一段字、直接放進畫面的 HTML：換行變 <br>、**字** 變粗體，其他照字面顯示（不能塞 HTML）
+export function textHtml(pageText,key,opts){
+  return escapeHTML(textOf(pageText,key,opts)).replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>").replace(/\r\n|\r|\n/g,"<br>");
+}
+
 /* ── 商品說明的過濾（白名單）─────────────────────────────────────
    商品說明存的是後台編輯器輸出的 HTML。資料庫本身不會檢查內容，所以顯示前一定要過濾。
    原本是「黑名單」（拿掉 script、on 開頭的屬性…），但 HTML 能改變頁面的寫法太多，例如
@@ -428,8 +493,8 @@ export function productSizeHtml(product,site){
     const fig=figureKey?`<div class="lb-dim-fig">${dimFigureSvg(figureKey,{seat:hasSeatH,dims:figureDims})}</div>`:"";
     body=`<div class="lb-dim${fig?"":" no-fig"}">${fig}<div class="lb-dim-rows">${rows}</div></div>${extraHtml}`;
   }else if(extraHtml)body=extraHtml;
-  else body=`<div class="lb-dim-ask"><strong>尺寸請洽詢</strong><p>${hasLine?"這款的實際尺寸，先按下方的收藏，再從收藏清單用 LINE 問老闆就會告訴你。":"這款的實際尺寸，歡迎聯絡我們詢問。"}</p></div>`;
-  return `<div class="lb-spec-title">尺寸</div>${body}${customNoteHtml(product,site.tagDefs,hasLine)}`;
+  else body=`<div class="lb-dim-ask"><strong>${textHtml(site.pageText,"sizeAskTitle")}</strong><p>${textHtml(site.pageText,"sizeAskNote",{noLine:!hasLine})}</p></div>`;
+  return `<div class="lb-spec-title">${textHtml(site.pageText,"specTitle")}</div>${body}${customNoteHtml(product,site.tagDefs,hasLine)}`;
 }
 
 /* ── 顏色／款式 ─────────────────────────────────────────────────
@@ -452,10 +517,10 @@ export function optionsHtml(product,selected=-1){
    直接用 LINE 的入口只留兩個：收藏清單裡的送出按鈕、頁尾「聯絡我們」。
    商品頁原本的「LINE 詢問這件商品」換成下面這塊：一顆收藏按鈕＋一句話說明之後怎麼問。
    按鈕的字跟「已收藏」的樣子由 site.js 的 updateLbFavoriteBtn 接手更新。 */
-export function askListHtml(hasLine=true){
+export function askListHtml(hasLine=true,pageText){
   return `<div class="lb-ask">
-    <button type="button" class="lb-ask-btn" id="lbAskBtn" onclick="lbAskClick()">${HEART_SVG}<span>收藏這件，選好一起問</span></button>
-    <p class="lb-ask-note">想問的商品先按愛心收藏，選好後到「收藏清單」${hasLine?"<strong>一次用 LINE 傳給老闆</strong>":"<strong>一次把清單傳給我們</strong>"}，不用一件一件問。</p>
+    <button type="button" class="lb-ask-btn" id="lbAskBtn" onclick="lbAskClick()">${HEART_SVG}<span>${textHtml(pageText,"askBtn")}</span></button>
+    <p class="lb-ask-note">${textHtml(pageText,"askNote",{noLine:!hasLine})}</p>
   </div>`;
 }
 const HEART_SVG='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
@@ -477,9 +542,9 @@ export function similarProducts(product,listed,catalog,n=4){
   const main=listed.filter(p=>p.mainCat===product.mainCat&&!(p.subCat&&p.subCat===product.subCat)).sort(cmp);
   return [...rotate(same),...main].filter(p=>p.id!==product.id).slice(0,n);
 }
-export function similarHtml(items,now=new Date()){
+export function similarHtml(items,now=new Date(),pageText){
   if(!items.length)return "";
-  return `<div class="lb-spec-title lb-similar-title">同類商品</div><div class="lb-similar">${items.map(p=>{
+  return `<div class="lb-spec-title lb-similar-title">${textHtml(pageText,"similarTitle")}</div><div class="lb-similar">${items.map(p=>{
     const photo=(p.photos||[]).filter(Boolean)[0];
     const price=priceHtml(p,now);
     return `<a class="lb-sim" href="${productPath(p.id)}" data-similar="${escapeHTML(p.id)}"><span class="lb-sim-img">${photo?`<img src="${escapeHTML(normalizePhotoUrl(photo,300))}" alt="" loading="lazy">`:""}</span><span class="lb-sim-name">${escapeHTML(p.name||"")}</span>${price?`<span class="lb-sim-price">${price}</span>`:""}</a>`;
@@ -508,9 +573,9 @@ export function productInfoHtml(product,site,{option=-1,now=new Date(),similar=[
       ${product.leadTime?`<div class="lb-lead"><span class="lb-lead-k">交期</span><span>${escapeHTML(product.leadTime)}</span></div>`:""}
       ${optionsHtml(product,option)}
       ${productSizeHtml(product,site)}
-      ${desc?`<div class="lb-spec-title lb-desc-title">商品說明</div><div class="lb-product-note">${desc}</div>`:""}
-      ${askListHtml(hasLineOf(site))}
-      ${similarHtml(similar,now)}
+      ${desc?`<div class="lb-spec-title lb-desc-title">${textHtml(site.pageText,"descTitle")}</div><div class="lb-product-note">${desc}</div>`:""}
+      ${askListHtml(hasLineOf(site),site.pageText)}
+      ${similarHtml(similar,now,site.pageText)}
     `;
 }
 
@@ -562,14 +627,18 @@ export function categoryPageTitle(page,contact){
   const where=area?`${area.city.replace(/^臺/,"台").replace(/市$/,"")}${area.district}`:"";
   return `${page.name}${page.sub&&!page.name.includes(page.mainName)?`｜${page.mainName}`:""}｜${where?`${where} `:""}${SITE_NAME}`;
 }
-export function categoryIntro(page,contact){
+// 分類介紹：後台「分類管理」該分類有寫介紹就用它（子分類頁用子分類的），沒寫就自動湊一段
+export function categoryIntro(page,contact,catalog){
+  const main=mainCatOf(catalog,page.main);
+  const own=page.sub?(main?.subs||[]).find(s=>s.id===page.sub)?.intro:main?.intro;
+  if(typeof own==="string"&&own.trim())return own.trim();
   const area=storeArea(contact);
   const names=page.products.slice(0,3).map(p=>String(p.name||"").trim()).filter(Boolean);
   return `${SITE_NAME}的${page.name}共 ${page.products.length} 款${names.length>1?`，像是${names.join("、")}${page.products.length>names.length?"等":""}`:""}。`
     +`點商品可以看照片和尺寸${area?`；${area.city}${area.district}的門市可以看實品`:""}，喜歡的先按愛心收藏，選好再一次用 LINE 詢問。`;
 }
 // 商品列表的大標題：選了子分類時是「主分類 » 子分類」（主分類可以點，回到整個主分類）。
-// 電腦版只顯示子分類（index.html 用 CSS 藏起前兩段），手機版三段都顯示。前台、分類頁共用。
+// 手機、電腦都一樣。前台、分類頁共用。
 export function listingTitleHtml(catalog,main,sub){
   const mainName=escapeHTML(mainNameOf(catalog,main));
   if(!sub)return mainName;

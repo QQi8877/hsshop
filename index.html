@@ -38,7 +38,7 @@
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
 <link rel="modulepreload" href="/site.js?v=3">
-<link rel="modulepreload" href="/shop-render.js?v=14">
+<link rel="modulepreload" href="/shop-render.js?v=15">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
 <!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
@@ -1692,14 +1692,14 @@ button.cat-tile{font:inherit;width:100%}
   </div>
   <div class="nav-end">
     <ul class="nav-links">
-      <li><a href="#hero">首頁</a></li>
-      <li><a href="#categories">商品</a></li>
-      <li class="nav-buy" hidden><a href="#buyInfo">購買須知</a></li>
-      <li><a href="#contact">聯繫</a></li>
+      <li><a href="#hero" data-page-field="navHome">首頁</a></li>
+      <li><a href="#categories" data-page-field="navProducts">商品</a></li>
+      <li class="nav-buy" hidden><a href="#buyInfo" data-page-field="navBuy">購買須知</a></li>
+      <li><a href="#contact" data-page-field="navContact">聯繫</a></li>
     </ul>
     <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="收藏清單">
       <svg viewBox="0 0 24 24" width="15" height="15" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-      <span class="fav-label">收藏</span>
+      <span class="fav-label" data-page-field="navFav">收藏</span>
       <span class="favorites-count" id="favoritesCount">0</span>
     </button>
   </div>
@@ -1708,10 +1708,10 @@ button.cat-tile{font:inherit;width:100%}
   </button>
 </nav>
 <ul class="nav-links-mobile" id="navLinksMobile">
-  <li><a href="#hero" onclick="toggleMobileNav(false)">首頁</a></li>
-  <li><a href="#categories" onclick="toggleMobileNav(false)">商品</a></li>
-  <li class="nav-buy" hidden><a href="#buyInfo" onclick="toggleMobileNav(false)">購買須知</a></li>
-  <li><a href="#contact" onclick="toggleMobileNav(false)">聯繫</a></li>
+  <li><a href="#hero" onclick="toggleMobileNav(false)" data-page-field="navHome">首頁</a></li>
+  <li><a href="#categories" onclick="toggleMobileNav(false)" data-page-field="navProducts">商品</a></li>
+  <li class="nav-buy" hidden><a href="#buyInfo" onclick="toggleMobileNav(false)" data-page-field="navBuy">購買須知</a></li>
+  <li><a href="#contact" onclick="toggleMobileNav(false)" data-page-field="navContact">聯繫</a></li>
 </ul>
 
 
@@ -1736,7 +1736,7 @@ button.cat-tile{font:inherit;width:100%}
 
 <section id="picks" style="padding:34px 40px 0">
   <div class="sec-head reveal">
-    <h2>本月選品</h2>
+    <h2 data-page-field="picksTitle">本月選品</h2>
     <a href="#categories" class="mono">全部<span id="picksTotalCount">0</span>件 →</a>
   </div>
   <div class="pick-grid" id="picksGrid">
@@ -1780,11 +1780,11 @@ button.cat-tile{font:inherit;width:100%}
 
 <section id="buyInfo" hidden>
   <div class="buyinfo-inner">
-    <h2 class="buyinfo-title">購買須知</h2>
+    <h2 class="buyinfo-title" data-page-field="buyTitle">購買須知</h2>
     <div class="buyinfo-list" id="buyInfoList"></div>
     <div class="buyinfo-ask" id="buyInfoAsk" hidden>
-      <span>運費、送貨或其他問題，歡迎直接問我們</span>
-      <a id="buyInfoLine" href="#contact">到「聯絡我們」詢問</a>
+      <span data-page-field="buyAsk">運費、送貨或其他問題，歡迎直接問我們</span>
+      <a id="buyInfoLine" href="#contact" data-page-field="buyAskLink">到「聯絡我們」詢問</a>
     </div>
   </div>
 </section>
@@ -1794,7 +1794,7 @@ button.cat-tile{font:inherit;width:100%}
     <div class="contact-intro">
       <h2 class="contact-heading" data-page-field="contactTitle">聯繫我們</h2>
       <p class="contact-sub" data-page-field="contactSub">CONTACT US</p>
-      <p class="contact-lead">歡迎來門市看實品，或直接 LINE 詢問。</p>
+      <p class="contact-lead" data-page-field="contactLead">歡迎來門市看實品，或直接 LINE 詢問。</p>
       <div class="contact-actions" id="contactActions"><a class="contact-btn contact-btn--primary" href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE 詢問</a><a class="contact-btn" href="tel:0227053858" data-lead="phone"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/></svg>打電話</a><a class="contact-btn" href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener"><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5 3.5 6.5v13L9 17.5l6 2 5.5-2v-13L15 6.5z"/><path d="M9 4.5v13M15 6.5v13"/></svg>地圖導航</a></div>
     </div>
     <dl class="contact-list" id="contactItems"><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11.5a7 7 0 1 1 14 0C19 15.4 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>地址</dt><dd><a href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener">106 台北市大安區文昌街184號</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>營業時間</dt><dd>全年無休，每天 10:00-21:00</dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/></svg>電話</dt><dd><a href="tel:0227053858" data-lead="phone">02-2705-3858</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE</dt><dd><a href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend">@833pzizi</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>信箱</dt><dd><a href="mailto:service@hsintong.cc">service@hsintong.cc</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8.5h2.5V5H14a3.5 3.5 0 0 0-3.5 3.5V11H8v3.5h2.5V21H14v-6.5h2.5L17 11h-3V8.9c0-.2.2-.4.4-.4z"/></svg>Facebook</dt><dd><a href="https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW" target="_blank" rel="noopener">信通家俱行 粉絲專頁</a></dd></div></dl>
@@ -1804,15 +1804,15 @@ button.cat-tile{font:inherit;width:100%}
 </main>
 
 <footer>
-  <div class="footer-brand">HSIN TONG FURNITURE｜信通家俱行｜讓家更有溫度</div>
-  <div>© 2026 信通家俱行</div>
+  <div class="footer-brand" data-page-field="footerBrand">HSIN TONG FURNITURE｜信通家俱行｜讓家更有溫度</div>
+  <div data-page-field="footerCopy">© 2026 信通家俱行</div>
 </footer>
 
 <div class="toast" id="toast"></div>
 <aside class="favorites-panel" id="favoritesPanel">
   <div class="favorites-head">
     <div>
-      <div class="favorites-title">收藏清單</div>
+      <div class="favorites-title" data-page-field="favTitle">收藏清單</div>
       <div class="favorites-subtitle" id="favoritesSubtitle"></div>
     </div>
     <button class="favorites-close" onclick="toggleFavoritesPanel(false)" aria-label="關閉"><svg viewBox="0 0 24 24" width="16" height="16" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>
@@ -1831,9 +1831,9 @@ button.cat-tile{font:inherit;width:100%}
     <div class="favorites-total" id="favoritesTotal"></div>
     <button class="favorites-inquire-btn" id="favoritesInquireBtn" onclick="inquireAllFavorites()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
-      整份用 LINE 詢價
+      <span data-page-field="favSend">整份用 LINE 詢價</span>
     </button>
-    <button class="favorites-copy-btn" onclick="copyFavoritesLink()">複製清單連結</button>
+    <button class="favorites-copy-btn" onclick="copyFavoritesLink()" data-page-field="favCopy">複製清單連結</button>
   </div>
 </aside>
 
@@ -1849,7 +1849,7 @@ button.cat-tile{font:inherit;width:100%}
 
 <div id="lightbox" role="dialog" aria-modal="true" aria-label="商品詳細資訊" aria-hidden="true" tabindex="-1">
   <!-- 整頁式的商品詳情（視覺 2.2）：最上面一條「回商品列表」，左邊照片、右邊資訊；照片的上一張／下一張箭頭跟張數疊在照片上 -->
-  <div class="lb-bar"><button class="lb-close" onclick="closeLightbox()"><span aria-hidden="true">←</span> 回商品列表</button><button class="lb-bar-fav" onclick="toggleFavoritesPanel(true)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>收藏清單 <span class="favorites-count" id="lbBarFavCount">0</span></button></div>
+  <div class="lb-bar"><button class="lb-close" onclick="closeLightbox()"><span aria-hidden="true">←</span> <span data-page-field="lbBack">回商品列表</span></button><button class="lb-bar-fav" onclick="toggleFavoritesPanel(true)"><svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>收藏清單 <span class="favorites-count" id="lbBarFavCount">0</span></button></div>
   <div class="lb-layout">
     <div class="lb-left">
       <div class="lb-stage-wrap">
@@ -1859,7 +1859,7 @@ button.cat-tile{font:inherit;width:100%}
         <div class="lb-counter" id="lbCounter"></div>
       </div>
       <div class="lb-thumbs" id="lbThumbs"></div>
-      <div class="lb-hint">有多張照片時：點下面的小圖、按照片兩側的箭頭或鍵盤左右鍵換照片；滑鼠移到照片上會放大。</div>
+      <div class="lb-hint" data-page-field="photoHint">有多張照片時：點下面的小圖、按照片兩側的箭頭或鍵盤左右鍵換照片；滑鼠移到照片上會放大。</div>
     </div>
     <div class="lb-info" id="lbInfo"></div>
   </div>

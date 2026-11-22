@@ -17,7 +17,7 @@
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="admin/manage.css?v=3">
+<link rel="stylesheet" href="admin/manage.css?v=4">
 </head>
 <body>
 
@@ -45,7 +45,7 @@
           <button onclick="closeHeaderDropdowns();openCategoryManage()">🗂 分類管理</button>
           <button onclick="closeHeaderDropdowns();openTagManage()">🏷 標籤管理</button>
           <button onclick="closeHeaderDropdowns();openContactManage()">📇 聯繫資訊</button>
-          <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 頁面文字</button>
+          <button onclick="closeHeaderDropdowns();openPageTextManage()">📝 網站文字</button>
           <button onclick="closeHeaderDropdowns();openBuyInfoManage()">🛒 購買須知</button>
           <button onclick="closeHeaderDropdowns();openLayoutSettings()">🎨 首頁版面</button>
         </div></div>
@@ -310,7 +310,7 @@
     <button class="modal-close" onclick="closeCategoryManage()">×</button>
     <div class="modal-scroll">
     <div class="modal-title">分類管理</div>
-    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可重新命名、排序（▲▼）、隱藏／顯示（顧客端）、刪除主分類與子分類。</p>
+    <p style="font-size:12px;color:var(--soft);margin:-4px 0 10px">可重新命名、拖曳排序、寫分類介紹（📝）、隱藏／顯示（顧客端）、刪除主分類與子分類。</p>
     <div id="catmgrList" style="display:flex;flex-direction:column;gap:10px;margin:10px 0 16px"></div>
     <button onclick="addMainCategoryInline()" style="border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:8px;padding:10px;font-size:13px;width:100%;text-align:center">＋ 新增主分類</button>
     <div class="modal-actions">
@@ -448,18 +448,12 @@
 </div>
 
 <div class="modal-overlay" id="pageTextModal">
-  <div class="modal" style="max-width:520px">
+  <div class="modal" style="max-width:600px">
     <button class="modal-close" onclick="closeModal('pageTextModal')">×</button>
     <div class="modal-scroll">
-    <div class="modal-title">頁面文字</div>
-    <p class="catmgr-hint">首頁上的標語、標題等文字，留空就會顯示預設文字（灰色小字提示的內容）。</p>
-    <label>首頁英文小標</label><input type="text" id="ptHeroTag" placeholder="HSIN TONG FURNITURE">
-    <label>首頁大標題</label><input type="text" id="ptHeroTitle" placeholder="信通家俱行">
-    <label>首頁副標</label><input type="text" id="ptHeroSub" placeholder="讓家，更有溫度">
-    <label>首頁說明文字</label><input type="text" id="ptHeroDesc" placeholder="用心挑選每一件家具，陪伴您每一個家的日常。溫潤、可靠、實用、美學、安心。">
-    <label>首頁按鈕文字</label><input type="text" id="ptHeroCta" placeholder="探索商品">
-    <label>聯繫區標題</label><input type="text" id="ptContactTitle" placeholder="聯繫我們">
-    <label>聯繫區英文小標</label><input type="text" id="ptContactSub" placeholder="CONTACT US">
+    <div class="modal-title">網站文字</div>
+    <p class="catmgr-hint">前台所有固定的字都在這裡改。每一格留空，就會顯示預設文字（格子裡灰色的字）。分類標題下面的介紹，在「分類管理」每個分類旁的 📝 改。</p>
+    <div id="pageTextFields"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('pageTextModal')">取消</button>
       <button class="btn-primary" onclick="savePageTextManage()">儲存</button>
@@ -591,6 +585,6 @@
   </div>
 </div>
 
-<script type="module" src="admin/manage.js?v=9"></script>
+<script type="module" src="admin/manage.js?v=10"></script>
 </body>
 </html>

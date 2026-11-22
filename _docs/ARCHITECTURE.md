@@ -72,14 +72,20 @@ siteFx 不要去讀主程式的變數或盯它的畫面。
 | `admin/*.js`、`manage.css` | 引用它的那一行（`manage.html` 或 `admin/manage.js`） |
 
 一個檔案的 import 網址變了，它自己的內容也算改了，要再往上加一層（例如 `shop-render.js` 改版號 → `admin/rich-text.js` 內容變了 → `admin/manage.js` 裡 `rich-text.js?v=` 也要加）。
-目前版本：site 3、shop-render 14、dim-figures 4、manage.js 9、rich-text 6、image-tools 2、manage.css 3、csv 1、util 1。
+目前版本：site 3、shop-render 15、dim-figures 4、manage.js 10、rich-text 7、image-tools 2、manage.css 4、csv 1、util 1。
 
-**(5) 每小時更新的觸發**：`.github/workflows/build-pages.yml` 的 `paths`。新增一個「產生頁面會用到」的檔案要加進去。
+**(5) 網站文字（後台「網站文字」）**：給客人看的固定文字都登記在 `shop-render.js` 的 `TEXT_FIELDS`（key、預設文字、後台分組）。
+HTML 裡整段固定的字加 `data-page-field="key"`（字要跟預設文字一樣），前台 `applyPageText` 和 `build-pages.mjs` 的 `fillPageText` 都會換成後台填的字；
+程式畫出來的字用 `textOf(pageText,key)`／`textHtml(...)`。後台表單照 `TEXT_FIELDS` 自動排出來。分類介紹另外存在 catalog 每個分類的 `intro`（後台分類管理的 📝）。
+`_tools/tests/site-texts.mjs` 會檢查 HTML 的字跟預設文字對得上。
+
+**(6) 每小時更新的觸發**：`.github/workflows/build-pages.yml` 的 `paths`。新增一個「產生頁面會用到」的檔案要加進去。
 
 ## 5. 常見修改要動哪裡
 
 | 想改 | 動這裡 | 注意 |
 |---|---|---|
+| 網站上的固定文字（標題、按鈕、提示） | `shop-render.js` 的 `TEXT_FIELDS` 加一筆，HTML 加 `data-page-field` 或程式用 `textOf` | 不要把客人看的字直接寫死在程式裡，老闆要能在後台改 |
 | 顏色、字級、間距 | `index.html <style>`：直接改原本那條規則 | 不要在最後面再加一條蓋掉它 |
 | 手機版排版 | `<style>` 裡 `@media(max-width:760px)` 的區塊 | 手機／電腦的分界是 760／761px |
 | 商品卡片、商品頁右邊那欄、尺寸區、價格格式 | `shop-render.js` | 改完 `p/` 要等每小時更新才會換 |

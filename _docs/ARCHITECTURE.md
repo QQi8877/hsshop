@@ -54,8 +54,8 @@
 
 **(1) 產生頁面靠的 id**：`build-pages.mjs` 只認下面這些 id／屬性，版面可以隨便改，但這些要留著、不能重複：
 `structuredData`、`contactItems`、`contactActions`、`categoriesBar`、`catSidebar`、`listingTitle`、`listingIntro`、
-`subCategoriesBar`、`productsGrid`、`lightbox`、`lbPrev`、`lbNext`、`lbImg`、`lbInfo`、`data-page-field="heroTitle"`，
-以及 `<title>`、`<body>`、`</head>`、`<meta name="description">`、`og:*`、`twitter:*`、`<link rel="canonical">`。
+`subCategoriesBar`、`productsGrid`、`lightbox`、`lbPrev`、`lbNext`、`lbImg`、`lbInfo`、`data-page-field="heroTitle"`、
+`navBuyItem`、`mobileNavBuyItem`、`picksTotalCount`，以及 `<title>`、`<body>`、`</head>`、`<meta name="description">`、`og:*`、`twitter:*`、`<link rel="canonical">`。
 找不到時 `build-pages.mjs` 會直接停下來報錯，不會產生壞頁面。
 
 **(2) HTML 的 onclick**：`site.js` 是 module，函式不會自動變成全域。HTML 上 `onclick="xxx()"` 要能用，

@@ -46,9 +46,9 @@
      - "HS Serif"＝思源宋體（Noto Serif TC）：只有店名、首頁大標、載入中的店名（--font-brand）。
 
      瘦身：完整的繁體中文字型每個字重約 1～1.3MB，但網站實際只用到幾百個字。每小時自動更新商品頁時
-     （_tools/build-pages.mjs）會把網站上可能出現的字列成字單（黑體 fonts/site-chars.txt、明體 fonts/heading-chars.txt），
-     再由 _tools/subset-fonts.py 從完整字型裡只取出這些字，存成 fonts/*-sub.woff2（每個約 110KB）。平常只下載這些小檔案：
-     黑體 400 先 preload（內文到處都是），500／600 用到才下載；明體只 preload 店名用的 600。
+     （_tools/build-pages.mjs）會把網站上可能出現的字列成字單（黑體 fonts/site-chars.txt；明體 fonts/heading-chars.txt，
+     明體只收店名、首頁大標、載入中的店名用到的字），再由 _tools/subset-fonts.py 從完整字型裡只取出這些字，
+     存成 fonts/*-sub.woff2（黑體每個約 110KB，明體只有十幾 KB）。平常只下載這些小檔案。
      - 標點檔（fonts/*-punct.woff2，每個約 10KB）：完整字型是 @fontsource 的「繁體中文常用字」版本，裡面沒有
        全形標點（，（）！？：…）跟幾個符號（→ ● ♡…），這些字原本會變成裝置內建的字、跟旁邊的字不一樣。
        標點檔是從同一套字型的完整版取出這些字做成的，unicode-range 只列這些字，用到才下載；字不會變，不用每小時重做。
@@ -56,29 +56,42 @@
        補那幾個字；黑體為了不讓客人在搜尋框打字時就下載 1MB 的完整字型，先用裝置內建的字顯示（蘋方／微軟正黑體），
        下一次每小時更新就補進小檔案。後台 manage.html 還在用 fonts/ 裡的完整字型，那些檔案不能刪。
 
-     font-display:swap：字型還沒下載完先用裝置內建的字顯示，下載完再換上（中文字每個字一樣寬，換字型時版面幾乎不會動）。
+     第一次打開網頁時，不要「字先小、一下子又變大」（2026-11 老闆反映電腦版會這樣）：
+     - 第一個畫面就會用到的字型檔全部 preload（黑體 400／500／600、黑體 400／600 的標點檔、店名的明體 600），
+       跟網頁同時開始下載，不用等排版時才發現要用。只 preload 首頁、分類頁、商品頁一打開都會用到的檔案，
+       用不到的 preload 是白白下載（瀏覽器也會提出警告）。
+     - font-display:block：字型還沒下載完，字先不顯示（版面照常排好），下載完直接用思源黑體顯示。
+       不用 swap（先用裝置內建的字、下載完再換）：Windows 的微軟正黑體、新細明體字面比思源小，
+       換過去時看起來像整頁的字突然放大。
+     - 網路很慢、1.5 秒內還沒下載完：<head> 最後的字型程式在 <html> 加上 fonts-late，先用裝置內建的黑體顯示，
+       下載完再換回思源黑體（只有很慢的網路才會看到換字，不會讓客人對著沒有字的畫面等）。
+     - 補字用的完整明體（"Noto Serif TC"）維持 swap：只在剛改過首頁大標、每小時更新還沒補字之前用到。
 
      字重限制（很重要，改 CSS 前務必看這裡）：兩套字型都只內嵌 400／500／600 三個字重，這個檔案裡任何文字的
      font-weight 都只能是 400、500 或 600 其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／
      <b>／<strong> 預設是 700）。用到 700 瀏覽器會改用 600，字體粗細跟設計的不一樣。 -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600-sub.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-400-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-600-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-500-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-400-punct.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-600-punct.woff2" crossorigin>
 <style>
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
-@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-serif-tc-600-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-serif-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-serif-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Serif';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-serif-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-sans-tc-400-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-sans-tc-500-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-sans-tc-600-sub.woff2') format('woff2')}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-sans-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-sans-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
-@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-sans-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-sans-tc-400-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-sans-tc-500-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-sans-tc-600-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:block;src:url('/fonts/noto-sans-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:block;src:url('/fonts/noto-sans-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:block;src:url('/fonts/noto-sans-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
 :root{
   /* 信通家俱行設計系統 2.0。下面第一段是 2.0 的色票與尺寸，新寫的樣式請直接用這些名稱。
      第二段是舊的變數名稱，值改指向 2.0，舊樣式不用逐行改就會換成新配色。
@@ -1398,6 +1411,13 @@ footer a:hover{color:var(--color-on-dark)}
   --text-secondary:#4f453a;
   --text-tertiary:#655a4c;
 }
+/* 網路很慢、思源黑體 1.5 秒內還沒下載完：先用裝置內建的黑體顯示，下載完再換回來
+   （<head> 最後的字型程式加上、拿掉 fonts-late；原因見開頭的字型說明）。店名的明體檔案很小，不用換。 */
+:root.fonts-late{
+  --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --font-heading:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+}
 .nav-logo,.hero-title,.loading-breathe-text{font-family:var(--font-brand)}
 .hero-title{font-size:58px;letter-spacing:.04em}
 .hero-sub{font-size:19px;font-weight:600;letter-spacing:.1em}
@@ -1791,26 +1811,33 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
 })();
 </script>
 <script>
-/* 首頁大圖文字進場。等大標跟副標的字型（瘦身版，很小又有 preload）到了才播，播的時候就是正確的
-   字體，不會先顯示內建字體再換；1.5 秒內還沒到就直接顯示、不播，避免文字已經出現又消失重播。
-   寫在這裡（不放 site.js），Firebase 載入失敗也不會讓標題一直藏著。 */
+/* 第一次打開網頁時的字型（原因見 <head> 開頭的字型說明）：
+   1. 思源黑體還沒下載完，字先不顯示（font-display:block）；1.5 秒內還沒下載完（網路很慢），
+      加上 fonts-late 先用裝置內建的黑體顯示，下載完再拿掉、換回思源黑體。
+   2. 首頁大圖文字進場：等字型都到了才播，播的時候就是正確的字體；1.5 秒內還沒到就直接顯示、不播，
+      避免文字已經出現又消失重播。
+   寫在這裡（不放 site.js），Firebase 載入失敗也不會讓字或標題一直藏著。 */
 (function(){
-  var root=document.documentElement;
-  if(!window.matchMedia||matchMedia("(prefers-reduced-motion: reduce)").matches||!document.fonts||!document.fonts.load)return;
-  root.classList.add("hero-pending");
-  var done=false;
-  function reveal(animate){
-    if(done)return;
-    done=true;
+  var root=document.documentElement,fonts=document.fonts;
+  if(!fonts||!fonts.load)return;
+  var motion=!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
+  var sansReady=false,heroShown=!motion;
+  if(motion)root.classList.add("hero-pending");
+  function showHero(animate){
+    if(heroShown)return;
+    heroShown=true;
     root.classList.remove("hero-pending");
     if(!animate)return;
     root.classList.add("hero-enter");
     setTimeout(function(){root.classList.remove("hero-enter")},1600);
   }
-  setTimeout(function(){reveal(false)},1500);
-  // 帶上「，」：副標常有全形逗號，標點檔也要一起等到（只給字型名稱的話只會載入沒有限定字範圍的那個檔）
-  Promise.all(['600 1em "HS Serif"'].map(function(f){return document.fonts.load(f,"信通家俱行，")}))
-    .then(function(){reveal(true)},function(){reveal(false)});
+  // 「信」不在標點檔的字範圍裡，所以只會等主要的小檔案（標點檔另外 preload，很小）
+  function load(list){return Promise.all(list.map(function(f){return fonts.load(f,"信")}))}
+  var sans=load(['400 1em "HS Sans"','500 1em "HS Sans"','600 1em "HS Sans"']);
+  function sansDone(){sansReady=true;root.classList.remove("fonts-late")}
+  sans.then(sansDone,sansDone);
+  setTimeout(function(){if(!sansReady)root.classList.add("fonts-late");showHero(false)},1500);
+  Promise.all([sans,load(['600 1em "HS Serif"'])]).then(function(){showHero(true)},function(){showHero(false)});
 })();
 </script>
 </head>
@@ -1826,7 +1853,7 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
     <ul class="nav-links">
       <li><a href="#hero" data-page-field="navHome">首頁</a></li>
       <li><a href="#categories" data-page-field="navProducts">商品</a></li>
-      <li class="nav-buy" hidden><a href="#buyInfo" data-page-field="navBuy">購買須知</a></li>
+      <li class="nav-buy" id="navBuyItem" hidden><a href="#buyInfo" data-page-field="navBuy">購買須知</a></li>
       <li><a href="#contact" data-page-field="navContact">聯繫</a></li>
     </ul>
     <button class="favorites-fab" onclick="toggleFavoritesPanel()" aria-label="收藏清單">
@@ -1842,7 +1869,7 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
 <ul class="nav-links-mobile" id="navLinksMobile">
   <li><a href="#hero" onclick="toggleMobileNav(false)" data-page-field="navHome">首頁</a></li>
   <li><a href="#categories" onclick="toggleMobileNav(false)" data-page-field="navProducts">商品</a></li>
-  <li class="nav-buy" hidden><a href="#buyInfo" onclick="toggleMobileNav(false)" data-page-field="navBuy">購買須知</a></li>
+  <li class="nav-buy" id="mobileNavBuyItem" hidden><a href="#buyInfo" onclick="toggleMobileNav(false)" data-page-field="navBuy">購買須知</a></li>
   <li><a href="#contact" onclick="toggleMobileNav(false)" data-page-field="navContact">聯繫</a></li>
 </ul>
 

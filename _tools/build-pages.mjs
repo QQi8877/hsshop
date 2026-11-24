@@ -10,8 +10,9 @@
    - llms.txt：給 AI 搜尋（ChatGPT、Perplexity…）看的網站簡介、分類、商品清單。
    - sitemap.xml：告訴 Google 有哪些網址、什麼時候更新過。
    - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 site.js 的「啟動」段落）。
-   - fonts/heading-chars.txt：網站標題可能用到的所有字（版型裡的字＋分類、頁面文字、商品名稱），
-     _tools/subset-fonts.py 照這份字單把標題字型瘦身成只含這些字的小檔案。
+   - fonts/heading-chars.txt：店名、首頁大標用的明體可能用到的字（版型裡的字＋分類、頁面文字、商品名稱）；
+     fonts/site-chars.txt：全站思源黑體可能用到的所有字（再加上商品說明、規格、款式這些商品資料）。
+     _tools/subset-fonts.py 照這兩份字單把字型瘦身成只含這些字的小檔案。
    由 .github/workflows/build-pages.yml 每小時跑一次（index.html 等版型檔案改了也會馬上跑），店家照常在
    後台改商品就好，不用做任何事；網站本身一直是直接讀 Firebase，改了馬上看得到，這裡產生的頁面最晚一小時跟上。
    後台「分類管理」設成隱藏的分類、垃圾桶／封存的商品都不產生頁面，也不放進網站地圖。
@@ -350,10 +351,11 @@ async function writeIfChanged(file,content){
   return true;
 }
 
-/* ── 標題字型要留哪些字 ────────────────────────────────────────
+/* ── 字型要留哪些字 ────────────────────────────────────────
    版型（index.html、shop-render.js、site.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、購買須知、
-   標籤，跟每件商品的名稱。程式註解裡的字不算（只是說明，畫面上不會出現）。多收幾個字沒關係，
-   少收的字前台會自動改用完整字型補上。 */
+   標籤，跟每件商品的名稱（明體的字單）；全站思源黑體的字單再加上每件商品的所有文字（說明、規格、款式、交期…）。
+   程式註解裡的字不算（只是說明，畫面上不會出現）。多收幾個字沒關係；少收的字明體會自動改用完整字型補上，
+   黑體會先用裝置內建的字顯示，下一次每小時更新就補進字單。 */
 const stripComments=src=>src.replace(/<!--[\s\S]*?-->/g,"").replace(/\/\*[\s\S]*?\*\//g,"").replace(/(^|[^:\\"'`])\/\/[^\n]*/g,"$1");
 function headingChars(sources){
   const set=new Set();
@@ -419,9 +421,10 @@ async function main(){
     products:rows.map(r=>r.data).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
   if(await writeIfChanged(path.join(OUT,"data","site.json"),JSON.stringify(sortKeys(siteData))+"\n"))changed++;
   const [shopRender,siteJs]=await Promise.all(["shop-render.js","site.js"].map(f=>readFile(path.join(ROOT,f),"utf8")));
-  const chars=headingChars([stripComments(sourceHome),stripComments(shopRender),stripComments(siteJs),
-    ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]]))),...products.map(p=>p.name)]);
-  if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),chars))changed++;
+  const layoutText=[stripComments(sourceHome),stripComments(shopRender),stripComments(siteJs),
+    ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]])))];
+  if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),headingChars([...layoutText,...products.map(p=>p.name)])))changed++;
+  if(await writeIfChanged(path.join(OUT,"fonts","site-chars.txt"),headingChars([...layoutText,...products.flatMap(allStrings)])))changed++;
   console.log(`上架中 ${rows.length} 件，產生商品頁 ${listed.length} 件；更新 ${changed} 個檔案，移除 ${removed} 個舊頁面`);
 }
 main().catch(e=>{console.error(e.message||e);process.exit(1)});

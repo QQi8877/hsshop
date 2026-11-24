@@ -24,7 +24,7 @@
 <link rel="canonical" href="https://hsintong.cc/p/vn6qvrrr">
 <!-- 給 Google 看的店家資料（地址、電話、營業時間）。直接寫在網頁裡，Google 不用等程式跑完就讀得到；
      內容由每小時的 _tools/build-pages.mjs 照後台「聯繫資訊」重新產生，不用手改 -->
-<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://hsintong.cc/og-image.jpg","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"文昌街184號","addressLocality":"大安區","addressRegion":"台北市","postalCode":"106","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
+<script type="application/ld+json" id="structuredData">{"@context":"https://schema.org","@type":"FurnitureStore","@id":"https://hsintong.cc/#store","name":"信通家俱行","alternateName":"HsinTong Furniture","url":"https://hsintong.cc/","image":"https://res.cloudinary.com/oqcmekau/image/upload/c_pad,w_1200,h_630,b_rgb:fffaf3,f_jpg,q_auto/v1795530712/axvaji2aray3zc4cphwj.png","logo":"https://hsintong.cc/icon-512.png","telephone":"+886-2-2705-3858","email":"service@hsintong.cc","address":{"@type":"PostalAddress","streetAddress":"文昌街184號","addressLocality":"大安區","addressRegion":"台北市","postalCode":"106","addressCountry":"TW"},"geo":{"@type":"GeoCoordinates","latitude":25.032357,"longitude":121.554016},"openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],"opens":"10:00","closes":"21:00"}],"hasMap":"https://maps.app.goo.gl/YVk7GoeiY2WKJWA86","sameAs":["https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW","https://lin.ee/YiaZm7f"]}</script>
 <!-- 網站小圖示：Google 搜尋結果左邊的小圖示要真的檔案（48 的倍數），不能是寫在網頁裡的圖 -->
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -40,38 +40,29 @@
 <link rel="modulepreload" href="/site.js?v=4">
 <link rel="modulepreload" href="/shop-render.js?v=16">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
-<!-- 字型：標題用的 Noto Serif TC 自行內嵌（fonts/ 資料夾，來源 @fontsource/noto-serif-tc），
+<!-- 字型（2026-11 老闆選的 A：全站思源黑體）：全部自行內嵌在 fonts/ 資料夾（來源 @fontsource，開放字型授權 OFL，可以免費商用），
      不透過 Google Fonts CDN（Google 會把中文字拆成上百個小檔案分批載入，CSS 清單就有 233KB）。
-     內文（--font-body／--font-mono）用各裝置內建的中文字型：蘋果是蘋方 PingFang TC、Windows
-     是微軟正黑體、Android 是 Noto Sans CJK，不用下載。
+     - "HS Sans"＝思源黑體（Noto Sans TC）：全站的字（--font-body／--font-heading／--font-mono），每台裝置看起來都一樣。
+     - "HS Serif"＝思源宋體（Noto Serif TC）：只有店名、首頁大標、載入中的店名（--font-brand）。
 
-     標題字型瘦身：完整的繁體中文字型每個字重約 1.3MB（三個字重將近 4MB），但網站標題、商品名稱、
-     分類名稱實際只用到幾百個字。每小時自動更新商品頁時（_tools/build-pages.mjs），會把網站上所有
-     標題可能出現的字列成 fonts/heading-chars.txt，再由 _tools/subset-fonts.py 從完整字型裡只取出
-     這些字，存成 fonts/noto-serif-tc-*-sub.woff2（每個約 90KB）。
-     - "HS Serif"：瘦身後的小檔案，平常只下載這個（400／600 先 preload，500 用到才下載）。
-     - "HS Serif" 的標點檔（fonts/noto-serif-tc-*-punct.woff2，每個約 11KB）：上面的完整字型是 @fontsource
-       的「繁體中文常用字」版本，裡面沒有全形標點（，（）！？：…）跟幾個符號，標題裡的這些字原本會變成
-       裝置內建的黑體、跟旁邊的字不一樣。這三個小檔是從同一套字型的完整版取出這些標點做成的，
-       unicode-range 只列這些字，標題裡出現這些標點時才下載。這份不用每小時重做，字不會變。
-     - "Noto Serif TC"：完整字型，排在 "HS Serif" 後面當備援。後台剛新增的商品名稱用到小檔案裡沒有
-       的字時，瀏覽器才會自動下載完整字型補那幾個字；下一次每小時更新就會把新字補進小檔案。
-       平常所有字小檔案都有，完整字型完全不會下載。完整字型的 unicode-range 只列中文字（漢字）：
-       全形標點（，（）等）兩個檔案本來就都沒有，會直接用裝置內建的字，不要為了它們白白下載完整字型。
+     瘦身：完整的繁體中文字型每個字重約 1～1.3MB，但網站實際只用到幾百個字。每小時自動更新商品頁時
+     （_tools/build-pages.mjs）會把網站上可能出現的字列成字單（黑體 fonts/site-chars.txt、明體 fonts/heading-chars.txt），
+     再由 _tools/subset-fonts.py 從完整字型裡只取出這些字，存成 fonts/*-sub.woff2（每個約 110KB）。平常只下載這些小檔案：
+     黑體 400 先 preload（內文到處都是），500／600 用到才下載；明體只 preload 店名用的 600。
+     - 標點檔（fonts/*-punct.woff2，每個約 10KB）：完整字型是 @fontsource 的「繁體中文常用字」版本，裡面沒有
+       全形標點（，（）！？：…）跟幾個符號（→ ● ♡…），這些字原本會變成裝置內建的字、跟旁邊的字不一樣。
+       標點檔是從同一套字型的完整版取出這些字做成的，unicode-range 只列這些字，用到才下載；字不會變，不用每小時重做。
+     - 後台剛新增的商品用到小檔案裡沒有的字：明體會自動下載完整字型（"Noto Serif TC"，只列漢字的 unicode-range）
+       補那幾個字；黑體為了不讓客人在搜尋框打字時就下載 1MB 的完整字型，先用裝置內建的字顯示（蘋方／微軟正黑體），
+       下一次每小時更新就補進小檔案。後台 manage.html 還在用 fonts/ 裡的完整字型，那些檔案不能刪。
 
-     font-display:swap：字型還沒下載完先用裝置內建的字顯示，下載完再換上（中文字每個字一樣寬，
-     換字型時版面幾乎不會動）。檔案很小、又有 preload，大多在畫面出來前就已經到了。
+     font-display:swap：字型還沒下載完先用裝置內建的字顯示，下載完再換上（中文字每個字一樣寬，換字型時版面幾乎不會動）。
 
-     字重限制（很重要，改 CSS 前務必看這裡）：Noto Serif TC 只內嵌 400/500/600 三個字重，
-     這個檔案裡任何用到 var(--font-heading) 的地方，font-weight 都只能是 400、500 或 600
-     其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／<b>／<strong>
-     預設是 700）。用到 700 瀏覽器找不到對應的檔案，會改用最接近的字重或自己加粗，字體看起來不一樣。
-     內文用的是裝置內建字型，沒有這個限制。
-     後台 manage.html 仍然使用 fonts/ 裡的完整字型（Noto Serif TC、Noto Sans TC），那些檔案不能刪。
-
-     2026-11 視覺 2.1：標題（--font-heading）改用裝置內建的黑體，上面這套明體只剩店名、首頁大標、
-     載入中的店名在用（--font-brand，都是 600），所以只 preload 600 那個檔案。見 <style> 最後「視覺 2.1」。 -->
+     字重限制（很重要，改 CSS 前務必看這裡）：兩套字型都只內嵌 400／500／600 三個字重，這個檔案裡任何文字的
+     font-weight 都只能是 400、500 或 600 其中之一（包括沒寫 font-weight、靠瀏覽器預設值的情況，例如 <h1>~<h6>／
+     <b>／<strong> 預設是 700）。用到 700 瀏覽器會改用 600，字體粗細跟設計的不一樣。 -->
 <link rel="preload" as="font" type="font/woff2" href="/fonts/noto-serif-tc-600-sub.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/noto-sans-tc-400-sub.woff2" crossorigin>
 <style>
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400-sub.woff2') format('woff2')}
 @font-face{font-family:'HS Serif';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500-sub.woff2') format('woff2')}
@@ -82,6 +73,12 @@
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-serif-tc-400.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-serif-tc-500.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
 @font-face{font-family:'Noto Serif TC';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-serif-tc-600.woff2') format('woff2');unicode-range:U+3400-4DBF,U+4E00-9FFF,U+F900-FAFF,U+20000-2FA1F}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-sans-tc-400-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-sans-tc-500-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-sans-tc-600-sub.woff2') format('woff2')}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/noto-sans-tc-400-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/noto-sans-tc-500-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
+@font-face{font-family:'HS Sans';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/noto-sans-tc-600-punct.woff2') format('woff2');unicode-range:U+2027,U+203B,U+2103,U+2190,U+2192,U+25AA,U+25B2-25B3,U+25BC,U+25C6,U+25CB,U+25CF,U+2605-2606,U+2661,U+3004,U+3006-3007,U+301C,U+3020,U+3022-3025,U+3030,U+303D,U+30FB,U+FF01-FF5E}
 :root{
   /* 信通家俱行設計系統 2.0。下面第一段是 2.0 的色票與尺寸，新寫的樣式請直接用這些名稱。
      第二段是舊的變數名稱，值改指向 2.0，舊樣式不用逐行改就會換成新配色。
@@ -158,8 +155,8 @@
      內文字型 → 一般 400、強調 600，不用 500：Windows 的微軟正黑體只有一般跟粗體兩種，
      500 在 Windows 上會變成一般字，跟蘋果裝置看起來不一樣。 */
   --font-heading:"HS Serif","Noto Serif TC",serif;
-  --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
-  --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --font-body:"HS Sans","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --font-mono:"HS Sans","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -1390,14 +1387,14 @@ footer a:hover{color:var(--color-on-dark)}
 }
 
 /* ══ 視覺 2.1（2026-11）：蓋在上面所有規則之後的調整 ═══════════════════
-   1. 標題（--font-heading）改用各裝置內建的黑體（蘋方／微軟正黑體／思源黑體），不再用筆畫細的明體；
+   1. 標題（--font-heading）改用黑體（2026-11 起是內嵌的思源黑體 "HS Sans"，見開頭的字型說明），不再用筆畫細的明體；
       只有店名、首頁大標、載入中的店名保留明體（--font-brand，用的還是 fonts/ 裡瘦身過的 HS Serif）
    2. 小字放大加深；商品名稱中等粗細（500），左邊商品目錄跟分類按鈕粗體（600）
    3. 互動（JS 在檔案最後的 siteFx）：捲動進度條、首頁大圖跟著滑鼠微動、
       卡片滑過出現「看看這件」、回到頂端、手機底部的「已收藏 N 件」長條 */
 :root{
   --font-brand:"HS Serif","Noto Serif TC",serif;
-  --font-heading:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC","Noto Sans TC",system-ui,sans-serif;
+  --font-heading:"HS Sans","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
   --text-secondary:#4f453a;
   --text-tertiary:#655a4c;
 }
@@ -1490,7 +1487,7 @@ body.lightbox-open .fx-line,body.lightbox-open .fx-top{display:none!important}
 /* 商品詳情：說明文字放大、加粗、用最深的字色（原本 14px、一般粗細、灰棕色，看起來太淡）。
    500 在蘋果、Android 是中等粗細；Windows 的微軟正黑體沒有 500，會顯示一般粗細，所以顏色也一起加深 */
 .lb-product-note{font-size:15.5px;font-weight:500;color:var(--ink);line-height:1.8}
-.lb-product-note b,.lb-product-note strong{font-weight:700}
+.lb-product-note b,.lb-product-note strong{font-weight:600}
 .lb-spec-title{font-size:13.5px;font-weight:600}
 .lb-dim-k{font-size:13.5px;font-weight:500;color:var(--text-secondary)}
 .lb-dim-extra,.lb-dim-note{font-size:14px;font-weight:500}

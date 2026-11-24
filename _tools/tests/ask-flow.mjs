@@ -1,4 +1,4 @@
-import {launch,setup,ORIGIN,checker,SHOTS} from "./lib.mjs";
+import {launch,setup,ORIGIN,checker,SHOTS,openCard} from "./lib.mjs";
 const ok=checker();
 const b=await launch();const errs=[];
 for(const [name,vp] of [["desk",{width:1366,height:820}],["mob",{width:390,height:844}]]){
@@ -15,7 +15,7 @@ for(const [name,vp] of [["desk",{width:1366,height:820}],["mob",{width:390,heigh
   await pg.evaluate(()=>document.getElementById("catCta").scrollIntoView({block:"center"}));await pg.waitForTimeout(500);
   await pg.locator("#catTiles").screenshot({path:`${SHOTS}/ask-${name}-tiles.png`});
   // 商品頁
-  await pg.locator("#productsGrid .product-card").first().click();await pg.waitForTimeout(1500);
+  await openCard(pg,pg.locator("#productsGrid .product-card").first());
   ok(await pg.locator(".lb-inquire-btn").count()===0,name+" no LINE button in product page");
   ok((await pg.locator("#lbAskBtn").textContent()).includes("收藏這件"),name+" ask button initial");
   await pg.evaluate(()=>document.querySelector(".lb-ask").scrollIntoView({block:"center"}));await pg.waitForTimeout(300);

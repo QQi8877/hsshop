@@ -24,7 +24,8 @@ ok(!bad.length,"every marked text is the default or the shop's own text "+bad.jo
 // 店家改過的字（假資料庫）
 const custom={navHome:"回首頁",picksTitle:"這個月推薦",lbBack:"返回列表",askBtn:"想要這件",askBtnDone:"清單裡有 {n} 件，去看看",
   askNote:"先**收藏**再一起問",favEmpty:"清單空空的\n快去逛逛",favSend:"用 LINE 問價",contactLead:"歡迎光臨門市",
-  tileFavCta:"一次問老闆",favSnackFirst:"收好了！",descTitle:"關於這件",footerCopy:"© 信通",contactLead:"歡迎光臨\n門市在文昌街"};
+  tileFavCta:"一次問老闆",favSnackFirst:"收好了！",descTitle:"關於這件",footerCopy:"© 信通",contactLead:"歡迎光臨\n門市在文昌街",
+  qvOpen:"看這件的全部",recentTitle:"剛剛看的"};
 const CHAIR_INTRO="椅子介紹：各式餐椅、藤椅都有現貨。";
 const SUB_INTRO="藤椅介紹：手工編織，透氣耐坐。";
 const patchMeta=meta=>{
@@ -61,8 +62,10 @@ const b=await launch();const errs=[];
   ok((await pg.innerHTML(".favorites-empty")).replace(/\s/g,"")==="清單空空的<br>快去逛逛","empty favorites text keeps line breaks");
   ok((await pg.textContent('[data-page-field="favSend"]'))==="用 LINE 問價","favorites send button");
   await pg.evaluate(()=>toggleFavoritesPanel(false));await pg.waitForTimeout(300);
-  // 商品頁
-  await pg.locator("#productsGrid .product-card").first().click();await pg.waitForTimeout(900);
+  // 手機點商品先跳快速預覽：按鈕的字也是後台的字；按了進商品頁
+  await pg.locator("#productsGrid .product-card").first().click();await pg.waitForTimeout(600);
+  ok((await pg.textContent(".sheet.open .qv-open")).startsWith("看這件的全部"),"quick view button text from admin");
+  await pg.click(".sheet.open .qv-open");await pg.waitForTimeout(900);
   const lb=await pg.evaluate(()=>({btn:document.querySelector("#lbAskBtn span").textContent,note:document.querySelector(".lb-ask-note").innerHTML,
     back:document.querySelector(".lb-close").textContent,desc:document.querySelector(".lb-desc-title")?.textContent}));
   ok(lb.btn==="想要這件","ask button text");
@@ -72,6 +75,8 @@ const b=await launch();const errs=[];
   await pg.click("#lbAskBtn");await pg.waitForTimeout(500);
   ok((await pg.textContent("#lbAskBtn span"))==="清單裡有 1 件，去看看","added state uses {n}");
   ok((await pg.textContent("#favSnack span"))==="收好了！","first favorite tip");
+  await pg.click(".lb-close");await pg.waitForTimeout(700);
+  ok((await pg.textContent("#recentStrip .recent-title"))==="剛剛看的","recently viewed title from admin");
   await ctx.close();
 }
 // 網站設定讀不到時：頁面上已經寫好的字（每小時更新寫進去的老闆文字）不能被換回預設

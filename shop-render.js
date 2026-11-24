@@ -37,6 +37,23 @@ export const TEXT_FIELDS=[
   {key:"tileFavTitle",group:"首頁",label:"分類方塊最後一格（綠色）",def:"喜歡的\n先按 ♡ 收藏",long:true,hint:"換行會照樣換行"},
   {key:"tileFavCta",group:"首頁",label:"綠色方塊下面那行",def:"選好再一次問老闆 →"},
   {key:"emptyCategory",group:"商品列表",label:"分類裡沒有商品時",def:"此分類尚無商品"},
+  {key:"introMore",group:"商品列表",label:"分類介紹「展開」",def:"更多"},
+  {key:"introLess",group:"商品列表",label:"分類介紹「收起」",def:"收起"},
+  {key:"recentTitle",group:"商品列表",label:"「最近看過」標題",def:"最近看過"},
+  {key:"filterBtn",group:"商品列表",label:"「篩選」按鈕和標題",def:"篩選"},
+  {key:"filterTags",group:"商品列表",label:"篩選：特色那一組",def:"特色（符合任一個）"},
+  {key:"filterSort",group:"商品列表",label:"篩選：排序那一組",def:"排序"},
+  {key:"sortDefault",group:"商品列表",label:"排序：預設",def:"店長推薦順序"},
+  {key:"sortNew",group:"商品列表",label:"排序：最近更新",def:"最近更新"},
+  {key:"sortSmall",group:"商品列表",label:"排序：由小到大",def:"由小到大"},
+  {key:"filterClear",group:"商品列表",label:"篩選：清除按鈕",def:"清除"},
+  {key:"filterApply",group:"商品列表",label:"篩選：看結果按鈕（手機）",def:"看 {n} 件商品",hint:"{n} 會換成符合的件數"},
+  {key:"filterEmpty",group:"商品列表",label:"篩選後沒有商品時",def:"沒有符合的商品，換個條件試試看"},
+  {key:"qvOpen",group:"快速預覽（手機點商品先跳出來的那塊）",label:"看完整商品頁的按鈕",def:"看完整介紹"},
+  {key:"qvFav",group:"快速預覽（手機點商品先跳出來的那塊）",label:"收藏按鈕",def:"收藏"},
+  {key:"qvFavDone",group:"快速預覽（手機點商品先跳出來的那塊）",label:"收藏按鈕（已收藏時）",def:"已收藏"},
+  {key:"qvPhotos",group:"快速預覽（手機點商品先跳出來的那塊）",label:"照片張數",def:"共 {n} 張照片",hint:"{n} 會換成照片張數"},
+  {key:"qvSimilar",group:"快速預覽（手機點商品先跳出來的那塊）",label:"同類推薦標題",def:"同類還有這些"},
   {key:"lbBack",group:"商品頁",label:"最上面的返回按鈕",def:"回商品列表"},
   {key:"specTitle",group:"商品頁",label:"「尺寸」標題",def:"尺寸"},
   {key:"sizeAskTitle",group:"商品頁",label:"沒填尺寸時的標題",def:"尺寸請洽詢"},
@@ -46,6 +63,8 @@ export const TEXT_FIELDS=[
   {key:"askBtnDone",group:"商品頁",label:"收藏按鈕（已收藏時）",def:"已收藏・看收藏清單（共 {n} 件）→",hint:"{n} 會換成收藏的件數"},
   {key:"askNote",group:"商品頁",label:"收藏按鈕下面的說明",def:"想問的商品先按愛心收藏，選好後到「收藏清單」**一次用 LINE 傳給老闆**，不用一件一件問。",long:true,hint:"用 **兩個星號** 包起來的字會變粗體"},
   {key:"similarTitle",group:"商品頁",label:"「同類商品」標題",def:"同類商品"},
+  {key:"dockAsk",group:"商品頁",label:"手機底部收藏列的按鈕",def:"收藏這件"},
+  {key:"dockAskDone",group:"商品頁",label:"手機底部收藏列的按鈕（已收藏時）",def:"已收藏・看清單"},
   {key:"favSnackFirst",group:"按愛心之後的提示",label:"第一次按愛心",def:"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。",long:true},
   {key:"favSnackMore",group:"按愛心之後的提示",label:"之後再按愛心",def:"已收藏，清單裡有 {n} 件。選好後一次問老闆。",hint:"{n} 會換成收藏的件數"},
   {key:"favSnackBtn",group:"按愛心之後的提示",label:"提示旁的按鈕",def:"看清單"},
@@ -225,6 +244,15 @@ export function productDescText(product){
   return decodeEntities(html.replace(/<br>|<\/(?:p|div|li|h[3-6]|blockquote)>/g,"\n").replace(/<[^>]*>/g,"")).replace(/[ \t ]+/g," ").replace(/\s*\n\s*/g,"\n").trim();
 }
 
+// 商品說明的第一段（純文字，手機快速預覽用）：到第一個空行、清單或「• 」開頭的條列為止；
+// 段落裡的換行接成一句（行尾沒有標點的補逗號），太長就截斷加「…」
+export function productLead(product,max=120){
+  const html=productDescHtml(product);
+  const first=html.split(/<br>\s*<br>|<\/(?:p|div|h[3-6]|blockquote)>|<(?:ul|ol|li|hr|h[3-6]|blockquote)\b|<br>\s*[•・●▪‧\-–*]\s?/i)[0];
+  const text=decodeEntities(first.replace(/<br>/g,"\n").replace(/<[^>]*>/g,"")).replace(/[ \t ]+/g," ");
+  return clipText(flattenLines(text).replace(/[，、]$/,""),max);
+}
+
 /* ── Google 搜尋結果顯示的標題、說明 ─────────────────────────────
    每小時產生商品頁（_tools/build-pages.mjs）時用，後台商品視窗的「Google 搜尋預覽」也用同一份，
    後台看到的就是 Google 會拿到的。 */
@@ -390,6 +418,15 @@ export function getSizeSummary(product){
   // "x" 後面、變成下一行開頭孤零零一個 x，讀起來卡卡的。
   return parts.join(" x ").replace(/ cm(?= x )/g,"");
 }
+// 商品卡片上的短尺寸（2026-11 A 版）：寬深高都有、而且都是數字時寫成「56×46×104 cm」（跟 IKEA 一樣照寬×深×高），
+// 一行就放得下；少了其中一個或寫了文字（例如「約 60」）就照舊寫「寬 56 x 高 104 cm」，免得看不出哪個是哪個。
+// 收藏清單、LINE 詢問訊息、商品頁還是用上面完整的寫法。
+export function getSizeShort(product){
+  const d=product.dimensions||{};
+  const v=[d.width,d.depth,d.height].map(x=>String(x??"").trim());
+  if(v.every(x=>/^\d+(?:\.\d+)?$/.test(x)))return `${v.join("×")} cm`;
+  return getSizeSummary(product);
+}
 // 特價：有填特價、而且沒設結束日或還沒過期（結束日當天整天都算）才生效，過期自動恢復原價
 export function activeSalePrice(product,now=new Date()){
   const sale=String(product.salePrice||"").trim();
@@ -551,10 +588,13 @@ export function similarHtml(items,now=new Date(),pageText){
   }).join("")}</div>`;
 }
 
-// 商品的標籤（可客製化、台製…）只在商品頁顯示，商品列表的卡片上不放；順序照後台「標籤管理」
-function lbBadgesHtml(product,site){
+// 商品的標籤（可客製化、台製…）在商品頁、手機快速預覽顯示，商品列表的卡片上不放；順序照後台「標籤管理」
+export function productBadgesHtml(product,tagDefs){
   const badges=product.badges||[];
-  const html=tagDefsOf(site.tagDefs).filter(d=>badges.includes(d.key)).map(tagBadgeHtml).join("");
+  return tagDefsOf(tagDefs).filter(d=>badges.includes(d.key)).map(tagBadgeHtml).join("");
+}
+function lbBadgesHtml(product,site){
+  const html=productBadgesHtml(product,site.tagDefs);
   return html?`<div class="lb-badges">${html}</div>`:"";
 }
 // similar：同類商品（similarProducts 算好的）
@@ -677,14 +717,17 @@ export function categoryNavHtml(catalog,listed,activeMain="全部",activeSub=nul
 // 分類頁一開始就畫好的商品格（沒跑程式的時候看得到、Google 也找得到每件商品的連結）。
 // 前台程式載入後會用自己的版本（愛心、第二張照片…）整個換掉，所以這裡只要長得一樣就好。
 const STATIC_GRID_WIDTHS=[200,280,400,500,600,800];
+// 商品格照片實際顯示多寬（給瀏覽器挑哪一張尺寸的照片）：跟 index.html「視覺 3.0」商品格的欄數一起改。
+// 手機：左邊分類欄 104px＋兩欄；電腦：左邊分類 165px＋外距，760～1099 三欄、～1499 四欄、～1899 五欄、再寬六欄
+export const GRID_IMG_SIZES="(max-width:760px) calc(50vw - 66px), (max-width:1099px) calc(33vw - 93px), (max-width:1499px) calc(25vw - 75px), (max-width:1899px) calc(20vw - 64px), calc(16.6vw - 56px)";
 export function staticProductCardHtml(product,catalog,now=new Date()){
   const photo=(product.photos||[]).filter(Boolean)[0];
   const isWeb=/^https?:\/\//i.test(photo||"");
   const srcset=isWeb?STATIC_GRID_WIDTHS.map(w=>`${normalizePhotoUrl(photo,w)} ${w}w`).join(", "):"";
   const price=priceHtml(product,now);
-  return `<article class="product-card"><div class="product-img-wrap">${photo?`<img class="img-primary" loading="lazy" decoding="async" src="${escapeHTML(normalizePhotoUrl(photo,600))}"${srcset?` srcset="${escapeHTML(srcset)}" sizes="(max-width:760px) 46vw, 16vw"`:""} alt="${escapeHTML(photoAlt(product,catalog))}">`:""}</div>`
+  return `<article class="product-card"><div class="product-img-wrap">${photo?`<img class="img-primary" loading="lazy" decoding="async" src="${escapeHTML(normalizePhotoUrl(photo,600))}"${srcset?` srcset="${escapeHTML(srcset)}" sizes="${GRID_IMG_SIZES}"`:""} alt="${escapeHTML(photoAlt(product,catalog))}">`:""}</div>`
     +`<div class="product-info"><div class="product-name"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name||"")}</a></div>`
-    +`<div class="product-meta-row"><span class="product-size">${escapeHTML(getSizeSummary(product))}</span></div>${price?`<span class="product-price">${price}</span>`:""}</div></article>`;
+    +`<div class="product-meta-row"><span class="product-size">${escapeHTML(getSizeShort(product))}</span></div>${price?`<span class="product-price">${price}</span>`:""}</div></article>`;
 }
 
 /* ── 聯繫資訊、給 Google 看的店家資料 ─────────────────────────────── */

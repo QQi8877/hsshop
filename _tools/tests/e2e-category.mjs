@@ -45,10 +45,12 @@ async function page(vp={width:1400,height:900},opts={}){
   ok(await pg.locator("#productsGrid .product-card").count()>=20,"chair grid rendered");
   await pg.click('#catSidebar a.cat-sub-btn >> nth=0');await pg.waitForTimeout(300);
   ok(/^\/c\/sub-/.test(new URL(pg.url()).pathname),"sub url "+pg.url());
-  await pg.click('#appliedChips .chip-applied >> nth=1');await pg.waitForTimeout(300);
-  ok(new URL(pg.url()).pathname==="/c/cat-chair","chip clear sub → main url");
-  await pg.click('#clearAllChips');await pg.waitForTimeout(300);
-  ok(new URL(pg.url()).pathname==="/"&&await pg.title()===HOME_TITLE,"clear all → home url/title");
+  // 「椅子 ×」這種已選分類的小膠囊拿掉了（跟左邊分類清單重複），回上一層、回全部都用左邊清單
+  ok(await pg.locator("#appliedChips").count()===0,"no duplicate category chips");
+  await pg.click('#catSidebar a.cat-side-btn[data-main="cat-chair"]');await pg.waitForTimeout(300);
+  ok(new URL(pg.url()).pathname==="/c/cat-chair","main category link: sub → main url");
+  await pg.click('#catSidebar a.cat-side-btn[data-main="全部"]');await pg.waitForTimeout(300);
+  ok(new URL(pg.url()).pathname==="/"&&await pg.title()===HOME_TITLE,"全部 → home url/title");
   ok(await pg.isHidden("#listingIntro"),"intro hidden on 全部");
   // product name link: plain click opens lightbox in place
   await pg.click("#productsGrid .product-card .product-name a >> nth=0");await pg.waitForTimeout(600);

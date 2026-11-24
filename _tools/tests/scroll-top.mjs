@@ -1,7 +1,7 @@
 // 回到頂端的兩種情況（手機、電腦都要）：
 // 1. 商品頁捲到中間 → 回商品列表 → 開別件商品：商品頁要從最上面開始看
 // 2. 商品列表往下逛到一半 → 點左邊分類：畫面回到這個分類的標題
-import {launch,setup,ORIGIN,ROOT,checker} from "./lib.mjs";
+import {launch,setup,ORIGIN,ROOT,checker,openCard} from "./lib.mjs";
 import {readFileSync} from "node:fs";
 import path from "node:path";
 const ok=checker();
@@ -12,12 +12,12 @@ for(const [name,w,h] of [["mob",390,844],["desk",1366,900]]){
   await pg.goto(ORIGIN+"/c/cat-chair");await pg.waitForTimeout(2500);
   await pg.addStyleTag({content:"html{scroll-behavior:auto!important}"});
   const cards=pg.locator("#productsGrid .product-card");
-  await cards.nth(0).click();await pg.waitForTimeout(900);
+  await openCard(pg,cards.nth(0),900);
   // 不管是哪一層在捲（整個商品頁、右邊資訊欄），都捲到中間
   const scrolled=await pg.evaluate(()=>{const els=[document.getElementById("lightbox"),document.getElementById("lbInfo"),document.scrollingElement];els.forEach(e=>e.scrollTop=600);return els.map(e=>e.scrollTop)});
   ok(scrolled.some(v=>v>0),`${name}: the first product page can scroll (${scrolled})`);
   await pg.click(".lb-close");await pg.waitForTimeout(700);
-  await cards.nth(3).click();await pg.waitForTimeout(900);
+  await openCard(pg,cards.nth(3),900);
   const top=await pg.evaluate(()=>[document.getElementById("lightbox").scrollTop,document.getElementById("lbInfo").scrollTop]);
   ok(top[0]===0&&top[1]===0,`${name}: the next product opens at the top (${top})`);
   await pg.click(".lb-close");await pg.waitForTimeout(700);

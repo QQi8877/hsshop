@@ -6,7 +6,7 @@
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{listingTitleHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,activeSalePrice,priceDigits,priceHtml,productDescText,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml}from"/shop-render.js?v=14";
+import{listingTitleHtml,textOf,textHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,getSizeShort,activeSalePrice,priceDigits,priceHtml,productDescText,productLead,productBadgesHtml,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml,GRID_IMG_SIZES}from"/shop-render.js?v=16";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -180,6 +180,7 @@ function listTitle(){const page=currentCategoryPage();return page?categoryPageTi
 function setCategory(main,sub=null){
   state.activeMain=main;
   state.activeSub=sub;
+  listFilter={tags:[],sort:"default"}; // 篩選只對這一頁，換分類就清掉
   if(main==="全部")document.body.classList.remove("cat-landing");
   renderCategories();
   renderProducts();
@@ -199,15 +200,13 @@ function primaryTagBadgeHtml(product){
 }
 let searchQuery="";
 let productsLoadFailed=false;
-let favoritesRoomFilter="全部";
 // 依實際版面大小提供多種寬度，讓瀏覽器依裝置螢幕寬度/DPR自己挑最合適的檔案，
 // 避免手機版小卡片還是抓桌面版用的大尺寸圖（PageSpeed「圖片解析度過大」建議）。
 // 商品卡片（列表封面／滑鼠移過的第二張）跟首頁大圖分別對應兩組不同的顯示尺寸，
 // 各自的呼叫點共用同一份陣列，之後要調整最小寬度只要改這裡一個地方。
 // sizes：照片在畫面上實際顯示的寬度（實測各種螢幕寬度量出來的），瀏覽器依這個加上螢幕解析度挑剛好夠用的尺寸，
 // 寫太大會下載用不到的大圖（PageSpeed「圖片大小適中」）。版面改了寬度要跟著改。
-const GRID_IMG_WIDTHS=[200,280,400,500,600,800];
-const GRID_IMG_SIZES="(max-width:760px) 46vw, 16vw";
+const GRID_IMG_WIDTHS=[200,280,400,500,600,800]; // 商品格的 sizes（GRID_IMG_SIZES）跟分類頁靜態商品格共用，在 shop-render.js
 const PICK_IMG_WIDTHS=[200,300,450,600,800];
 const PICK_IMG_SIZES="(max-width:760px) 32vw, (max-width:860px) 38vw, 17vw";
 const HERO_IMG_SIZES="(max-width:760px) 53vw, min(30vw, 360px)";
@@ -233,19 +232,17 @@ function toast(msg,dur=2200){
 }
 function openModal(id){document.getElementById(id).classList.add("open")}
 function closeModal(id){document.getElementById(id).classList.remove("open")}
+// HTML 上標了 data-page-field 的字換成後台「網站文字」填的（沒填＝預設文字，清單在 shop-render.js 的 TEXT_FIELDS）
 function applyPageText(){
   document.querySelectorAll("[data-page-field]").forEach(el=>{
-    const key=el.dataset.pageField;
-    const val=state.pageText?.[key];
-    // val!=null（用寬鬆比較，一次排除 undefined 跟 null）才處理：後台這個欄位
-    // 從來沒設定過時是 undefined，這時候保留 HTML 裡寫死的預設文字；後台如果
-    // 把欄位清空成空字串 ""，這裡要能真的把畫面清空，不能因為 "" 是 falsy
-    // 就被跳過、變成永遠清不掉、卡在舊文字或預設文字。
+    const key=el.dataset.pageField,val=textOf(state.pageText,key);
+    // 有換行或 **粗體** 的字要用 HTML 寫（換行變 <br>）；一般的字照舊用純文字寫
+    if(/\n|\*\*/.test(val)){const html=textHtml(state.pageText,key);if(el.innerHTML!==html)el.innerHTML=html;return}
     // 值跟畫面上現有的文字一樣就不要動：textContent= 就算寫入相同的字串，
     // 也會整個文字節點砍掉重建，逼瀏覽器重新畫一次——如果這時候自架字型
     // 剛好已經下載完成，就會從「開頁瞬間的備援字體」變成「Noto 字型」，
     // 造成沒有實際內容變化、卻看起來像字體中途切換的閃爍。
-    if(val!=null&&el.textContent!==val)el.textContent=val;
+    if(el.textContent!==val)el.textContent=val;
   });
 }
 function applyLayoutVisibility(){
@@ -404,10 +401,17 @@ document.getElementById("categories").addEventListener("click",event=>{
   if(!link||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
   event.preventDefault();
   setCategory(link.dataset.main,link.dataset.sub||null);
-  // 手機版左邊的分類欄會跟著畫面固定：往下逛到一半換分類，商品格變短了，把畫面帶回商品列表開頭
-  const layout=document.querySelector(".cat-layout");
-  if(layout&&matchMedia("(max-width:760px)").matches&&layout.getBoundingClientRect().top<0)layout.scrollIntoView({block:"start"});
+  scrollToListingTop();
 });
+// 左邊分類欄會跟著畫面固定：往下逛到一半換分類，跟一般購物網站一樣把畫面帶回這個分類的標題，
+// 商品從第一件開始看（手機、電腦都一樣）。標題本來就看得到時不動，免得畫面跳一下。
+function scrollToListingTop(){
+  const head=document.querySelector(".cat-toolbar");
+  if(!head)return;
+  const navBottom=document.querySelector("nav")?.getBoundingClientRect().bottom||0;
+  const top=head.getBoundingClientRect().top;
+  if(top<navBottom)scrollTo({top:scrollY+top-navBottom,behavior:"instant"});
+}
 function renderProducts(animate=true){
   applyRouteCategory();
   const grid=document.getElementById("productsGrid");
@@ -431,19 +435,29 @@ function renderProducts(animate=true){
   // 自訂順序——不同分類的商品不會混在一起穿插，子分類裡排好的順序，看主分類或「全部」的
   // 時候也照樣套用。後台商品表格的「前台順序」用的是同一個規則（shop-render.js）。
   list.sort(catalogOrderCompare(state.catalog));
+  // 篩選（特色標籤、排序）：這一頁原本有哪些商品（篩選面板算件數用）→ 套用篩選
+  const pageList=list;
+  list=applyListFilter(list);
   renderListingTitle();
-  renderAppliedChips();
+  renderFilterControls(pageList,list.length);
   if(!list.length){
     const empty=document.createElement("div");
-    empty.style.cssText="width:100%;text-align:center;padding:56px 20px;color:var(--soft)";
-    empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`
-      :productsLoadFailed?"商品資料暫時載入不了，請稍後重新整理頁面；也可以直接打電話或傳 LINE 詢問。":"此分類尚無商品";
+    empty.className="grid-empty";
+    if(pageList.length&&filterActive()){
+      // 這一頁有商品、只是篩選後一件都不剩：給一顆「清除」直接回到全部
+      empty.innerHTML=`<p>${escapeHTML(textOf(state.pageText,"filterEmpty"))}</p><button type="button" class="grid-empty-clear">${escapeHTML(textOf(state.pageText,"filterClear"))}</button>`;
+      empty.querySelector("button").addEventListener("click",()=>setListFilter({tags:[],sort:"default"}));
+    }else{
+      empty.textContent=q?`找不到符合「${searchQuery.trim()}」的商品`
+        :productsLoadFailed?"商品資料暫時載入不了，請稍後重新整理頁面；也可以直接打電話或傳 LINE 詢問。":textOf(state.pageText,"emptyCategory");
+    }
     grid.appendChild(empty);
   }
   // 「全部分類」瀏覽（沒有搜尋、也沒選特定分類）才加分區標題：商品本來就已經照
   // 主分類排序好了，只是滑下去看不出分界，加個標題列把同一主分類的商品圈出來。
-  // 有搜尋或已經篩選到單一分類時，畫面上只有一組商品，不需要再多一層標題。
-  const showSections=state.activeMain==="全部"&&!q;
+  // 有搜尋或已經篩選到單一分類時，畫面上只有一組商品，不需要再多一層標題；
+  // 換了排序（最近更新、由小到大）不同分類會穿插，也不加。
+  const showSections=state.activeMain==="全部"&&!q&&listFilter.sort==="default";
   let lastSectionMain=null;
   const addCard=(product,idx)=>{
     if(showSections&&product.mainCat!==lastSectionMain){
@@ -457,6 +471,7 @@ function renderProducts(animate=true){
     const photos=(product.photos||[]).filter(Boolean);
     const card=document.createElement("article");
     card.className="product-card";
+    card.dataset.pid=product.id;
     const wrap=document.createElement("div");
     wrap.className="product-img-wrap";
     const fav=document.createElement("button");
@@ -492,6 +507,7 @@ function renderProducts(animate=true){
           hoverImg.alt=""; // 滑過去才出現的第二張照片，跟封面是同一件商品，不用再念一次
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
+          markSecondReady(hoverImg,wrap);
           wrap.appendChild(hoverImg);
         };
         if(photos.length>1&&CAN_HOVER){
@@ -528,12 +544,12 @@ function renderProducts(animate=true){
     info.innerHTML=`
       <div class="product-name"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name)}</a></div>
       <div class="product-meta-row">
-        <span class="product-size">${escapeHTML(getSizeSummary(product))}</span>
+        <span class="product-size">${escapeHTML(getSizeShort(product))}</span>
       </div>
       ${price?`<span class="product-price">${price}</span>`:""}
     `;
     card.appendChild(info);
-    card.addEventListener("click",()=>openProductDetail(product.id,wrap));
+    card.addEventListener("click",event=>openFromList(event,product.id,wrap));
     grid.appendChild(card);
   };
   let next=0;
@@ -561,6 +577,7 @@ function renderProducts(animate=true){
   // animate=false 只給開頁自動執行的那兩次呼叫用（先畫本機快取、Firebase資料
   // 回來後再畫一次真正的資料）——這兩次都不是使用者主動切換，不需要、也不該
   // 播放淡入動畫，不然這兩次自動重繪會讓整個商品區塊在開頁的一兩秒內閃兩次。
+  renderRecent();
   if(animate){
     grid.classList.remove("grid-transition-in");
     void grid.offsetWidth;
@@ -575,29 +592,300 @@ function renderListingTitle(){
   // 分類的簡介（跟分類頁一開始寫好的同一段，shop-render.js）；「全部」、搜尋中不放
   const intro=document.getElementById("listingIntro");
   const page=searchQuery.trim()?null:currentCategoryPage();
-  const text=page&&page.products.length?categoryIntro(page,state.contact):"";
+  const text=page&&page.products.length?categoryIntro(page,state.contact,state.catalog):"";
   if(intro.textContent!==text)intro.textContent=text;
   intro.hidden=!text;
+  syncIntroMore();
 }
-function renderAppliedChips(){
-  const wrap=document.getElementById("appliedChips");
-  if(!wrap)return;
-  const chips=[];
-  if(state.activeMain!=="全部"){
-    chips.push({label:getMainName(state.activeMain),clear:()=>setCategory("全部")});
+/* ══ 商品列表的體驗（2026-11 A 版「清爽型錄」）════════════════════════════════
+   樣式在 index.html <style> 最後「視覺 3.0」那段。手機、電腦是同一套功能，只差擺的位置（RWD）：
+   - 篩選（特色標籤＋排序）：電腦放在左邊分類清單下面，點了馬上換；手機是畫面下方中間的「篩選」鈕，
+     點了從下面滑出面板（往下捲時先收起來、往上捲再出現，不一直擋住商品）。換分類就清掉。
+   - 最近看過：分類標題下面一排小照片，只記在這台裝置（localStorage），點了就打開那件。
+   - 分類介紹先顯示兩行，超過才出現「更多」。
+   - 手機點商品先跳出「快速預覽」：大照片、標籤、說明第一段、尺寸、同類推薦（點了直接換成那件），
+     按「看完整介紹」才進整頁式商品頁。電腦螢幕夠大，點商品照舊直接開商品頁。
+   - 手機商品頁底部的收藏列：往下讀說明時「收藏這件」一直在手邊；看得到原本那顆收藏鈕時自動收起來。
+   快速預覽、篩選面板會記一筆瀏覽紀錄：手機按「上一頁」是關掉面板，不會離開網頁。 */
+const MOBILE_MQ=window.matchMedia("(max-width:760px)");
+const HEART_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+
+/* ── 從下面滑上來的面板（快速預覽、手機篩選共用）：點背景、按 ×、往下拉、按 Esc、按上一頁都會關 ── */
+const sheet=(()=>{
+  let bd=null,el=null,body=null,kind=null,returnFocus=null;
+  function ensure(){
+    if(el)return;
+    bd=document.createElement("div");bd.className="sheet-backdrop";
+    el=document.createElement("div");el.className="sheet";el.setAttribute("role","dialog");el.setAttribute("aria-modal","true");el.tabIndex=-1;
+    el.innerHTML='<div class="sheet-grip" aria-hidden="true"></div><button type="button" class="sheet-close" aria-label="關閉">×</button><div class="sheet-body"></div>';
+    body=el.querySelector(".sheet-body");
+    document.body.append(bd,el);
+    bd.addEventListener("click",()=>close());
+    el.querySelector(".sheet-close").addEventListener("click",()=>close());
+    // 抓著上面的小橫條往下拉超過 90px 就關
+    const grip=el.querySelector(".sheet-grip");let y0=null,dy=0;
+    grip.addEventListener("pointerdown",e=>{y0=e.clientY;dy=0;el.classList.add("dragging");try{grip.setPointerCapture(e.pointerId)}catch(_){}});
+    grip.addEventListener("pointermove",e=>{if(y0===null)return;dy=Math.max(0,e.clientY-y0);el.style.transform=`translateY(${dy}px)`});
+    const end=()=>{if(y0===null)return;y0=null;el.classList.remove("dragging");el.style.transform="";if(dy>90)close()};
+    grip.addEventListener("pointerup",end);grip.addEventListener("pointercancel",end);
   }
-  if(state.activeSub){
-    chips.push({label:getSubName(state.activeMain,state.activeSub),clear:()=>setCategory(state.activeMain)});
+  function open(k,html,label){
+    ensure();
+    const wasOpen=isOpen();
+    kind=k;body.innerHTML=html;body.scrollTop=0;
+    el.dataset.kind=k;
+    el.setAttribute("aria-label",label||"");
+    if(!wasOpen){
+      returnFocus=document.activeElement;
+      document.documentElement.classList.add("sheet-lock");
+      requestAnimationFrame(()=>{bd.classList.add("open");el.classList.add("open")});
+      el.focus({preventScroll:true});
+    }
+    return body;
   }
-  if(!chips.length){wrap.innerHTML="";return}
-  const closeSvg='<svg viewBox="0 0 24 24" data-icon><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>';
-  wrap.innerHTML=chips.map((c,i)=>`<button class="chip-applied" data-idx="${i}">${escapeHTML(c.label)}${closeSvg}</button>`).join("")
-    +`<button class="chip-clear-all" id="clearAllChips">全部清除</button>`;
-  wrap.querySelectorAll(".chip-applied").forEach((btn,i)=>{
-    btn.onclick=()=>chips[i].clear();
+  // history："back"＝這次是客人按 × 之類關的，退回打開前那一筆；"replace"＝接著要開商品頁，把這一筆改成沒有面板；
+  // false＝上一頁／下一頁本身造成的，不再動瀏覽紀錄
+  function close({history:mode="back"}={}){
+    if(!isOpen())return;
+    bd.classList.remove("open");el.classList.remove("open");el.style.transform="";
+    document.documentElement.classList.remove("sheet-lock");
+    const was=kind;kind=null;
+    if(returnFocus instanceof HTMLElement&&document.contains(returnFocus))returnFocus.focus({preventScroll:true});
+    returnFocus=null;
+    if(mode==="back"){if(canStepBack()&&history.state?.sheet)history.back();else replaceView(location.href)}
+    else if(mode==="replace")replaceView(location.href);
+    if(was==="qv"){quickId=null;renderRecent()}
+  }
+  function isOpen(k){return !!el&&el.classList.contains("open")&&(!k||kind===k)}
+  return {open,close,isOpen,get kind(){return kind},get body(){return body}};
+})();
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&sheet.isOpen()){e.stopImmediatePropagation();sheet.close()}},true);
+// 平板轉向、視窗拉寬變成電腦版：手機才有的面板直接收掉
+MOBILE_MQ.addEventListener?.("change",e=>{if(!e.matches&&sheet.isOpen())sheet.close()});
+
+/* ── 點商品：手機先跳快速預覽，電腦直接開商品頁 ─────────────────────── */
+function openFromList(event,id,sourceWrap){
+  if(MOBILE_MQ.matches)openQuickView(id,{sourceWrap});
+  else openProductDetail(id,sourceWrap);
+}
+let quickId=null,quickSource=null;
+function quickViewHtml(product){
+  const photos=(product.photos||[]).filter(Boolean);
+  const count=product.photoCount??photos.length;
+  const cat=[mainNameOf(state.catalog,product.mainCat),subNameOf(state.catalog,product.mainCat,product.subCat)].filter(Boolean).join(" » ");
+  const badges=productBadgesHtml(product,state.tagDefs);
+  const price=priceHtml(product);
+  const lead=productLead(product);
+  const dims=product.dimensions||{};
+  const size=(dims.width||dims.depth||dims.height||product.size)?getSizeSummary(product):textOf(state.pageText,"sizeAskTitle");
+  const sims=similarProducts(product,listedProducts(),state.catalog,8);
+  const fav=isFavorite(product.id);
+  const t=k=>escapeHTML(textOf(state.pageText,k));
+  return `<div class="qv" data-id="${escapeHTML(product.id)}">
+    <div class="qv-photo">${photos.length?`<img src="${escapeHTML(normalizePhotoUrl(photos[0],800))}"${/^https?:/i.test(photos[0])?` srcset="${escapeHTML(buildSrcset(photos[0],[400,600,800,1200]))}" sizes="100vw"`:""} alt="${escapeHTML(photoAlt(product,state.catalog))}">`:placeholderMarkup("尚無圖片")}${count>1?`<span class="qv-count">${escapeHTML(textOf(state.pageText,"qvPhotos",{vars:{n:count}}))}</span>`:""}</div>
+    ${cat?`<div class="qv-cat">${escapeHTML(cat)}</div>`:""}
+    <h2 class="qv-name" id="qvTitle">${escapeHTML(product.name||"")}</h2>
+    ${badges?`<div class="qv-tags">${badges}</div>`:""}
+    ${price?`<div class="qv-price">${price}</div>`:""}
+    ${lead?`<p class="qv-desc">${escapeHTML(lead)}</p>`:""}
+    <div class="qv-size"><b>${t("specTitle")}</b><span>${escapeHTML(size)}</span></div>
+    <div class="qv-actions">
+      <button type="button" class="qv-fav${fav?" active":""}" data-qv="fav" data-fav-id="${escapeHTML(product.id)}">${HEART_ICON}<span class="qv-fav-off">${t("qvFav")}</span><span class="qv-fav-on">${t("qvFavDone")}</span></button>
+      <button type="button" class="qv-open" data-qv="open">${t("qvOpen")}<span aria-hidden="true"> →</span></button>
+    </div>
+    ${sims.length?`<div class="qv-sim"><div class="qv-sim-t">${t("qvSimilar")}</div><div class="qv-sim-row">${sims.map(p=>{
+      const ph=(p.photos||[]).filter(Boolean)[0];
+      return `<button type="button" class="qv-sim-item" data-qv-id="${escapeHTML(p.id)}"><span class="qv-sim-img thumb-studio">${ph?`<img src="${escapeHTML(normalizePhotoUrl(ph,300))}" alt="" loading="lazy">`:""}</span><span class="qv-sim-name">${escapeHTML(p.name||"")}</span></button>`;
+    }).join("")}</div></div>`:""}
+  </div>`;
+}
+function openQuickView(id,{sourceWrap=null,history:useHistory=true}={}){
+  const product=state.products.find(p=>p.id===id);
+  if(!product)return;
+  const wasOpen=sheet.isOpen("qv");
+  quickId=id;quickSource=sourceWrap||null;
+  const body=sheet.open("qv",quickViewHtml(product),product.name||"");
+  body.querySelector(".qv-photo img")&&fadeInOnLoad(body.querySelector(".qv-photo img"),body.querySelector(".qv-photo"));
+  pushRecent(id);
+  track("select_item",gaItemParams(product));
+  if(!useHistory)return;
+  if(wasOpen)replaceView(location.href);else pushView(location.href);
+}
+// 快速預覽裡的按鈕（面板內容每次整塊換掉，所以掛在面板本身、用 data-qv 分辨）
+document.addEventListener("click",e=>{
+  if(!sheet.isOpen("qv")||!e.target.closest(".sheet"))return;
+  const b=e.target.closest("[data-qv],[data-qv-id]");
+  if(!b||!quickId)return;
+  if(b.dataset.qv==="fav")toggleFavorite(quickId,b);
+  else if(b.dataset.qv==="open"){
+    const id=quickId;
+    // 卡片還在列表上就從它飛進商品頁（同類推薦換過的商品不一定有卡片）
+    const wrap=quickSource&&document.contains(quickSource)&&quickSource.closest("[data-pid]")?.dataset.pid===id?quickSource:cardWrapOf(id);
+    sheet.close({history:"replace"});
+    openProductDetail(id,wrap);
+  }else if(b.dataset.qvId){
+    // 同類推薦：面板淡出、換成那一件、捲回最上面
+    const next=b.dataset.qvId,box=sheet.body.querySelector(".qv");
+    if(box)box.classList.add("swap");
+    setTimeout(()=>{if(sheet.isOpen("qv"))openQuickView(next)},prefersReducedMotion()?0:150);
+  }
+});
+function cardWrapOf(id){
+  const card=document.querySelector(`#productsGrid .product-card[data-pid="${CSS.escape(id)}"]`);
+  return card?card.querySelector(".product-img-wrap"):null;
+}
+
+/* ── 篩選：特色標籤（符合任一個）＋排序 ───────────────────────────── */
+let listFilter={tags:[],sort:"default"};
+let filterPageList=[],filterShown=0;
+const SORT_KEYS=[["default","sortDefault"],["new","sortNew"],["small","sortSmall"]];
+function filterActive(){return listFilter.tags.length>0||listFilter.sort!=="default"}
+function widthOf(p){const n=parseFloat(String(p.dimensions?.width??"").replace(/[^\d.]/g,""));return Number.isFinite(n)?n:Infinity}
+function applyListFilter(list){
+  let out=list;
+  if(listFilter.tags.length)out=out.filter(p=>(p.badges||[]).some(k=>listFilter.tags.includes(k)));
+  // 排序是穩定的：一樣的（例如都沒填寬度）照原本的店長順序
+  if(listFilter.sort==="new")out=[...out].sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  else if(listFilter.sort==="small")out=[...out].sort((a,b)=>widthOf(a)-widthOf(b));
+  return out;
+}
+function setListFilter(next,{scroll=true}={}){
+  listFilter={tags:[...next.tags],sort:SORT_KEYS.some(([k])=>k===next.sort)?next.sort:"default"};
+  renderProducts();
+  if(scroll)scrollToListingTop();
+}
+function filterGroupsHtml(pageList){
+  const count={};
+  pageList.forEach(p=>(p.badges||[]).forEach(k=>{count[k]=(count[k]||0)+1}));
+  const defs=tagDefsOf(state.tagDefs).filter(d=>count[d.key]||listFilter.tags.includes(d.key));
+  const t=k=>escapeHTML(textOf(state.pageText,k));
+  const tags=defs.length?`<div class="filter-group"><div class="filter-k">${t("filterTags")}</div><div class="filter-chips">${defs.map(d=>`<button type="button" class="filter-chip" data-filter-tag="${escapeHTML(d.key)}" aria-pressed="${listFilter.tags.includes(d.key)}">${escapeHTML(d.label)}<span class="filter-n">${count[d.key]||0}</span></button>`).join("")}</div></div>`:"";
+  const sorts=`<div class="filter-group"><div class="filter-k">${t("filterSort")}</div><div class="filter-chips">${SORT_KEYS.map(([k,label])=>`<button type="button" class="filter-chip" data-filter-sort="${k}" aria-pressed="${listFilter.sort===k}">${t(label)}</button>`).join("")}</div></div>`;
+  return tags+sorts;
+}
+function filterSheetHtml(){
+  const t=k=>escapeHTML(textOf(state.pageText,k));
+  return `<div class="filter-sheet"><h2 class="sheet-title">${t("filterBtn")}</h2>${filterGroupsHtml(filterPageList)}
+    <div class="filter-actions"><button type="button" class="filter-clear" data-filter-clear${filterActive()?"":" disabled"}>${t("filterClear")}</button><button type="button" class="filter-apply" data-filter-apply>${escapeHTML(textOf(state.pageText,"filterApply",{vars:{n:filterShown}}))}</button></div></div>`;
+}
+// renderProducts 每畫一次就更新：電腦左邊的篩選、手機的篩選鈕（有篩選時顯示幾件）、開著的手機篩選面板
+function renderFilterControls(pageList,shown){
+  filterPageList=pageList;filterShown=shown;
+  const side=document.getElementById("catSidebar");
+  if(side){
+    let box=document.getElementById("sideFilter");
+    if(!box||box.parentNode!==side){box=document.createElement("div");box.id="sideFilter";box.className="side-filter";side.appendChild(box)}
+    const t=k=>escapeHTML(textOf(state.pageText,k));
+    box.innerHTML=`<div class="side-filter-head"><span>${t("filterBtn")}</span>${filterActive()?`<button type="button" class="filter-clear-link" data-filter-clear>${t("filterClear")}</button>`:""}</div>${filterGroupsHtml(pageList)}`;
+  }
+  const fab=filterFab();
+  fab.querySelector(".filter-fab-label").textContent=textOf(state.pageText,"filterBtn");
+  fab.querySelector(".filter-fab-n").textContent=filterActive()?String(shown):"";
+  fab.classList.toggle("is-active",filterActive());
+  if(sheet.isOpen("filter"))sheet.body.innerHTML=filterSheetHtml();
+}
+let fabEl=null;
+function filterFab(){
+  if(fabEl)return fabEl;
+  fabEl=document.createElement("button");fabEl.type="button";fabEl.className="filter-fab";
+  fabEl.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span class="filter-fab-label"></span><span class="filter-fab-n"></span>';
+  fabEl.addEventListener("click",()=>{
+    sheet.open("filter",filterSheetHtml(),textOf(state.pageText,"filterBtn"));
+    pushView(location.href);
   });
-  document.getElementById("clearAllChips").onclick=()=>setCategory("全部");
+  document.body.appendChild(fabEl);
+  // 商品格在畫面上才出現；往下捲先收起來、往上捲再出現
+  let inGrid=false,away=false,lastY=scrollY;
+  const sync=()=>fabEl.classList.toggle("show",inGrid&&!away);
+  const grid=document.getElementById("productsGrid");
+  if(grid&&"IntersectionObserver" in window)new IntersectionObserver(es=>{inGrid=es.some(en=>en.isIntersecting);sync()},{rootMargin:"-30% 0px -10% 0px"}).observe(grid);
+  else inGrid=true;
+  addEventListener("scroll",()=>{const y=scrollY;if(Math.abs(y-lastY)<10)return;away=y>lastY&&y>300;lastY=y;sync()},{passive:true});
+  sync();
+  return fabEl;
 }
+// 篩選的按鈕（電腦左邊、手機面板都是同一種），一律在這裡處理
+document.addEventListener("click",e=>{
+  const chip=e.target.closest("[data-filter-tag],[data-filter-sort],[data-filter-clear],[data-filter-apply]");
+  if(!chip||!chip.closest("#sideFilter,.sheet"))return;
+  if(chip.dataset.filterApply!==undefined){sheet.close();scrollToListingTop();return}
+  let next={tags:[...listFilter.tags],sort:listFilter.sort};
+  if(chip.dataset.filterClear!==undefined)next={tags:[],sort:"default"};
+  else if(chip.dataset.filterTag){const k=chip.dataset.filterTag;next.tags=next.tags.includes(k)?next.tags.filter(x=>x!==k):[...next.tags,k]}
+  else if(chip.dataset.filterSort)next.sort=chip.dataset.filterSort;
+  // 手機面板裡：後面的商品先換好（也先捲回這一頁的標題），面板留著，按「看 N 件商品」再關
+  setListFilter(next);
+});
+
+/* ── 最近看過（只記在這台裝置）──────────────────────────────────── */
+const RECENT_KEY="hs_recent_v1",RECENT_MAX=12;
+function loadRecent(){try{const v=JSON.parse(localStorage.getItem(RECENT_KEY)||"[]");return Array.isArray(v)?v.filter(x=>typeof x==="string"):[]}catch(e){return []}}
+function pushRecent(id){try{localStorage.setItem(RECENT_KEY,JSON.stringify([id,...loadRecent().filter(x=>x!==id)].slice(0,RECENT_MAX)))}catch(e){}}
+function renderRecent(){
+  const box=document.getElementById("recentStrip");
+  if(!box)return;
+  const listed=new Map(listedProducts().map(p=>[p.id,p]));
+  const items=loadRecent().map(id=>listed.get(id)).filter(Boolean).slice(0,10);
+  box.hidden=!items.length;
+  const row=box.querySelector(".recent-row");
+  if(!row)return;
+  const html=items.map(p=>{
+    const ph=(p.photos||[]).filter(Boolean)[0];
+    return `<button type="button" class="recent-item thumb-studio" data-recent="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name||"")}" title="${escapeHTML(p.name||"")}">${ph?`<img src="${escapeHTML(normalizePhotoUrl(ph,200))}" alt="" loading="lazy">`:""}</button>`;
+  }).join("");
+  if(row.innerHTML!==html)row.innerHTML=html;
+}
+document.getElementById("recentStrip")?.addEventListener("click",e=>{
+  const item=e.target.closest("[data-recent]");
+  if(item){openFromList(e,item.dataset.recent,null);return}
+  if(e.target.closest(".recent-clear")){try{localStorage.removeItem(RECENT_KEY)}catch(_){}renderRecent()}
+});
+
+/* ── 分類介紹先兩行，超過才有「更多」────────────────────────────── */
+function syncIntroMore(){
+  const intro=document.getElementById("listingIntro");
+  if(!intro)return;
+  let btn=document.getElementById("introMore");
+  if(!btn){
+    btn=document.createElement("button");btn.type="button";btn.id="introMore";btn.className="intro-more";btn.hidden=true;
+    btn.setAttribute("aria-controls","listingIntro");
+    btn.addEventListener("click",()=>{const open=intro.classList.toggle("is-open");btn.setAttribute("aria-expanded",String(open));btn.textContent=textOf(state.pageText,open?"introLess":"introMore")});
+    intro.insertAdjacentElement("afterend",btn);
+  }
+  // 換了分類（文字換了）就收回兩行，再量一次有沒有超過
+  if(intro.dataset.introFor!==intro.textContent){intro.dataset.introFor=intro.textContent;intro.classList.remove("is-open")}
+  const open=intro.classList.contains("is-open");
+  btn.textContent=textOf(state.pageText,open?"introLess":"introMore");
+  btn.setAttribute("aria-expanded",String(open));
+  requestAnimationFrame(()=>{btn.hidden=intro.hidden||!intro.textContent.trim()||(!open&&intro.scrollHeight<=intro.clientHeight+2)});
+}
+let introResizeTimer=0;
+addEventListener("resize",()=>{clearTimeout(introResizeTimer);introResizeTimer=setTimeout(syncIntroMore,150)});
+
+/* ── 手機商品頁底部的收藏列 ──────────────────────────────────────── */
+let dockEl=null,dockAskSeen=true,dockAskEl=null,dockIO=null;
+function syncDock(){
+  if(!dockEl){
+    dockEl=document.createElement("div");dockEl.className="lb-dock";
+    dockEl.innerHTML=`<span class="lb-dock-img thumb-studio"><img alt=""></span><span class="lb-dock-name"></span><button type="button" class="lb-dock-btn">${HEART_ICON}<span></span></button>`;
+    dockEl.querySelector("button").addEventListener("click",()=>lbAskClick());
+    document.body.appendChild(dockEl);
+    if("IntersectionObserver" in window)dockIO=new IntersectionObserver(es=>{es.forEach(en=>{if(en.target===dockAskEl)dockAskSeen=en.isIntersecting});syncDock()});
+  }
+  const ask=document.getElementById("lbAskBtn");
+  if(ask!==dockAskEl&&dockIO){if(dockAskEl)dockIO.unobserve(dockAskEl);dockAskEl=ask;dockAskSeen=!!ask;if(ask)dockIO.observe(ask)}
+  const open=isLightboxOpen()&&!!lbProduct;
+  dockEl.classList.toggle("show",open&&!dockAskSeen);
+  if(!open)return;
+  const ph=(lbProduct.photos||[]).filter(Boolean)[0];
+  const img=dockEl.querySelector("img"),src=ph?normalizePhotoUrl(ph,200):"";
+  if(img.getAttribute("src")!==src){if(src)img.setAttribute("src",src);else img.removeAttribute("src")}
+  dockEl.querySelector(".lb-dock-name").textContent=lbProduct.name||"";
+  const fav=isFavorite(lbProduct.id);
+  dockEl.querySelector(".lb-dock-btn").classList.toggle("active",fav);
+  dockEl.querySelector(".lb-dock-btn span").textContent=textOf(state.pageText,fav?"dockAskDone":"dockAsk");
+}
+
 // 商品照片載入完成才淡入。這一輪已經載入過的網址（切換分類、Firebase 資料回來後
 // 重畫列表）直接顯示、不重播淡入，不然每次重畫整排照片都會閃一下。
 const loadedPhotoSrcs=new Set();
@@ -678,13 +966,14 @@ function renderPicks(){
     const photos=(product.photos||[]).filter(Boolean);
     const card=document.createElement("article");
     card.className="p-card reveal";
+    card.dataset.pid=product.id;
     card.style.transitionDelay=(idx*70)+"ms";
     const price=priceHtml(product);
     card.innerHTML=`
       <div class="p-card__media"></div>
       <div class="p-card__title"><a href="${escapeHTML(productPath(product.id))}">${escapeHTML(product.name)}</a></div>
       <div class="p-card__foot">
-        <span class="mono">${escapeHTML(getSizeSummary(product))}</span>
+        <span class="mono">${escapeHTML(getSizeShort(product))}</span>
         ${price?`<span class="price">${price}</span>`:""}
       </div>
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
@@ -716,6 +1005,7 @@ function renderPicks(){
           hoverImg.alt=""; // 滑過去才出現的第二張照片，跟封面是同一件商品，不用再念一次
           hoverImg.className="img-secondary";
           hoverImg.onerror=()=>hoverImg.style.display="none";
+          markSecondReady(hoverImg,media);
           media.appendChild(hoverImg);
         };
         if(photos.length>1&&CAN_HOVER){
@@ -737,7 +1027,7 @@ function renderPicks(){
       event.stopPropagation();
       toggleFavorite(product.id,event.currentTarget);
     });
-    card.addEventListener("click",()=>openProductDetail(product.id,media));
+    card.addEventListener("click",event=>openFromList(event,product.id,media));
     grid.appendChild(card);
   });
   initRevealOnScroll();
@@ -766,8 +1056,8 @@ function renderCategoryTiles(){
     `;
   }).join("")+`
     <button type="button" class="cat-tile cat-tile--cta reveal" id="catCta" onclick="toggleFavoritesPanel(true)" style="transition-delay:${cats.length*60}ms">
-      <span class="cat-tile__name">喜歡的<br>先按 ♡ 收藏</span>
-      <span class="cta-link">選好再一次問老闆 →</span>
+      <span class="cat-tile__name">${textHtml(state.pageText,"tileFavTitle")}</span>
+      <span class="cta-link">${textHtml(state.pageText,"tileFavCta")}</span>
     </button>
   `;
   grid.querySelectorAll(".cat-tile[data-cat]").forEach(link=>{
@@ -803,12 +1093,17 @@ function renderHeroPhoto(){
 }
 const FAVORITES_KEY="xintong_favorites_v1";
 const FAVORITES_TTL_MS=4*60*60*1000; // 收藏清單超過 4 小時沒更新就視為過期
+// 滑過去的第二張照片下載完才在照片框加 .second-ready，CSS 才把封面換成它（沒載好、載不到都維持封面）
+function markSecondReady(img,host){
+  const ready=()=>{if(img.naturalWidth)host.classList.add("second-ready")};
+  if(img.complete)ready();else img.addEventListener("load",ready,{once:true});
+}
 function placeholderMarkup(text){
   return `<div class="placeholder"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg><div>${escapeHTML(text)}</div></div></div>`;
 }
 function showBrokenImage(wrap,img){
   img.style.display="none";
-  if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片無法載入<br><small>請確認 Drive 已公開分享</small></div></div>`);
+  if(!wrap.querySelector(".broken-note"))wrap.insertAdjacentHTML("afterbegin",`<div class="placeholder broken-note"><div>圖片暫時無法顯示</div></div>`);
 }
 function loadFavoritesLocal(){
   try{
@@ -978,26 +1273,6 @@ function favoriteProductsWithMeta(){
     return product&&product.status==="active"?{...product,_qty:f.qty||1,_note:f.note||""}:null;
   }).filter(Boolean);
 }
-function renderFavoritesRoomTabs(allProducts){
-  const tabsWrap=document.getElementById("favoritesRoomTabs");
-  const rooms=[...new Set(allProducts.map(p=>p.room).filter(Boolean))];
-  const hasUnassigned=allProducts.some(p=>!p.room);
-  if(!rooms.length){
-    tabsWrap.style.display="none";
-    tabsWrap.innerHTML="";
-    return;
-  }
-  const tabs=["全部",...rooms,...(hasUnassigned?["未分類"]:[])];
-  if(!tabs.includes(favoritesRoomFilter))favoritesRoomFilter="全部";
-  tabsWrap.style.display="flex";
-  tabsWrap.innerHTML=tabs.map(room=>{
-    const n=room==="全部"?allProducts.length:allProducts.filter(p=>(p.room||"未分類")===room).length;
-    return `<button class="favorites-room-tab${favoritesRoomFilter===room?" active":""}" data-room="${escapeHTML(room)}">${escapeHTML(room)}<span class="mono" style="margin-left:5px">${n}</span></button>`;
-  }).join("");
-  tabsWrap.querySelectorAll(".favorites-room-tab").forEach(btn=>{
-    btn.onclick=()=>{favoritesRoomFilter=btn.dataset.room;renderFavorites()};
-  });
-}
 function renderFavorites(){
   const list=document.getElementById("favoritesList");
   const footer=document.getElementById("favoritesFooter");
@@ -1011,20 +1286,15 @@ function renderFavorites(){
   if(barCount)barCount.textContent=allProducts.length;
   updateLbFavoriteBtn(); // 在收藏清單裡移除了正在看的那件，商品頁的按鈕要跟著變回來
   subtitle.textContent=allProducts.length?`${allProducts.length} 項．共 ${totalQty} 件．這台裝置保留 4 小時`:"";
-  renderFavoritesRoomTabs(allProducts);
   if(!allProducts.length){
     footer.style.display="none";
-    list.innerHTML='<div class="favorites-empty">還沒有收藏。<br>逛商品時按 ♡ 把想問的都收進來，<br>選好後在這裡一次用 LINE 傳給老闆。</div>';
+    list.innerHTML=`<div class="favorites-empty">${textHtml(state.pageText,"favEmpty")}</div>`;
     return;
   }
   footer.style.display="block";
-  const products=favoritesRoomFilter==="全部"?allProducts:allProducts.filter(p=>(p.room||"未分類")===favoritesRoomFilter);
+  const products=allProducts;
   const total=products.reduce((sum,p)=>{const price=parsePriceNumber(activeSalePrice(p)||p.price);return price!=null?sum+price*p._qty:sum},0);
   document.getElementById("favoritesTotal").innerHTML=total>0?`<span>合計</span><span>$ ${total.toLocaleString()}</span>`:"";
-  if(!products.length){
-    list.innerHTML='<div class="favorites-empty">這個房間還沒收藏。<br>逛商品時按右上角的愛心就會進來這裡。</div>';
-    return;
-  }
   list.innerHTML="";
   products.forEach(product=>{
     const item=document.createElement("div");
@@ -1078,7 +1348,8 @@ function productIdFromPath(path){
 }
 // 目前畫面要記進瀏覽紀錄的樣子：哪件商品開著、收藏清單開著沒
 // lbDepth：從打開商品頁到現在，連續點了幾件商品（同類商品）——關掉時一次退回打開前
-function viewState(pushed,lbDepth=0){return {hs:PAGE_LOAD_ID,pushed,product:isLightboxOpen()&&lbProduct?lbProduct.id:null,fav:isFavoritesOpen(),lbDepth}}
+// sheet／qv：手機的快速預覽或篩選面板開著沒（qv＝預覽的是哪件），按上一頁要先關面板
+function viewState(pushed,lbDepth=0){return {hs:PAGE_LOAD_ID,pushed,product:isLightboxOpen()&&lbProduct?lbProduct.id:null,fav:isFavoritesOpen(),lbDepth,sheet:sheet.isOpen()?sheet.kind:null,qv:sheet.isOpen("qv")?quickId:null}}
 // 這一筆是這次自己加的：上一筆也還在這個網頁裡，可以直接退回去
 const canStepBack=()=>history.state?.hs===PAGE_LOAD_ID&&history.state.pushed===true;
 function pushView(url,lbDepth=0){try{history.pushState(viewState(true,lbDepth),"",url)}catch(e){}}
@@ -1086,6 +1357,10 @@ function replaceView(url){try{history.replaceState(viewState(canStepBack(),canSt
 let closingProduct=false; // 按 × 關商品頁、一次退好幾筆的途中
 window.addEventListener("popstate",event=>{
   const s=event.state||{};
+  // 快速預覽／篩選面板：退到沒有面板的那一筆就關掉；往前回到有面板的那一筆就再打開
+  if(!s.sheet&&sheet.isOpen())sheet.close({history:false});
+  else if(s.sheet==="qv"&&s.qv&&quickId!==s.qv&&state.products.some(p=>p.id===s.qv))openQuickView(s.qv,{history:false});
+  else if(s.sheet==="filter"&&!sheet.isOpen("filter"))sheet.open("filter",filterSheetHtml(),textOf(state.pageText,"filterBtn"));
   if(closingProduct){
     // 按 × 退回打開商品頁前那一筆：商品頁已經關了；退到的那筆如果是從商品網址直接進來的，網址換回首頁
     closingProduct=false;
@@ -1209,6 +1484,8 @@ function flyBackToCard(wrap,from,src){
 function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   const product=state.products.find(p=>p.id===id);
   if(!product)return;
+  if(sheet.isOpen())sheet.close({history:"replace"});
+  pushRecent(id);
   const wasOpen=isLightboxOpen();
   finishLbFlipOpen();
   const flipPrep=prepareLbFlip(sourceWrap);
@@ -1227,6 +1504,9 @@ function openProductDetail(id,sourceWrap,{history:mode="auto"}={}){
   // 不要先蓋住照片再顯示，不然畫面會閃一下
   const prerendered=lightbox.dataset.prerendered===id;
   delete lightbox.dataset.prerendered;
+  // 每次打開、換一件商品都從最上面開始看（商品頁本身和右邊資訊欄都會捲，不然會停在上一件捲到的地方）
+  // 例外：一打開就畫好的商品靜態頁（從 Google 點進來），客人可能已經往下捲了，資料到了不要把他拉回頂端
+  if(!prerendered&&(!wasOpen||isProductSwitch)){lightbox.scrollTop=0;document.getElementById("lbInfo").scrollTop=0}
   lightbox.classList.add("open");
   lightbox.setAttribute("aria-hidden","false");
   document.body.classList.add("lightbox-open");
@@ -1283,6 +1563,8 @@ function closeLightbox({history:useHistory=true}={}){
     if(canStepBack()&&history.state.product){closingProduct=true;history.go(-(history.state.lbDepth||1))}
     else replaceView(productIdFromPath(location.pathname)||location.hash.startsWith("#product-")?listUrl():location.href);
   }
+  syncDock();
+  renderRecent();
   // 捲軸回來之後才量卡片的落點
   if(from)flyBackToCard(wrap,from,backSrc);
 }
@@ -1296,8 +1578,9 @@ function updateLbFavoriteBtn(){
   const ask=document.getElementById("lbAskBtn");
   if(ask){
     ask.classList.toggle("is-added",active);
-    ask.querySelector("span").textContent=active?`已收藏・看收藏清單（共 ${favoriteProductsWithMeta().length} 件）→`:"收藏這件，選好一起問";
+    ask.querySelector("span").textContent=active?textOf(state.pageText,"askBtnDone",{vars:{n:favoriteProductsWithMeta().length}}):textOf(state.pageText,"askBtn");
   }
+  syncDock();
 }
 function lbAskClick(){
   if(!lbProduct)return;
@@ -1313,14 +1596,15 @@ function favSnack(){
   if(!el){
     el=document.createElement("div");
     el.id="favSnack";el.className="fav-snack";el.setAttribute("role","status");
-    el.innerHTML='<span></span><button type="button">看清單</button>';
+    el.innerHTML='<span></span><button type="button"></button>';
     el.querySelector("button").addEventListener("click",()=>{el.classList.remove("show");toggleFavoritesPanel(true)});
     document.body.appendChild(el);
   }
   let first=false;
   try{first=!localStorage.getItem(FAV_TIP_KEY);localStorage.setItem(FAV_TIP_KEY,"1")}catch(e){}
   const count=favoriteProductsWithMeta().length;
-  el.querySelector("span").textContent=first?"已收藏！喜歡的都先收起來，選好後到收藏清單，一次用 LINE 問老闆。":`已收藏，清單裡有 ${count} 件。選好後一次問老闆。`;
+  el.querySelector("span").textContent=first?textOf(state.pageText,"favSnackFirst"):textOf(state.pageText,"favSnackMore",{vars:{n:count}});
+  el.querySelector("button").textContent=textOf(state.pageText,"favSnackBtn");
   el.classList.toggle("first",first);
   el.classList.add("show");
   clearTimeout(favSnackTimer);
@@ -1347,8 +1631,6 @@ document.getElementById("lbInfo").addEventListener("click",e=>{
     if(!state.products.some(p=>p.id===sim.dataset.similar))return;
     e.preventDefault();
     openProductDetail(sim.dataset.similar,null,{history:"push"});
-    document.getElementById("lbInfo").scrollTop=0;
-    document.getElementById("lightbox").scrollTop=0;
     return;
   }
   const btn=e.target.closest(".lb-opt");
@@ -1460,7 +1742,6 @@ async function inquireAllFavorites(){
   showFavoritesPreview(msg);
 }
 function showFavoritesPreview(msg){
-  document.getElementById("favoritesRoomTabs").style.display="none";
   document.getElementById("favoritesList").style.display="none";
   document.getElementById("favoritesFooter").style.display="none";
   document.getElementById("favoritesPreviewBubble").textContent=msg;
@@ -1695,7 +1976,8 @@ function openRoutedProduct(final){
 
   const meta=await metaPromise;
   if(meta)Object.assign(state,meta);
-  applyPageText();
+  // 網站設定讀不到時不要動：頁面上的字已經是每小時更新時寫好的老闆文字，換成預設反而不對
+  if(meta)applyPageText();
   applyLayoutVisibility();
   renderContact();
   renderHeroPhoto();
@@ -1774,6 +2056,8 @@ function openRoutedProduct(final){
     line.textContent=`已收藏 ${count} 件・一次問老闆 →`;
     const atContact=contact?contact.getBoundingClientRect().top<innerHeight-80:false;
     line.classList.toggle("show",count>0&&!atContact&&!favPanelOpen);
+    // 長條出現時，手機的「篩選」鈕往上讓開（index.html：body.fx-line-on .filter-fab）
+    document.body.classList.toggle("fx-line-on",line.classList.contains("show"));
   };
   document.addEventListener("hs:favcount",e=>{favCount=e.detail;onScroll()});
   document.addEventListener("hs:favpanel",e=>{favPanelOpen=e.detail;onScroll()});

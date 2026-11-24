@@ -84,6 +84,12 @@ export async function setup(context,{store,blockSiteJson=false}={}){
 }
 // 雲端環境的瀏覽器放在 /opt/pw-browsers/chromium（固定捷徑，版本更新也不用改）；其他電腦用 Playwright 自己裝的
 const CHROME="/opt/pw-browsers/chromium";
+// 點商品卡打開商品頁：手機寬度（760px 以下）點商品會先跳「快速預覽」，再按「看完整介紹」才進商品頁
+export async function openCard(pg,card,wait=1500){
+  await card.click();await pg.waitForTimeout(450);
+  if(await pg.locator('.sheet.open[data-kind="qv"]').count())await pg.locator(".sheet.open .qv-open").click();
+  await pg.waitForTimeout(wait);
+}
 export async function launch(){return chromium.launch({...(existsSync(CHROME)?{executablePath:CHROME}:{}),args:["--no-proxy-server"]})}
 export function checker(){
   let pass=0,fail=0;const fails=[];

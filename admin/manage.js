@@ -14,10 +14,10 @@ import{getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged}from"https:
 // 尺寸示意圖跟前台共用同一份（改了那個檔案要把 ?v= 加一，見檔案開頭說明）
 import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from"../dim-figures.js?v=4";
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
-import{catalogOrderCompare,productPageTitle,productSearchDesc}from"../shop-render.js?v=14";
+import{catalogOrderCompare,productPageTitle,productSearchDesc,TEXT_FIELDS,categoryIntro,isListedProduct}from"../shop-render.js?v=16";
 import{escapeHTML}from"./util.js?v=1";
 import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=2";
-import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=6";
+import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=8";
 import{CSV_HEADERS,csvEscapeCell,parseCSV}from"./csv.js?v=1";
 
 const firebaseConfig={
@@ -263,6 +263,37 @@ function renameSubCategory(mainId,subId,value){
   const sub=main?.subs?.find(s=>s.id===subId);
   if(sub)sub.name=value;
 }
+/* 分類介紹：前台分類標題下面那段話。每個主分類、子分類都可以寫自己的；留空＝自動產生
+   （「信通家俱行的椅子共 34 款，像是…」，輸入框裡灰色的字就是自動產生的內容）。存在 catalog 每個分類的 intro。 */
+const catIntroOpen=new Set();
+function autoCategoryIntro(mainId,subId){
+  const main=getMainCat(mainId),sub=subId?main?.subs?.find(s=>s.id===subId):null;
+  // 跟前台同樣的排序，舉例的商品才會跟客人看到的一樣
+  const listed=products.filter(p=>isListedProduct(p,catalog)&&p.mainCat===mainId&&(!subId||p.subCat===subId)).sort(catalogOrderCompare(catalog));
+  if(!main||!listed.length)return "這個分類目前沒有上架的商品，前台不會顯示介紹。";
+  const bare=[{id:main.id,name:main.name,subs:[]}]; // 不帶已寫的介紹，才算得出自動產生的那段
+  return categoryIntro({main:mainId,sub:subId||null,name:(sub||main).name,mainName:main.name,products:listed},contact,bare);
+}
+function catIntroEditor(mainId,subId,target){
+  const key=subId||mainId;
+  const box=document.createElement("div");
+  box.className="catmgr-intro";
+  box.hidden=!catIntroOpen.has(key);
+  box.innerHTML=`<textarea rows="3" placeholder="${escapeHTML(autoCategoryIntro(mainId,subId))}">${escapeHTML(target.intro||"")}</textarea>
+    <div class="pt-hint">分類介紹：客人在這個分類的標題下面看到的話，Google 搜尋結果也會用。留空＝用灰色那段自動產生的。</div>`;
+  box.querySelector("textarea").addEventListener("input",e=>{
+    const v=e.target.value;
+    if(v.trim())target.intro=v.trim();else delete target.intro;
+    btn.classList.toggle("on",!!target.intro);
+  });
+  const btn=document.createElement("button");
+  btn.type="button";
+  btn.className="catmgr-icon-btn"+(target.intro?" on":"");
+  btn.title="分類介紹（標題下面那段話）";
+  btn.textContent="📝";
+  btn.onclick=()=>{box.hidden=!box.hidden;box.hidden?catIntroOpen.delete(key):catIntroOpen.add(key);if(!box.hidden)box.querySelector("textarea").focus()};
+  return {btn,box};
+}
 function toggleMainHidden(mainId){
   const cat=getMainCat(mainId);
   if(cat)cat.hidden=!cat.hidden;
@@ -382,8 +413,7 @@ function renderCatMgrList(){
   wrap.innerHTML="";
   catalog.forEach((cat)=>{
     const row=document.createElement("div");
-    row.className="catmgr-main-row";
-    row.draggable=true;
+    row.className="catmgr-main-row"; // 能不能拖由下面的拖曳把手決定（按住 ⠿ 才打開 draggable）
     row.dataset.catId=cat.id;
     const top=document.createElement("div");
     top.className="catmgr-row-top";
@@ -397,14 +427,16 @@ function renderCatMgrList(){
     nameInput.addEventListener("input",()=>renameMainCategory(cat.id,nameInput.value));
     hideBtn.onclick=()=>toggleMainHidden(cat.id);
     delBtn.onclick=()=>deleteMainCategoryRequest(cat.id);
+    const intro=catIntroEditor(cat.id,null,cat);
+    top.insertBefore(intro.btn,hideBtn);
     row.appendChild(top);
+    row.appendChild(intro.box);
     const subsWrap=document.createElement("div");
     subsWrap.className="catmgr-subs";
     subsWrap.dataset.mainId=cat.id;
     (cat.subs||[]).forEach((sub)=>{
       const subRow=document.createElement("div");
       subRow.className="catmgr-sub-row";
-      subRow.draggable=true;
       subRow.dataset.mainId=cat.id;
       subRow.dataset.subId=sub.id;
       subRow.innerHTML=`
@@ -417,7 +449,10 @@ function renderCatMgrList(){
       sName.addEventListener("input",()=>renameSubCategory(cat.id,sub.id,sName.value));
       sHide.onclick=()=>toggleSubHidden(cat.id,sub.id);
       sDel.onclick=()=>deleteSubCategoryRequest(cat.id,sub.id);
+      const sIntro=catIntroEditor(cat.id,sub.id,sub);
+      subRow.insertBefore(sIntro.btn,sHide);
       subsWrap.appendChild(subRow);
+      subsWrap.appendChild(sIntro.box);
     });
     const addSubBtn=document.createElement("button");
     addSubBtn.className="catmgr-add-sub";
@@ -447,7 +482,15 @@ catmgrListEl.addEventListener("dragstart",e=>{
   dragMainCatId=row.dataset.catId;
   row.classList.add("dragging");
 });
+// 只有按住「⠿」才能拖：整列都能拖的話，在名稱、介紹的輸入框裡反白文字（Firefox 特別明顯）會變成拖動整列、誤改順序
+catmgrListEl.addEventListener("pointerdown",e=>{
+  const row=e.target.closest(".drag-handle")?.closest(".catmgr-sub-row,.catmgr-main-row");
+  if(row)row.draggable=true;
+});
+const stopCatRowDrag=()=>catmgrListEl.querySelectorAll('[draggable="true"]').forEach(r=>r.draggable=false);
+document.addEventListener("pointerup",stopCatRowDrag);
 catmgrListEl.addEventListener("dragend",e=>{
+  stopCatRowDrag();
   const subRow=e.target.closest(".catmgr-sub-row");
   if(subRow){
     catmgrListEl.querySelectorAll(".catmgr-sub-row").forEach(r=>r.classList.remove("dragging","drag-over"));
@@ -544,29 +587,35 @@ async function saveContactManage(){
 }
 window.saveContactManage=saveContactManage;
 
-/* ── 頁面文字（首頁標語等） ───────────────────────────────────── */
-const PAGE_TEXT_FIELDS=["heroTag","heroTitle","heroSub","heroDesc","heroCta","contactTitle","contactSub"];
-const PAGE_TEXT_INPUT_IDS={
-  heroTag:"ptHeroTag",heroTitle:"ptHeroTitle",heroSub:"ptHeroSub",heroDesc:"ptHeroDesc",heroCta:"ptHeroCta",
-  contactTitle:"ptContactTitle",contactSub:"ptContactSub"
-};
+/* ── 網站文字：前台所有固定的字（標題、按鈕、提示…）──────────────────────
+   要改哪些字、預設是什麼，清單在 shop-render.js 的 TEXT_FIELDS（前台、每小時產生頁面也用同一份），
+   這裡照清單自動排出表單：每一格留空＝用預設文字（灰色的字）。存在網站設定的 pageText。 */
 function openPageTextManage(){
-  PAGE_TEXT_FIELDS.forEach(key=>{
-    document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value=pageText[key]||"";
-  });
+  const wrap=document.getElementById("pageTextFields");
+  let group="";
+  wrap.innerHTML=TEXT_FIELDS.map(f=>{
+    const head=f.group!==group?`<div class="pt-group">${escapeHTML(group=f.group)}</div>`:"";
+    const val=escapeHTML(typeof pageText[f.key]==="string"?pageText[f.key]:"");
+    const ph=escapeHTML(f.def);
+    const input=f.long
+      ?`<textarea data-pt="${f.key}" rows="2" placeholder="${ph}">${val}</textarea>`
+      :`<input type="text" data-pt="${f.key}" placeholder="${ph}" value="${val}">`;
+    return `${head}<label>${escapeHTML(f.label)}</label>${input}${f.hint?`<div class="pt-hint">${escapeHTML(f.hint)}</div>`:""}`;
+  }).join("");
   openModal("pageTextModal");
 }
 window.openPageTextManage=openPageTextManage;
 async function savePageTextManage(){
+  // 只留清單上的字：以前存過、網站已經不用的舊欄位（例如舊版的「Facebook」「LINE」「精選商品」標題）存一次就清掉
   const next={};
-  PAGE_TEXT_FIELDS.forEach(key=>{
-    const value=document.getElementById(PAGE_TEXT_INPUT_IDS[key]).value.trim();
-    if(value)next[key]=value;
+  document.querySelectorAll("#pageTextFields [data-pt]").forEach(el=>{
+    const value=el.value.trim();
+    if(value)next[el.dataset.pt]=value;
   });
   pageText=next;
   if(!await saveMeta())return;
   closeModal("pageTextModal");
-  toast("頁面文字已更新 ☁️");
+  toast("網站文字已更新 ☁️");
 }
 window.savePageTextManage=savePageTextManage;
 
@@ -2160,7 +2209,6 @@ window.setUploadMethod=function(method,el){
   el.parentElement.querySelectorAll(".upload-method-btn").forEach(b=>b.classList.remove("active")); // 只換這一排，批次上傳視窗那排不要動到
   el.classList.add("active");
   document.getElementById("urlInputPanel").style.display=method==="url"?"block":"none";
-  document.getElementById("gdriveInputPanel").style.display=method==="gdrive"?"block":"none";
   renderPhotoSlots();
 };
 function renderPhotoSlots(){
@@ -2314,11 +2362,9 @@ function handleSlotFile(slotIdx,event){
   });
 }
 async function promptUrlForSlot(slotIdx){
-  const inputId=uploadMethod==="gdrive"?"gdriveInput":"urlInput";
-  const raw=document.getElementById(inputId).value.trim();
+  const raw=document.getElementById("urlInput").value.trim();
   if(!raw){toast("請先在上方輸入連結");return}
-  // Google Drive 分享連結要先轉成可以直接讀取圖片的網址格式，Cloudinary 才抓得到
-  const fetchable=uploadMethod==="gdrive"?convertGdriveUrl(raw):raw;
+  const fetchable=driveToImageUrl(raw);
   const openedFor=editingProductId;
   slotsUploading.add(slotIdx);
   renderPhotoSlots();
@@ -2342,15 +2388,17 @@ async function promptUrlForSlot(slotIdx){
   renderPhotoSlots();
 }
 
+// Google 雲端的分享連結要先轉成可以直接讀取圖片的網址，Cloudinary 才抓得到。
+// 只認 drive.google.com／docs.google.com：別的網站的網址也可能有 ?id= 或 /d/，那些照原樣用
+function driveToImageUrl(raw){
+  let host="";
+  try{host=new URL(raw).hostname}catch(e){}
+  return /(^|\.)(drive|docs)\.google\.com$/i.test(host)?convertGdriveUrl(raw):raw;
+}
 window.addPhotoByUrl=async function(){
   const raw=document.getElementById("urlInput").value.trim();
-  if(!raw){toast("請輸入圖片網址");return}
-  await addWorkingPhoto(raw);
-};
-window.addPhotoByGdrive=async function(){
-  const raw=document.getElementById("gdriveInput").value.trim();
-  if(!raw){toast("請輸入 Google Drive 連結");return}
-  await addWorkingPhoto(convertGdriveUrl(raw));
+  if(!raw){toast("請貼上照片網址");return}
+  await addWorkingPhoto(driveToImageUrl(raw));
 };
 async function addWorkingPhoto(raw){
   // 排除 slotsUploading 裡「正在上傳、畫面上還沒填值」的格子，避免兩個上傳
@@ -2526,7 +2574,6 @@ window.openProductModal=async function(id,{copy=false}={}){
   viewLink.hidden=!(id&&!copy&&source?.status==="active");
   viewLink.href=`index.html#product-${encodeURIComponent(id||"")}`;
   document.getElementById("urlInput").value="";
-  document.getElementById("gdriveInput").value="";
   setUploadMethod("file",document.querySelector(".upload-method-btn"));
   renderCatSelect();
   rteInit("pDesc");
@@ -2545,6 +2592,8 @@ window.openProductModal=async function(id,{copy=false}={}){
     // 複製出來的新商品不帶搜尋說明：兩頁一模一樣的說明，Google 容易當成重複內容
     document.getElementById("pSeoDesc").value=copy?"":product.seoDesc||"";
     workingOptions=(product.options||[]).map(o=>({name:o.name||"",color:o.color||"#d8cbb8",photo:Number.isInteger(o.photo)?o.photo:null}));
+    // 「進階設定」平常收起來；這件商品有填交期、款式或搜尋說明就打開，免得看不到已經填的內容
+    document.getElementById("advFields").open=!!(product.leadTime||workingOptions.length||(!copy&&product.seoDesc));
     renderBadgeCheckboxes(product.badges||[]);
     const dims=product.dimensions||{};
     document.getElementById("pWidth").value=dims.width||"";
@@ -2583,6 +2632,7 @@ window.openProductModal=async function(id,{copy=false}={}){
     updateSubSelect();
     ["pName","pWidth","pDepth","pHeight"].forEach(fid=>document.getElementById(fid).value="");
     ["pSaleEnd","pLeadTime","pSeoDesc"].forEach(fid=>document.getElementById(fid).value="");
+    document.getElementById("advFields").open=false;
     setPriceField("pPrice","");
     setPriceField("pSalePrice","");
     renderBadgeCheckboxes([]);

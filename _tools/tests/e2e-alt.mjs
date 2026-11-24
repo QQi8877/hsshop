@@ -1,5 +1,5 @@
 // #13 auto alt text on storefront: cards name（分類）, hover empty, lightbox numbered, thumbs labeled.
-import {launch,setup,ORIGIN,checker} from "./lib.mjs";
+import {launch,setup,ORIGIN,checker,openCard} from "./lib.mjs";
 const ok=checker();
 const b=await launch();
 for(const vp of [{width:1400,height:900},{width:390,height:844}]){
@@ -21,7 +21,7 @@ for(const vp of [{width:1400,height:900},{width:390,height:844}]){
       ok(h.every(a=>a===""),"hover alts empty "+JSON.stringify(h));}
   }
   // open lightbox for a multi-photo product
-  await pg.locator("#productsGrid .product-card").first().click();
+  await openCard(pg,pg.locator("#productsGrid .product-card").first(),0);
   await pg.waitForSelector("#lightbox.open");await pg.waitForTimeout(800);
   const lb=await pg.getAttribute("#lbImg","alt");
   ok(/商品照片 1$/.test(lb),"lightbox alt "+lb);

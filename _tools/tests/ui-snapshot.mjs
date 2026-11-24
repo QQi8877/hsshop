@@ -2,7 +2,7 @@
 import {launch,setup,seedStore,ORIGIN} from "./lib.mjs";
 import fs from "fs";
 const out=process.argv[2];
-const SEL=["#lightbox",".lb-bar",".lb-close",".lb-bar-fav",".lb-layout",".lb-left",".lb-stage-wrap",".lb-stage","#lbImg","#lbPrev","#lbNext","#lbCounter",".lb-thumbs",".lb-thumb",".lb-thumb.active",".lb-hint",".lb-info",".lb-product-title",".lb-product-cat",".lb-spec-title",".lb-dim",".lb-product-note",".lb-ask",".lb-ask-btn",".lb-ask-note",".lb-similar",".lb-favorite",
+const SEL=["#lightbox",".lb-bar",".lb-close",".lb-bar-fav",".lb-layout",".lb-left",".lb-stage-wrap",".lb-stage","#lbImg","#lbPrev","#lbNext","#lbCounter",".lb-thumbs",".lb-thumb",".lb-thumb.active",".lb-info",".lb-product-title",".lb-product-cat",".lb-spec-title",".lb-dim",".lb-product-note",".lb-ask",".lb-ask-btn",".lb-ask-note",".lb-similar",".lb-favorite",
  "nav",".hero-inner",".hero-title",".hero-actions",".hero-line-cta",".hero-photo","#picks .sec-head h2",".p-card",".p-card__title",".p-card__foot",".cat-tile",".cat-tile--cta",".cat-side-btn",".cat-tab",".product-card",".product-info",".product-name",".product-size",".product-img-wrap",".favorite-btn",".favorites-fab",".favorites-panel",".favorites-inquire-btn",".favorites-empty",".fx-line",".fx-top",".fx-progress","#buyInfoLine",".contact-btn","footer",".products-section-head",".listing-title"];
 const b=await launch();const res={};
 const store=await seedStore();

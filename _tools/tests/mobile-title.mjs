@@ -20,10 +20,10 @@ for(const [name,w] of [["mob",390],["desk",1366]]){
     ok((await pg.locator("#listingTitle").textContent())==="椅子"&&new URL(pg.url()).pathname==="/c/cat-chair","tapping 椅子 goes back to the main category");
     // 全部：椅子區的欄線
     await pg.locator('#catSidebar .cat-side-btn[data-main="全部"]').click();await pg.waitForTimeout(800);
-    const cols=await pg.evaluate(()=>{const g=document.getElementById("productsGrid").getBoundingClientRect();return [...document.querySelectorAll("#productsGrid .product-card")].slice(12,17).map(c=>{const r=c.getBoundingClientRect();return [r.left-g.left<20?"L":"R",getComputedStyle(c).borderRadius,getComputedStyle(c).borderLeftWidth,Math.round(r.right)]})});
+    const cols=await pg.evaluate(()=>{const g=document.getElementById("productsGrid").getBoundingClientRect();return [...document.querySelectorAll("#productsGrid .product-card")].slice(12,17).map(c=>{const r=c.getBoundingClientRect(),w=c.querySelector(".product-img-wrap");return [r.left-g.left<20?"L":"R",getComputedStyle(w).borderRadius,getComputedStyle(c).borderLeftWidth,Math.round(r.right),getComputedStyle(c).backgroundColor]})});
     console.log(JSON.stringify(cols));
-    // 奇數件分類後面：左右欄照樣交替、每張都是圓角無框線的卡片、不超出螢幕
-    ok(cols.every(([,rad,bl])=>rad==="10px"&&bl==="0px")&&cols.every(c=>c[3]<=390)&&new Set(cols.map(c=>c[0])).size===2,"cards after an odd-sized category keep the same look, nothing past the screen edge");
+    // 奇數件分類後面：左右欄照樣交替、每張都是同樣的卡（照片圓角框、卡片本身沒有底色和框線）、不超出螢幕
+    ok(cols.every(([,rad,bl,,bg])=>rad==="12px"&&bl==="0px"&&bg==="rgba(0, 0, 0, 0)")&&cols.every(c=>c[3]<=390)&&new Set(cols.map(c=>c[0])).size===2,"cards after an odd-sized category keep the same look, nothing past the screen edge");
     await pg.evaluate(()=>{[...document.querySelectorAll("#productsGrid .products-section-head")][1].scrollIntoView({block:"start"});scrollBy(0,-60)});await pg.waitForTimeout(500);
     await pg.screenshot({path:`${S}/cols-mob.png`});
   }else{

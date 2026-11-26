@@ -394,7 +394,11 @@ function toggleMobileNav(force){
    一批。全部 58 件一次畫出來有一千多個網頁元素，手機光是算版面就要花上半秒以上；客人通常只會看
    前面幾排，後面的等快捲到再畫，看起來一樣是一路接著出現。 */
 const GRID_FIRST_BATCH=20,GRID_NEXT_BATCH=24;
-let gridMoreObserver=null;
+let gridMoreObserver=null,gridRenderRest=null;
+// 往下跳過商品列表的連結（選單的「購買須知」「聯繫」、購買須知裡的「到聯絡我們詢問」）和右邊小圓點（siteFx 送 hs:gridall）：
+// 跳之前先把還沒畫的商品一次畫完。不然捲過去的途中會多畫一批、把後面的區塊往下推，停在商品列表中間
+document.addEventListener("click",e=>{if(e.target.closest?.('a[href="#buyInfo"],a[href="#contact"]'))gridRenderRest?.()},true);
+document.addEventListener("hs:gridall",()=>gridRenderRest?.());
 // 分類連結：一般點擊就地切換分類；按著 Ctrl／⌘ 或中鍵點，照一般連結在新分頁打開
 document.getElementById("categories").addEventListener("click",event=>{
   const link=event.target.closest("a[data-main]");
@@ -417,7 +421,7 @@ function renderProducts(animate=true){
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
   gridMoreObserver?.disconnect();
-  gridMoreObserver=null;
+  gridMoreObserver=null;gridRenderRest=null;
   let list=listedProducts();
   const q=searchQuery.trim().toLowerCase();
   if(q){
@@ -560,9 +564,10 @@ function renderProducts(animate=true){
     const end=Math.min(list.length,next+(next?GRID_NEXT_BATCH:GRID_FIRST_BATCH));
     for(;next<end;next++)addCard(list[next],next);
     if(next<list.length)grid.appendChild(sentinel); // 移到最後面，捲到它附近再畫下一批
-    else{sentinel.remove();gridMoreObserver?.disconnect();gridMoreObserver=null}
+    else{sentinel.remove();gridMoreObserver?.disconnect();gridMoreObserver=null;gridRenderRest=null}
   };
   renderMore();
+  if(next<list.length)gridRenderRest=()=>{while(next<list.length)renderMore()};
   if(next<list.length){
     if("IntersectionObserver" in window){
       gridMoreObserver=new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting))renderMore()},{rootMargin:"0px 0px 1600px 0px"});
@@ -2074,4 +2079,61 @@ function openRoutedProduct(final){
     });
     hero.addEventListener("pointerleave",()=>{photo.style.setProperty("--mx",0);photo.style.setProperty("--my",0)});
   }
+
+  // 3. 首頁四大區塊・整頁翻頁（2026-11 老闆選的 B；對齊、大小在 index.html「首頁四大區塊」那段）：
+  //    右邊小圓點顯示現在在第幾塊、點了跳過去；電腦用滑鼠滾輪時，前兩塊轉一格就換一塊
+  //    （只靠瀏覽器的整頁對齊，滾輪轉一點點會彈回原位，像卡住）。商品列表那塊照常捲。
+  const byId=id=>document.getElementById(id);
+  const blocks=()=>{
+    const second=[byId("picks"),byId("catTiles")].find(b=>b&&b.offsetParent); // 本月選品關掉時，分類磚就是第二塊
+    const buy=byId("buyInfo");
+    return [byId("hero"),second,byId("categories"),buy&&!buy.hidden?buy:byId("contact")].filter(b=>b&&b.offsetParent);
+  };
+  const snapTop=b=>b.getBoundingClientRect().top+scrollY-(parseFloat(getComputedStyle(b).scrollMarginTop)||0);
+  const goBlock=b=>{
+    if(b.id==="buyInfo"||b.id==="contact")document.dispatchEvent(new Event("hs:gridall")); // 先把商品列表畫完，目標才不會被推走
+    b.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});
+  };
+  // 小圓點的說明用各塊自己的標題（網站文字），不另外寫死字
+  const titleOf=b=>(b.querySelector("h1,h2")?.textContent||b.querySelector(".cat-tile__name")?.textContent||"").trim();
+  const dots=document.body.appendChild(el("div","fx-dots"));
+  let dotKey="";
+  const updateDots=()=>{
+    const list=blocks(),key=list.map(b=>b.id+":"+titleOf(b)).join("|");
+    if(key!==dotKey){
+      dotKey=key;dots.textContent="";
+      list.forEach(b=>{
+        const d=dots.appendChild(document.createElement("button"));
+        d.type="button";d.setAttribute("aria-label",titleOf(b));d.title=titleOf(b);
+        d.addEventListener("click",()=>goBlock(b));
+      });
+    }
+    const line=scrollY+innerHeight*.45;let at=0;
+    list.forEach((b,i)=>{if(snapTop(b)<=line)at=i});
+    [...dots.children].forEach((d,i)=>d.setAttribute("aria-current",String(i===at)));
+  };
+  let dotsTicking=false;
+  const onDots=()=>{if(!dotsTicking){dotsTicking=true;requestAnimationFrame(()=>{dotsTicking=false;updateDots()})}};
+  addEventListener("scroll",onDots,{passive:true});
+  addEventListener("resize",onDots);
+  // 從分類頁換回「全部」、後台關掉本月選品或分類磚、購買須知有沒有內容：哪幾塊看得到會變
+  new MutationObserver(onDots).observe(document.body,{attributes:true,attributeFilter:["class"]});
+  ["picks","catTiles","buyInfo"].forEach(id=>{const n=byId(id);if(n)new MutationObserver(onDots).observe(n,{attributes:true,attributeFilter:["style","hidden"]})});
+  updateDots();
+  let wheelLock=0;
+  addEventListener("wheel",e=>{
+    if(e.ctrlKey||!e.deltaY||document.body.classList.contains("lightbox-open")||document.documentElement.classList.contains("sheet-lock"))return;
+    if(e.target.closest?.("#favoritesPanel,#lightbox,.sheet"))return;
+    const now=performance.now();
+    // 換塊的動畫期間（觸控板一次滑動會送出一長串滾輪事件）全部吃掉，一次滑動只換一塊
+    if(now<wheelLock){e.preventDefault();wheelLock=Math.max(wheelLock,now+220);return}
+    const list=blocks(),last=list.findIndex(b=>b.id==="categories");
+    if(last<1)return;
+    const dir=e.deltaY>0?1:-1;
+    let at=-1;
+    for(let i=0;i<=last;i++)if(Math.abs(snapTop(list[i])-scrollY)<6)at=i;
+    if(at<0||(dir>0&&at===last)||(dir<0&&at===0))return;
+    e.preventDefault();wheelLock=now+750;
+    goBlock(list[at+dir]);
+  },{passive:false});
 })();

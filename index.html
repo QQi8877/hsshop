@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/site.js?v=4">
+<link rel="modulepreload" href="/site.js?v=5">
 <link rel="modulepreload" href="/shop-render.js?v=16">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
 <!-- 字型（2026-11 老闆選的 A：全站思源黑體）：全部自行內嵌在 fonts/ 資料夾（來源 @fontsource，開放字型授權 OFL，可以免費商用），
@@ -1765,6 +1765,91 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
 @media(prefers-reduced-motion:reduce){
   .sheet,.sheet-backdrop,.filter-fab,.lb-dock,.qv{transition:none}
 }
+
+/* ══ 首頁四大區塊・整頁翻頁（2026-11 老闆選的 B）═══════════════════
+   首頁分成四塊：1 大圖（#hero）、2 本月選品＋分類磚（#picks＋#catTiles）、3 商品列表（#categories）、
+   4 購買須知＋聯繫我們（#buyInfo＋#contact）。捲動時一次對齊一整塊（scroll-snap），前兩塊滑一下只換一塊；
+   商品列表那塊很長，裡面照常自由捲。只加捲動效果、調前兩塊的大小，商品列表等功能都不動。
+   - 對齊的位置要扣掉上方選單：大圖在最上面時選單是 62px，往下捲之後縮成 52px（nav--scrolled），
+     所以大圖留 62px、其他塊留 52px（scroll-margin-top）。
+   - 前兩塊剛好一個畫面：大圖的高度＝畫面高度－62px，照片跟著高度縮放；第二塊用 main 上的 --b2-* 算照片框多高
+     （寬度跟可用高度取小的，照片框不一定是正方形）、分類磚多高，剩下的空間平均放上下。
+   - 從 Google 直接進分類頁（body.cat-landing）沒有第二塊，大圖也維持原本的大小，商品才不會被擠到下一頁。
+   - 電腦用滑鼠滾輪時前兩塊轉一格就換一塊、右邊的小圓點（.fx-dots）：site.js 的 siteFx「3.」。
+   改了選單高度、本月選品卡片的字級、分類磚的樣式，下面的數字要一起看。 */
+:root{--nav-full:62px;--nav-small:52px;--vh:100vh}
+@supports(height:100svh){:root{--vh:100svh}}
+html{scroll-snap-type:y mandatory}
+#hero,#picks,#categories,#buyInfo,#buyInfo[hidden]+#contact,#picks[style*="none"]+#catTiles{scroll-snap-align:start;scroll-margin-top:var(--nav-small)}
+#hero{scroll-margin-top:var(--nav-full)}
+#hero,#picks,#picks[style*="none"]+#catTiles{scroll-snap-stop:always}
+footer{scroll-snap-align:end} /* 第四塊比畫面高：最底下（聯繫我們的下半、頁尾）也要停得住 */
+
+/* 1. 大圖：剛好一個畫面 */
+body:not(.cat-landing) #hero{min-height:calc(var(--vh) - var(--nav-full));display:flex;flex-direction:column;justify-content:center}
+body:not(.cat-landing) .hero-inner{width:100%;padding-top:clamp(20px,6vh,64px);padding-bottom:clamp(20px,6vh,64px)}
+@media(min-width:761px) and (min-aspect-ratio:1/1){
+  /* 照片圓圈外面還有一圈線（往外 22px），一起算進高度 */
+  body:not(.cat-landing) .hero-photo{width:min(100%,calc(var(--vh) - var(--nav-full) - 2 * clamp(20px,6vh,64px) - 44px));justify-self:center}
+}
+/* 手機、直立的平板：字在上、照片在下，照片填滿剩下的高度 */
+@media(max-width:760px),(max-aspect-ratio:1/1){
+  body:not(.cat-landing) .hero-inner{display:flex;flex-direction:column;flex:1 1 auto;gap:clamp(16px,3vh,26px);padding:clamp(20px,4vh,36px) 24px}
+  body:not(.cat-landing) .hero-content{max-width:none}
+  body:not(.cat-landing) .hero-photo{flex:1 1 auto;width:100%;min-height:150px;aspect-ratio:auto;border-radius:var(--radius-lg)}
+  body:not(.cat-landing) .hero-photo::before{display:none}
+  body:not(.cat-landing) .hero-photo img{width:60%;height:60%}
+}
+
+/* 2. 本月選品＋分類磚：剛好一個畫面 */
+main{
+  --b2-blk:calc(var(--vh) - var(--nav-small));      /* 這一塊可用的高度 */
+  --b2-pad:clamp(14px,3.4vh,40px);                   /* 上、下留白（還會再加上 --b2-extra） */
+  --b2-headm:clamp(10px,2.2vh,24px);
+  --b2-head:calc(34px + var(--b2-headm));            /* 「本月選品」標題列＋下面的間距 */
+  --b2-text:68px;                                    /* 照片框下面：間距 12＋名稱 23＋間距 12＋尺寸 21 */
+  --b2-cols:4;--b2-rows:1;--b2-gap:18px;--b2-side:80px;--b2-maxw:1200px;
+  --b2-mid:clamp(12px,2.6vh,26px);                   /* 選品和分類磚之間 */
+  --b2-tile:clamp(110px,calc(var(--b2-blk) * .22),190px);
+  --b2-colw:calc((min(100vw - var(--b2-side),var(--b2-maxw)) - (var(--b2-cols) - 1) * var(--b2-gap)) / var(--b2-cols));
+  --b2-fit:calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - (var(--b2-rows) - 1) * var(--b2-gap)) / var(--b2-rows) - var(--b2-text));
+  --b2-img:max(72px,min(var(--b2-colw),var(--b2-fit)));
+  --b2-extra:max(0px,calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - var(--b2-rows) * (var(--b2-img) + var(--b2-text)) - (var(--b2-rows) - 1) * var(--b2-gap)) / 2));
+}
+#picks{padding-top:calc(var(--b2-pad) + var(--b2-extra))!important}
+#picks .sec-head{margin-bottom:var(--b2-headm)}
+#picks .p-card__media{aspect-ratio:auto;height:var(--b2-img)}
+#picks .p-card__title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#catTiles{padding-top:var(--b2-mid)!important;padding-bottom:calc(var(--b2-pad) + var(--b2-extra))!important}
+#catTiles .cat-tile{height:var(--b2-tile);justify-content:center;padding:8px 10px;gap:clamp(4px,calc(var(--b2-tile) * .05),10px)}
+#catTiles .cat-tile__thumb{flex:none;width:clamp(40px,calc(var(--b2-tile) * .42),80px);height:clamp(40px,calc(var(--b2-tile) * .42),80px)}
+/* 手機、直立的平板：選品兩欄兩排，分類磚排成一排小磚 */
+@media(max-width:860px),(max-aspect-ratio:1/1){
+  main{--b2-cols:2;--b2-rows:2;--b2-tile:clamp(84px,calc(var(--b2-blk) * .15),130px)}
+  #picks .pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #catTiles .cat-grid{grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:10px}
+  #catTiles .cat-grid.odd .cat-tile--cta{grid-column:auto}
+  #catTiles .cat-tile{padding:6px 4px;border-radius:14px}
+  #catTiles .cat-tile__name{font-size:13.5px;line-height:1.3}
+  #catTiles .cat-tile__count{font-size:11.5px}
+  #catTiles .cat-tile--cta .cat-tile__name{font-size:13px;line-height:1.35}
+  #catTiles .cat-tile--cta .cta-link{font-size:11px}
+}
+@media(max-width:860px){main{--b2-side:36px;--b2-head:calc(30px + var(--b2-headm));--b2-text:66.5px}}
+@media(max-width:760px){main{--b2-text:60.5px}} /* 760px 以下品名往上收 6px（上面「手機兩欄版面」那條） */
+@media(max-width:480px){#catTiles .cat-tile--cta .cta-link{display:none}}
+
+/* 右邊的小圓點：現在在第幾塊（點了跳過去） */
+.fx-dots{position:fixed;z-index:90;right:max(10px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+.fx-dots button{width:10px;height:10px;padding:0;border:0;border-radius:var(--radius-pill);background:rgba(34,29,24,.28);box-shadow:0 0 0 2px rgba(255,253,249,.8);cursor:pointer;transition:height .3s ease,background .3s ease}
+.fx-dots button[aria-current="true"]{height:28px;background:var(--brand)}
+body.lightbox-open .fx-dots{display:none}
+@media(max-width:760px){
+  .fx-dots{right:max(3px,env(safe-area-inset-right,0px));gap:8px}
+  .fx-dots button{width:7px;height:7px}
+  .fx-dots button[aria-current="true"]{height:22px}
+}
+@media(prefers-reduced-motion:reduce){.fx-dots button{transition:none}}
 </style>
 <script>
 /* 第一次來的客人（這台瀏覽器還沒存過商品資料）：馬上去抓每小時自動更新的商品資料
@@ -2044,6 +2129,6 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
 
 
 
-<script type="module" src="/site.js?v=4"></script>
+<script type="module" src="/site.js?v=5"></script>
 </body>
 </html>

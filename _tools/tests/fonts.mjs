@@ -56,7 +56,9 @@ for(const [name,vp] of [["mob",{width:390,height:844}],["desk",{width:1280,heigh
   await pg.click(".lb-close");await pg.waitForTimeout(700);
   if(name==="mob"){
     await pg.locator('#catSidebar .cat-side-btn[data-main="cat-storage"]').click();await pg.waitForTimeout(900);
-    await pg.evaluate(()=>{document.getElementById("productsGrid").scrollIntoView();scrollBy(0,-60)});await pg.waitForTimeout(600);
+    // 捲進商品格裡面一點、再往上捲一點，「篩選」鈕才會出現（首頁整頁翻頁：在商品列表最上面往上捲，會回到上一塊）
+    await pg.evaluate(()=>scrollTo({top:document.getElementById("productsGrid").getBoundingClientRect().top+scrollY+300,behavior:"instant"}));await pg.waitForTimeout(400);
+    await pg.evaluate(()=>scrollBy({top:-60,behavior:"instant"}));await pg.waitForTimeout(600);
     await pg.locator(".filter-fab").click();await pg.waitForTimeout(500);
     text+=await pg.evaluate(()=>document.querySelector(".sheet.open")?.innerText||"");
   }

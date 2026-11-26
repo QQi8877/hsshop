@@ -1,9 +1,9 @@
 """字型瘦身：只留網站真的用到的字。
 
 fonts/ 裡的完整字型是繁體中文常用字（每個字重約 1～1.3MB），但網站實際只用到幾百個字。這支程式照
-build-pages.mjs 算好的字單，從完整字型裡只取出這些字，另存成小檔案（每個約一百 KB），前台只載入小檔案：
-- 明體（店名、首頁大標）：fonts/heading-chars.txt → fonts/noto-serif-tc-{400,500,600}-sub.woff2
-- 思源黑體（全站其他的字）：fonts/site-chars.txt → fonts/noto-sans-tc-{400,500,600}-sub.woff2
+build-pages.mjs 算好的字單，從完整字型裡只取出這些字，另存成小檔案，前台只載入小檔案：
+- 明體（只有店名、首頁大標的幾個字，每個十幾 KB）：fonts/heading-chars.txt → fonts/noto-serif-tc-{400,500,600}-sub.woff2
+- 思源黑體（全站其他的字，每個約一百 KB）：fonts/site-chars.txt → fonts/noto-sans-tc-{400,500,600}-sub.woff2
 
 字單裡的字沒變，就不重做（輸出檔一模一樣，不會每小時多一筆更新）。後台新增的商品用到新的字：
 明體會自動改抓完整字型補那幾個字，黑體先用裝置內建的字顯示（見 index.html 的字型說明），

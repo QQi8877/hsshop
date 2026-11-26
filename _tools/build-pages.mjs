@@ -10,8 +10,8 @@
    - llms.txt：給 AI 搜尋（ChatGPT、Perplexity…）看的網站簡介、分類、商品清單。
    - sitemap.xml：告訴 Google 有哪些網址、什麼時候更新過。
    - data/site.json：第一次來的客人先用這份資料畫商品，不用等 Firebase（見 site.js 的「啟動」段落）。
-   - fonts/heading-chars.txt：店名、首頁大標用的明體可能用到的字（版型裡的字＋分類、頁面文字、商品名稱）；
-     fonts/site-chars.txt：全站思源黑體可能用到的所有字（再加上商品說明、規格、款式這些商品資料）。
+   - fonts/heading-chars.txt：明體用到的字（只有店名、首頁大標、載入中的店名，見下面的 brandText）；
+     fonts/site-chars.txt：全站思源黑體可能用到的所有字（版型裡的字、後台填的文字、所有商品資料）。
      _tools/subset-fonts.py 照這兩份字單把字型瘦身成只含這些字的小檔案。
    由 .github/workflows/build-pages.yml 每小時跑一次（index.html 等版型檔案改了也會馬上跑），店家照常在
    後台改商品就好，不用做任何事；網站本身一直是直接讀 Firebase，改了馬上看得到，這裡產生的頁面最晚一小時跟上。
@@ -22,7 +22,7 @@
 import{readFile,writeFile,mkdir,readdir,unlink}from"node:fs/promises";
 import{fileURLToPath}from"node:url";
 import path from"node:path";
-import{listingTitleHtml,textHtml,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
+import{buyInfoItems,listingTitleHtml,textHtml,SITE_ORIGIN,SITE_NAME,escapeHTML,normalizeProduct,isListedProduct,isSafeProductId,catalogOrderCompare,productInfoHtml,similarProducts,productDescText,productPageTitle,productSearchDesc,photoAlt,clipText,flattenLines,categoryPath,categoryPages,categoryPageTitle,categoryIntro,categoryNavHtml,staticProductCardHtml,contactItemsHtml,contactActionsHtml,storeJsonLd,getSizeSummary,productPath,normalizePhotoUrl,shareImageUrl,activeSalePrice,priceDigits,mainNameOf,subNameOf}from"../shop-render.js";
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),"..");
 const outArg=process.argv.indexOf("--out");
@@ -204,6 +204,11 @@ function homePage(template,site,listed){
   const nav=categoryNavHtml(site.catalog,listed);
   html=fillById(html,"categoriesBar",nav.bar);
   html=fillById(html,"catSidebar",nav.side);
+  // 一打開就是對的，不用等程式跑完才變（不然第一秒會看到選單被擠開、「全部 0 件」變成「全部 59 件」）：
+  // 選單的「購買須知」有填問答才顯示（跟 site.js 的 renderBuyInfo 一樣）、本月選品旁的商品總數（跟 renderPicks 一樣）
+  const hasBuyInfo=buyInfoItems(site).length>0;
+  for(const id of ["navBuyItem","mobileNavBuyItem"])html=setAttrs(html,{id},{hidden:hasBuyInfo?null:true},id);
+  html=fillById(html,"picksTotalCount",String(listed.length));
   return html;
 }
 
@@ -352,11 +357,22 @@ async function writeIfChanged(file,content){
 }
 
 /* ── 字型要留哪些字 ────────────────────────────────────────
-   版型（index.html、shop-render.js、site.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、購買須知、
-   標籤，跟每件商品的名稱（明體的字單）；全站思源黑體的字單再加上每件商品的所有文字（說明、規格、款式、交期…）。
-   程式註解裡的字不算（只是說明，畫面上不會出現）。多收幾個字沒關係；少收的字明體會自動改用完整字型補上，
-   黑體會先用裝置內建的字顯示，下一次每小時更新就補進字單。 */
+   全站思源黑體：版型（index.html、shop-render.js、site.js）裡寫死的字，加上後台填的分類、頁面文字、聯繫資訊、
+   購買須知、標籤，跟每件商品的所有文字（名稱、說明、規格、款式、交期…）。程式註解裡的字不算（畫面上不會出現）。
+   明體：只有店名、首頁大標、載入中的店名用（index.html 的 --font-brand），只收這幾個元素的字＋後台改過的首頁大標，
+   檔案只有十幾 KB，打開網頁時很快就下載完（見 index.html 開頭的字型說明）。
+   多收幾個字沒關係；少收的字明體會自動改用完整字型補上，黑體會先用裝置內建的字顯示，下一次每小時更新就補進字單。 */
 const stripComments=src=>src.replace(/<!--[\s\S]*?-->/g,"").replace(/\/\*[\s\S]*?\*\//g,"").replace(/(^|[^:\\"'`])\/\/[^\n]*/g,"$1");
+// 用明體（--font-brand）的元素：跟 index.html 裡 `.nav-logo,.hero-title,.loading-breathe-text{font-family:var(--font-brand)}` 一致
+const BRAND_CLASSES=["nav-logo","hero-title","loading-breathe-text"];
+function brandText(html){
+  const out=[];
+  for(const cls of BRAND_CLASSES){
+    const re=new RegExp(`<(\\w+)\\b[^>]*\\bclass="(?:[^"]*\\s)?${cls}(?:\\s[^"]*)?"[^>]*>([\\s\\S]*?)</\\1>`,"g");
+    for(const m of html.matchAll(re))out.push(m[2].replace(/<[^>]+>/g,""));
+  }
+  return out.filter(t=>t.trim());
+}
 function headingChars(sources){
   const set=new Set();
   for(let c=0x20;c<0x7f;c++)set.add(String.fromCharCode(c));          // 英數字、半形標點
@@ -423,7 +439,11 @@ async function main(){
   const [shopRender,siteJs]=await Promise.all(["shop-render.js","site.js"].map(f=>readFile(path.join(ROOT,f),"utf8")));
   const layoutText=[stripComments(sourceHome),stripComments(shopRender),stripComments(siteJs),
     ...allStrings(Object.fromEntries(META_FIELDS.map(k=>[k,meta.data[k]])))];
-  if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),headingChars([...layoutText,...products.map(p=>p.name)])))changed++;
+  // 明體：店名、首頁大標的字＋後台改過的首頁大標。版型改了、找不到用明體的元素：保險起見照舊收版型＋商品名稱的字
+  // （檔案大一點，但店名不會缺字）
+  const brand=brandText(stripComments(sourceHome));
+  const brandSources=brand.length?[...brand,site.pageText.heroTitle]:[...layoutText,...products.map(p=>p.name)];
+  if(await writeIfChanged(path.join(OUT,"fonts","heading-chars.txt"),headingChars(brandSources)))changed++;
   if(await writeIfChanged(path.join(OUT,"fonts","site-chars.txt"),headingChars([...layoutText,...products.flatMap(allStrings)])))changed++;
   console.log(`上架中 ${rows.length} 件，產生商品頁 ${listed.length} 件；更新 ${changed} 個檔案，移除 ${removed} 個舊頁面`);
 }

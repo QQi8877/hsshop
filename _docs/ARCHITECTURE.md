@@ -45,6 +45,7 @@
 5. `詢問方式`：收藏按鈕、按愛心後的提示
 6. `手機版商品列表`：手機左邊兩層分類
 7. `視覺 3.0`：A 版「清爽型錄」——商品卡的暖灰照片框、各寬度的欄數、篩選、最近看過、快速預覽、手機商品頁底部收藏列
+8. `首頁四大區塊・整頁翻頁`（B 版）：整頁對齊（scroll-snap）、大圖和「本月選品＋分類磚」各剛好一個畫面（--b2-* 算照片框、分類磚多高）、右邊小圓點
 
 色票、尺寸用 `:root` 的變數（`--text`、`--brand`、`--bg`、`--line`…），不要寫死顏色。
 
@@ -54,14 +55,15 @@
 
 **(1) 產生頁面靠的 id**：`build-pages.mjs` 只認下面這些 id／屬性，版面可以隨便改，但這些要留著、不能重複：
 `structuredData`、`contactItems`、`contactActions`、`categoriesBar`、`catSidebar`、`listingTitle`、`listingIntro`、
-`subCategoriesBar`、`productsGrid`、`lightbox`、`lbPrev`、`lbNext`、`lbImg`、`lbInfo`、`data-page-field="heroTitle"`，
-以及 `<title>`、`<body>`、`</head>`、`<meta name="description">`、`og:*`、`twitter:*`、`<link rel="canonical">`。
+`subCategoriesBar`、`productsGrid`、`lightbox`、`lbPrev`、`lbNext`、`lbImg`、`lbInfo`、`data-page-field="heroTitle"`、
+`navBuyItem`、`mobileNavBuyItem`、`picksTotalCount`，以及 `<title>`、`<body>`、`</head>`、`<meta name="description">`、`og:*`、`twitter:*`、`<link rel="canonical">`。
 找不到時 `build-pages.mjs` 會直接停下來報錯，不會產生壞頁面。
 
 **(2) HTML 的 onclick**：`site.js` 是 module，函式不會自動變成全域。HTML 上 `onclick="xxx()"` 要能用，
 `xxx` 必須加進 `site.js` 裡 `Object.assign(window,{...})` 那份清單。
 
-**(3) siteFx 跟主程式只用事件溝通**：`hs:favcount`（收藏件數）、`hs:favpanel`（收藏清單開關）。
+**(3) siteFx 跟主程式只用事件溝通**：`hs:favcount`（收藏件數）、`hs:favpanel`（收藏清單開關）、
+`hs:gridall`（siteFx 送給主程式：跳到購買須知／聯繫之前，先把商品格還沒畫的商品一次畫完）。
 siteFx 不要去讀主程式的變數或盯它的畫面。
 
 **(4) 版本號 `?v=`**：瀏覽器會快取，改了檔案就要把「引用它的地方」的數字加一：

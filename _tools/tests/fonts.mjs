@@ -5,7 +5,7 @@
 // 3. 畫面上看得到的每個字（列表、快速預覽、篩選、商品頁、收藏清單）都在字單裡，不會有字掉回裝置內建的字型
 // 4. 打開網頁不會「字先小後大」（2026-11 老闆反映）：第一個畫面用到的字型檔都有 preload、而且都用得到；
 //    思源字型用 font-display:block（下載完才顯示，不先用裝置內建的字）；網路很慢時 1.5 秒後改用內建字（fonts-late），
-//    下載完再換回來；網路正常時不會出現 fonts-late
+//    下載完再換回來；網路正常時不會出現 fonts-late。店名的明體也一樣（brand-late），不會空白到瀏覽器放棄的 3 秒
 import {launch,setup,ORIGIN,ROOT,checker,openCard} from "./lib.mjs";
 import {readFileSync,statSync,existsSync,readdirSync} from "node:fs";
 import path from "node:path";
@@ -56,10 +56,8 @@ for(const [name,vp] of [["mob",{width:390,height:844}],["desk",{width:1280,heigh
   await pg.click(".lb-close");await pg.waitForTimeout(700);
   if(name==="mob"){
     await pg.locator('#catSidebar .cat-side-btn[data-main="cat-storage"]').click();await pg.waitForTimeout(900);
-    // 捲進商品格裡面一點、再往上捲一點，「篩選」鈕才會出現（首頁整頁翻頁：在商品列表最上面往上捲，會回到上一塊）
-    await pg.evaluate(()=>scrollTo({top:document.getElementById("productsGrid").getBoundingClientRect().top+scrollY+300,behavior:"instant"}));await pg.waitForTimeout(400);
-    await pg.evaluate(()=>scrollBy({top:-60,behavior:"instant"}));await pg.waitForTimeout(600);
-    await pg.locator(".filter-fab").click();await pg.waitForTimeout(500);
+    // 換分類後停在商品列表開頭：「篩選」鈕直接看得到（不用先往上捲）
+    await pg.locator(".filter-fab.show").click({timeout:4000});await pg.waitForTimeout(500);
     text+=await pg.evaluate(()=>document.querySelector(".sheet.open")?.innerText||"");
   }
   const miss=missing(text);
@@ -71,8 +69,8 @@ for(const [name,vp] of [["mob",{width:390,height:844}],["desk",{width:1280,heigh
 const WANT=["noto-serif-tc-600-sub","noto-sans-tc-400-sub","noto-sans-tc-500-sub","noto-sans-tc-600-sub","noto-sans-tc-400-punct","noto-sans-tc-600-punct"];
 const prod="/p/"+readdirSync(path.join(ROOT,"p")).find(f=>f.endsWith(".html")).replace(/\.html$/,"");
 const base=s=>s.replace(/^.*\/|\.woff2$/g,"");
-// 記下 <html> 有沒有出現過 fonts-late（這時 <html> 可能還沒建好，所以盯整份文件）
-const watchLate=()=>{new MutationObserver(()=>{if(document.documentElement?.classList.contains("fonts-late"))window.__late=true})
+// 記下 <html> 有沒有出現過 fonts-late／brand-late（這時 <html> 可能還沒建好，所以盯整份文件）
+const watchLate=()=>{new MutationObserver(()=>{const c=document.documentElement?.classList;if(c?.contains("fonts-late"))window.__late=true;if(c?.contains("brand-late"))window.__brandLate=true})
   .observe(document,{subtree:true,attributes:true,attributeFilter:["class"]})};
 // 分類頁、商品頁是照 index.html 產生的：還沒重新產生（專案資料夾裡的是舊的，每小時更新才會換）就跳過，
 // 用 stage.mjs 做出來的資料夾測才準
@@ -90,7 +88,8 @@ for(const [name,url] of [["desk","/"],["desk","/c/cat-chair"],["desk",prod],["mo
     preloads:[...document.querySelectorAll("link[rel=preload][as=font]")].map(l=>l.getAttribute("href")),
     fetched:performance.getEntriesByType("resource").filter(e=>/\/fonts\//.test(e.name)).map(e=>[e.name,e.initiatorType]),
     display:[...document.fonts].map(f=>[f.family.replace(/["']/g,""),f.display]),
-    late:!!window.__late||document.documentElement.classList.contains("fonts-late")}));
+    late:!!window.__late||document.documentElement.classList.contains("fonts-late"),
+    brandLate:!!window.__brandLate||document.documentElement.classList.contains("brand-late")}));
   const tag=`${name} ${url}`;
   if(url==="/"&&!mob)ok(JSON.stringify(r.preloads.map(base).sort())===JSON.stringify(WANT.slice().sort()),"the fonts used on the first screen are preloaded ("+r.preloads.map(base).join(" ")+")");
   const notPre=WANT.filter(f=>!r.fetched.some(([n,how])=>base(n)===f&&how==="link"));
@@ -100,7 +99,7 @@ for(const [name,url] of [["desk","/"],["desk","/c/cat-chair"],["desk",prod],["mo
     const bad=r.display.filter(([fam,d])=>/^HS (Sans|Serif)$/.test(fam)?d!=="block":fam==="Noto Serif TC"?d!=="swap":false);
     ok(!bad.length&&r.display.some(([f])=>f==="HS Sans"),"思源 fonts use font-display:block, the full serif fallback keeps swap "+JSON.stringify(bad.slice(0,3)));
   }
-  ok(!r.late,`${tag}: normal network never falls back to the device font (no fonts-late)`);
+  ok(!r.late&&!r.brandLate,`${tag}: normal network never falls back to the device font (no fonts-late / brand-late)`);
   await ctx.close();
 }
 // 很慢的網路：黑體的小檔案晚 2.6 秒才到。1.5 秒後先用裝置內建的字顯示（不讓客人對著沒有字的畫面等），到了再換回來
@@ -121,6 +120,24 @@ for(const [name,url] of [["desk","/"],["desk","/c/cat-chair"],["desk",prod],["mo
   ok(!mid.hero,"slow network: the hero text is shown after 1.5 s");
   const end=await at(4200);
   ok(!end.late&&/^"?HS Sans/.test(end.body)&&/^"?HS Sans/.test(end.title),"slow network: once the fonts arrive it switches back to 思源黑體");
+  await ctx.close();
+}
+// 店名的明體晚 2.6 秒才到：1.5 秒後店名、首頁大標先用裝置內建的明體（不會空白到瀏覽器放棄的 3 秒），到了再換回來
+{
+  const ctx=await b.newContext({viewport:{width:1280,height:900}});await setup(ctx);
+  await ctx.route(/\/fonts\/noto-serif-tc-600-sub\.woff2$/,async r=>{await new Promise(res=>setTimeout(res,2600));return r.fallback()});
+  await ctx.addInitScript(watchLate);
+  const pg=await ctx.newPage();pg.on("pageerror",e=>errs.push(e.message));
+  await pg.goto(ORIGIN+"/",{waitUntil:"commit"});
+  const at=async ms=>{await pg.waitForFunction(t=>performance.now()>t,ms,{timeout:15000});
+    return pg.evaluate(()=>({late:document.documentElement.classList.contains("brand-late"),sansLate:document.documentElement.classList.contains("fonts-late"),
+      logo:getComputedStyle(document.querySelector(".nav-logo")).fontFamily,title:getComputedStyle(document.querySelector(".hero-title")).fontFamily}))};
+  const early=await at(900);
+  ok(!early.late,"slow serif: still waiting for the shop-name font before 1.5 s");
+  const mid=await at(1900);
+  ok(mid.late&&!mid.sansLate&&!/HS Serif/.test(mid.logo)&&!/HS Serif/.test(mid.title),`slow serif: after 1.5 s the shop name and hero title use the device serif (${mid.title.slice(0,26)}), body text keeps 思源黑體`);
+  const end=await at(4200);
+  ok(!end.late&&/^"?HS Serif/.test(end.title),"slow serif: once it arrives the shop name switches back to 思源明體");
   await ctx.close();
 }
 ok(!errs.length,"no page errors "+errs.slice(0,2).join(" | "));

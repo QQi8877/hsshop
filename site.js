@@ -208,12 +208,13 @@ let productsLoadFailed=false;
 // 寫太大會下載用不到的大圖（PageSpeed「圖片大小適中」）。版面改了寬度要跟著改。
 const GRID_IMG_WIDTHS=[200,280,400,500,600,800]; // 商品格的 sizes（GRID_IMG_SIZES）跟分類頁靜態商品格共用，在 shop-render.js
 const PICK_IMG_WIDTHS=[200,300,450,600,800];
-const PICK_IMG_SIZES="(max-width:760px) 32vw, (max-width:860px) 38vw, 17vw";
-const HERO_IMG_SIZES="(max-width:760px) 53vw, min(30vw, 360px)";
+// 本月選品、首頁大圖：首頁第二塊／大圖跟著畫面高度縮放（index.html「首頁四大區塊」），直立的平板也是上下排、兩欄（2026-11 實測）
+const PICK_IMG_SIZES="(max-width:760px) 38vw, (max-width:860px) 41vw, (max-aspect-ratio:1/1) 41vw, min(22vw, 290px)";
+const HERO_IMG_SIZES="(max-width:760px) 53vw, (max-aspect-ratio:1/1) 57vw, min(30vw, 360px)";
 // 有滑鼠的裝置才先下載商品卡片的第二張照片（滑鼠移過去才看得到）；手機沒有「移過去」，
 // 不先下載，省一半的照片流量
 const CAN_HOVER=window.matchMedia("(hover:hover)").matches;
-const HERO_IMG_WIDTHS=[200,300,400,500,700,900];
+const HERO_IMG_WIDTHS=[200,300,400,500,700,900,1200]; // 1200：直立的大平板（iPad Pro）大圖約 530px 寬×2 倍螢幕
 function buildSrcset(url,widths){
   // 只有 http(s) 連結（Cloudinary／Drive）才需要多尺寸版本；base64 舊資料本來就
   // 是同一份資料，硬產生 4 份一樣的字串只會浪費記憶體，直接跳過。
@@ -249,8 +250,12 @@ function applyLayoutVisibility(){
   // 後台「首頁版面設定」的顯示/隱藏開關；沒設定過（undefined）一律預設顯示
   const picks=document.getElementById("picks");
   const catTiles=document.getElementById("catTiles");
-  if(picks)picks.style.display=state.layout?.showPicks===false?"none":"";
-  if(catTiles)catTiles.style.display=state.layout?.showCatTiles===false?"none":"";
+  const showPicks=state.layout?.showPicks!==false,showTiles=state.layout?.showCatTiles!==false;
+  if(picks)picks.style.display=showPicks?"":"none";
+  if(catTiles)catTiles.style.display=showTiles?"":"none";
+  // 首頁第二塊（index.html「首頁四大區塊」）：只剩一樣時另一樣的空間讓出來，兩樣都關就整塊不放
+  const b2=document.getElementById("homeB2");
+  if(b2){b2.classList.toggle("b2-no-picks",!showPicks);b2.classList.toggle("b2-no-tiles",!showTiles);b2.classList.toggle("b2-none",!showPicks&&!showTiles)}
 }
 
 // 顧客看得到的商品：上架中，而且主分類、子分類都沒有在後台「分類管理」設成隱藏。
@@ -394,11 +399,48 @@ function toggleMobileNav(force){
    一批。全部 58 件一次畫出來有一千多個網頁元素，手機光是算版面就要花上半秒以上；客人通常只會看
    前面幾排，後面的等快捲到再畫，看起來一樣是一路接著出現。 */
 const GRID_FIRST_BATCH=20,GRID_NEXT_BATCH=24;
-let gridMoreObserver=null,gridRenderRest=null;
+let gridMoreObserver=null,gridRenderRest=null,gridShown=0;
 // 往下跳過商品列表的連結（選單的「購買須知」「聯繫」、購買須知裡的「到聯絡我們詢問」）和右邊小圓點（siteFx 送 hs:gridall）：
 // 跳之前先把還沒畫的商品一次畫完。不然捲過去的途中會多畫一批、把後面的區塊往下推，停在商品列表中間
 document.addEventListener("click",e=>{if(e.target.closest?.('a[href="#buyInfo"],a[href="#contact"]'))gridRenderRest?.()},true);
 document.addEventListener("hs:gridall",()=>gridRenderRest?.());
+/* 重新整理、按「上一頁」回來、手機切去 LINE 再回來（分頁被瀏覽器收掉、重新載入）：回到離開時看到的位置；
+   網址帶 #categories／#buyInfo／#contact 進來：商品畫好再跳過去（不然途中多畫的商品會把目標推走，停在列表中間）。
+   開頁第一次把商品畫出來之後做（landOnce），做完送 hs:landed，siteFx 才打開首頁的整頁對齊——
+   對齊先開著的話，瀏覽器會把「回到原位」當成從大圖往下捲，停在第二塊（2026-11 審查找到的問題）。
+   位置存在 sessionStorage（只在這個分頁，關掉分頁就沒了），每個網址各記一個。 */
+const SCROLL_KEY="hs_scroll_v1";
+const scrollUrl=()=>location.pathname+location.search;
+function saveScroll(){
+  try{
+    const all=JSON.parse(sessionStorage.getItem(SCROLL_KEY)||"{}");
+    delete all[scrollUrl()];
+    all[scrollUrl()]=Math.round(scrollY);
+    const keys=Object.keys(all);keys.slice(0,Math.max(0,keys.length-20)).forEach(k=>delete all[k]); // 最多記 20 個網址
+    sessionStorage.setItem(SCROLL_KEY,JSON.stringify(all));
+  }catch(e){}
+}
+addEventListener("pagehide",saveScroll);
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveScroll()});
+let landed=false,userMoved=false;
+// 客人在商品畫出來之前就自己動了（捲、點、按鍵）：不要再把他拉走
+["wheel","touchstart","keydown","mousedown"].forEach(t=>addEventListener(t,()=>{userMoved=true},{once:true,passive:true,capture:true}));
+function landOnce(){
+  if(landed)return;
+  landed=true;
+  requestAnimationFrame(()=>{
+    const nav=(performance.getEntriesByType?.("navigation")?.[0]||{}).type;
+    let y=null;
+    if(!userMoved&&!isLightboxOpen()&&(nav==="reload"||nav==="back_forward"||document.wasDiscarded)){
+      try{const v=JSON.parse(sessionStorage.getItem(SCROLL_KEY)||"{}")[scrollUrl()];if(typeof v==="number"&&v>0)y=v}catch(e){}
+    }
+    const target=y===null&&!userMoved&&!isLightboxOpen()&&/^#(categories|buyInfo|contact)$/.test(location.hash)?document.querySelector(location.hash):null;
+    if(y!==null&&y>document.documentElement.scrollHeight-innerHeight*2||target&&target.id!=="categories")gridRenderRest?.();
+    if(y!==null)scrollTo({top:y,behavior:"instant"});
+    else if(target&&!target.hidden)target.scrollIntoView({block:"start",behavior:"instant"});
+    document.dispatchEvent(new Event("hs:landed"));
+  });
+}
 // 分類連結：一般點擊就地切換分類；按著 Ctrl／⌘ 或中鍵點，照一般連結在新分頁打開
 document.getElementById("categories").addEventListener("click",event=>{
   const link=event.target.closest("a[data-main]");
@@ -418,6 +460,9 @@ function scrollToListingTop(){
 }
 function renderProducts(animate=true){
   applyRouteCategory();
+  // 開頁自動重畫（animate=false：先畫快取、Firebase 新資料回來再畫一次）時，已經畫出來的件數要留著：
+  // 不然客人已經捲到後面（或剛回到重新整理前的位置），重畫只剩第一批，頁面變短、位置跳掉
+  const keep=animate?0:gridShown;
   const grid=document.getElementById("productsGrid");
   grid.innerHTML="";
   gridMoreObserver?.disconnect();
@@ -563,10 +608,12 @@ function renderProducts(animate=true){
   const renderMore=()=>{
     const end=Math.min(list.length,next+(next?GRID_NEXT_BATCH:GRID_FIRST_BATCH));
     for(;next<end;next++)addCard(list[next],next);
+    gridShown=next;
     if(next<list.length)grid.appendChild(sentinel); // 移到最後面，捲到它附近再畫下一批
     else{sentinel.remove();gridMoreObserver?.disconnect();gridMoreObserver=null;gridRenderRest=null}
   };
   renderMore();
+  while(next<Math.min(keep,list.length))renderMore();
   if(next<list.length)gridRenderRest=()=>{while(next<list.length)renderMore()};
   if(next<list.length){
     if("IntersectionObserver" in window){
@@ -799,13 +846,17 @@ function filterFab(){
     pushView(location.href);
   });
   document.body.appendChild(fabEl);
-  // 商品格在畫面上才出現；往下捲先收起來、往上捲再出現
+  // 商品格在畫面上才出現；往下捲先收起來、往上捲再出現。
+  // 剛到商品列表（商品格的開頭還在畫面上面那段）一律出現：首頁整頁對齊是往下捲到列表開頭的，
+  // 而且在列表開頭往上滑一點會被彈回原位，只靠「往上捲」叫不出來
   let inGrid=false,away=false,lastY=scrollY;
   const sync=()=>fabEl.classList.toggle("show",inGrid&&!away);
   const grid=document.getElementById("productsGrid");
   if(grid&&"IntersectionObserver" in window)new IntersectionObserver(es=>{inGrid=es.some(en=>en.isIntersecting);sync()},{rootMargin:"-30% 0px -10% 0px"}).observe(grid);
   else inGrid=true;
-  addEventListener("scroll",()=>{const y=scrollY;if(Math.abs(y-lastY)<10)return;away=y>lastY&&y>300;lastY=y;sync()},{passive:true});
+  const listSec=document.getElementById("categories");
+  const atListTop=()=>!!listSec&&listSec.getBoundingClientRect().top>-innerHeight*.3;
+  addEventListener("scroll",()=>{const y=scrollY;if(Math.abs(y-lastY)<10)return;away=y>lastY&&y>300&&!atListTop();lastY=y;sync()},{passive:true});
   sync();
   return fabEl;
 }
@@ -1046,6 +1097,7 @@ function renderCategoryTiles(){
   const cats=state.catalog.filter(c=>!c.hidden&&listed.some(p=>p.mainCat===c.id)).slice(0,4);
   grid.style.setProperty("--cols",cats.length+1);
   grid.classList.toggle("odd",(cats.length+1)%2===1);
+  grid.classList.toggle("many",cats.length+1>4); // 手機首頁第二塊五格擠一排：index.html 縮小字、不放件數
   grid.innerHTML=cats.map((cat,i)=>{
     // 後台「首頁版面設定」為這個分類上傳的縮圖優先；沒有的話自動抓分類底下第一件商品的照片
     // 縮圖實際只顯示約 56px 寬：給 120／200 兩種尺寸讓瀏覽器依螢幕解析度挑，不要每台都下載 200px
@@ -1977,7 +2029,7 @@ function openRoutedProduct(final){
       }
     }catch(e){console.warn("site.json 格式不對，略過",e)}
   }
-  if(painted)openRoutedProduct(false);
+  if(painted){openRoutedProduct(false);landOnce()}
 
   const meta=await metaPromise;
   if(meta)Object.assign(state,meta);
@@ -2011,6 +2063,7 @@ function openRoutedProduct(final){
   renderCategoryTiles();
   renderHeroPhoto(); // 沒設定自訂大圖的話，要等商品資料到齊才找得到可用照片，這裡再跑一次
   renderFavorites();
+  landOnce(); // 沒有快取、site.json 先畫的話，在這裡才第一次畫好
   // 商品頁已經用快取／site.json 的資料打開了：換成最新的資料再畫一次（照片、選的款式不動）；
   // 最新資料裡已經沒有這件商品（剛下架）就關掉
   if(isLightboxOpen()&&lbProduct){
@@ -2036,8 +2089,10 @@ function openRoutedProduct(final){
 })();
 
 /* ── siteFx：視覺 2.1 的互動（樣式在 index.html <style> 最後「視覺 2.1」那段）───────────
-   跟上面的主程式只透過兩個事件溝通（不讀主程式的變數、不盯它的畫面）：
-   hs:favcount（detail＝收藏件數）、hs:favpanel（detail＝收藏清單是否打開）。 */
+   跟上面的主程式透過事件溝通（不讀主程式的變數）：hs:favcount（detail＝收藏件數）、hs:favpanel（detail＝收藏清單是否打開）、
+   hs:landed（開頁回到原本位置做完了，見主程式 landOnce）；siteFx 送 hs:gridall（先把商品列表畫完）。
+   「3.」整頁翻頁會看首頁幾個區塊的位置和顯示狀態（#hero、#homeB2、#categories、#buyInfo、#contact 和選單的字），
+   改這些 id 或選單時要一起看。 */
 (function siteFx(){
   const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
   const el=(tag,cls,html)=>{const n=document.createElement(tag);n.className=cls;if(html)n.innerHTML=html;return n};
@@ -2050,17 +2105,20 @@ function openRoutedProduct(final){
   line.type="button";
   line.addEventListener("click",()=>document.querySelector(".favorites-fab")?.click());
   let favCount=0,favPanelOpen=false;
-  const hero=document.getElementById("hero"),contact=document.getElementById("contact");
+  const hero=document.getElementById("hero"),contact=document.getElementById("contact"),list=document.getElementById("categories");
   let ticking=false;
   const onScroll=()=>{
     ticking=false;
     const max=document.documentElement.scrollHeight-innerHeight;
     bar.style.setProperty("--p",max>0?Math.min(1,scrollY/max):0);
-    top.classList.toggle("show",scrollY>innerHeight*.8);
+    // 商品列表還在畫面下半以下（大圖、本月選品＋分類磚那兩個整頁）：這兩顆浮動鈕先不出現，
+    // 不然矮手機上會蓋住分類磚（第二塊的綠色收藏方塊一樣可以打開收藏清單）
+    const early=list?list.getBoundingClientRect().top>innerHeight*.5:false;
+    top.classList.toggle("show",scrollY>innerHeight*.8&&!early);
     const count=favCount;
     line.textContent=`已收藏 ${count} 件・一次問老闆 →`;
     const atContact=contact?contact.getBoundingClientRect().top<innerHeight-80:false;
-    line.classList.toggle("show",count>0&&!atContact&&!favPanelOpen);
+    line.classList.toggle("show",count>0&&!atContact&&!favPanelOpen&&!early);
     // 長條出現時，手機的「篩選」鈕往上讓開（index.html：body.fx-line-on .filter-fab）
     document.body.classList.toggle("fx-line-on",line.classList.contains("show"));
   };
@@ -2082,20 +2140,40 @@ function openRoutedProduct(final){
 
   // 3. 首頁四大區塊・整頁翻頁（2026-11 老闆選的 B；對齊、大小在 index.html「首頁四大區塊」那段）：
   //    右邊小圓點顯示現在在第幾塊、點了跳過去；電腦用滑鼠滾輪時，前兩塊轉一格就換一塊
-  //    （只靠瀏覽器的整頁對齊，滾輪轉一點點會彈回原位，像卡住）。商品列表那塊照常捲。
+  //    （只靠瀏覽器的整頁對齊，滾輪轉一點點會彈回原位，像卡住）。商品列表之後照常捲。
+  const root=document.documentElement;
+  // 整頁對齊：一般打開網頁馬上開；重新整理、按上一頁回來、網址帶區塊位置的，等主程式先回到原本位置（hs:landed）再開
+  const snapOn=()=>root.classList.add("snap");
+  const navType=(performance.getEntriesByType?.("navigation")?.[0]||{}).type;
+  if(navType==="reload"||navType==="back_forward"||document.wasDiscarded||/^#(categories|buyInfo|contact)$/.test(location.hash)){
+    document.addEventListener("hs:landed",snapOn,{once:true});
+    setTimeout(snapOn,6000); // 商品資料一直沒來也不要永遠不對齊
+  }else snapOn();
   const byId=id=>document.getElementById(id);
+  const shown=b=>!!(b&&b.offsetParent&&b.offsetHeight);
   const blocks=()=>{
-    const second=[byId("picks"),byId("catTiles")].find(b=>b&&b.offsetParent); // 本月選品關掉時，分類磚就是第二塊
     const buy=byId("buyInfo");
-    return [byId("hero"),second,byId("categories"),buy&&!buy.hidden?buy:byId("contact")].filter(b=>b&&b.offsetParent);
+    return [byId("hero"),byId("homeB2"),byId("categories"),buy&&!buy.hidden?buy:byId("contact")].filter(shown);
   };
-  const snapTop=b=>b.getBoundingClientRect().top+scrollY-(parseFloat(getComputedStyle(b).scrollMarginTop)||0);
+  const snapTop=b=>b.getBoundingClientRect().top+scrollY-(parseFloat(getComputedStyle(b.id==="categories"?byId("homeRest")||b:b).scrollMarginTop)||0);
+  // 每一塊停得住的範圍：開頭（扣掉選單）到「這塊的底剛好在畫面底」；跟畫面一樣高的塊只有一個點
+  const range=b=>{const s=snapTop(b);return [s,Math.max(s,b.getBoundingClientRect().bottom+scrollY-innerHeight)]};
   const goBlock=b=>{
     if(b.id==="buyInfo"||b.id==="contact")document.dispatchEvent(new Event("hs:gridall")); // 先把商品列表畫完，目標才不會被推走
     b.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});
   };
-  // 小圓點的說明用各塊自己的標題（網站文字），不另外寫死字
-  const titleOf=b=>(b.querySelector("h1,h2")?.textContent||b.querySelector(".cat-tile__name")?.textContent||"").trim();
+  // 小圓點的說明用選單的字（後台「網站文字」改得到，不另外寫死）；第二塊用「本月選品」標題，選品關掉時列出分類名稱
+  const navText=key=>(document.querySelector(`nav [data-page-field="${key}"]`)?.textContent||"").trim();
+  const titleOf=b=>{
+    if(b.id==="hero")return navText("navHome");
+    if(b.id==="homeB2"){
+      const picks=byId("picks");
+      if(shown(picks))return (picks.querySelector("h2")?.textContent||"").trim();
+      return [...b.querySelectorAll(".cat-tile[data-cat] .cat-tile__name")].map(n=>n.textContent.trim()).join("・");
+    }
+    if(b.id==="categories")return navText("navProducts");
+    return navText(b.id==="buyInfo"?"navBuy":"navContact");
+  };
   const dots=document.body.appendChild(el("div","fx-dots"));
   let dotKey="";
   const updateDots=()=>{
@@ -2116,24 +2194,48 @@ function openRoutedProduct(final){
   const onDots=()=>{if(!dotsTicking){dotsTicking=true;requestAnimationFrame(()=>{dotsTicking=false;updateDots()})}};
   addEventListener("scroll",onDots,{passive:true});
   addEventListener("resize",onDots);
-  // 從分類頁換回「全部」、後台關掉本月選品或分類磚、購買須知有沒有內容：哪幾塊看得到會變
+  // 從分類頁換回「全部」、後台關掉本月選品或分類磚、購買須知有沒有內容、選單的字換成後台寫的：哪幾塊看得到、說明會變
   new MutationObserver(onDots).observe(document.body,{attributes:true,attributeFilter:["class"]});
-  ["picks","catTiles","buyInfo"].forEach(id=>{const n=byId(id);if(n)new MutationObserver(onDots).observe(n,{attributes:true,attributeFilter:["style","hidden"]})});
+  ["homeB2","picks","catTiles","buyInfo"].forEach(id=>{const n=byId(id);if(n)new MutationObserver(onDots).observe(n,{attributes:true,attributeFilter:["style","hidden","class"]})});
+  document.addEventListener("hs:landed",onDots);
   updateDots();
+  // 滾輪發生在自己捲得動的框裡（例如分類比較多時左邊的分類欄），而且往這個方向還捲得動：交給那個框
+  const innerScrolls=(t,dir)=>{
+    for(let n=t instanceof Element?t:null;n&&n!==document.body&&n!==root;n=n.parentElement){
+      if(n.scrollHeight<=n.clientHeight+1)continue;
+      const oy=getComputedStyle(n).overflowY;
+      if((oy==="auto"||oy==="scroll")&&(dir>0?n.scrollTop+n.clientHeight<n.scrollHeight-1:n.scrollTop>1))return true;
+    }
+    return false;
+  };
   let wheelLock=0;
   addEventListener("wheel",e=>{
-    if(e.ctrlKey||!e.deltaY||document.body.classList.contains("lightbox-open")||document.documentElement.classList.contains("sheet-lock"))return;
-    if(e.target.closest?.("#favoritesPanel,#lightbox,.sheet"))return;
+    // 縮放（Ctrl＋滾輪）、左右滑（觸控板滑「最近看過」那一排、Mac 的左右滑換頁）不管
+    if(e.ctrlKey||!e.deltaY||Math.abs(e.deltaX)>=Math.abs(e.deltaY))return;
+    // 商品頁、快速預覽／篩選面板、收藏清單、顧客傳來的收藏清單視窗開著的時候不管
+    if(document.body.classList.contains("lightbox-open")||root.classList.contains("sheet-lock")||document.querySelector(".modal-overlay.open"))return;
+    if(e.target.closest?.("#favoritesPanel,#lightbox,.sheet,.modal-overlay"))return;
     const now=performance.now();
     // 換塊的動畫期間（觸控板一次滑動會送出一長串滾輪事件）全部吃掉，一次滑動只換一塊
     if(now<wheelLock){e.preventDefault();wheelLock=Math.max(wheelLock,now+220);return}
+    const dir=e.deltaY>0?1:-1;
+    if(innerScrolls(e.target,dir))return;
     const list=blocks(),last=list.findIndex(b=>b.id==="categories");
     if(last<1)return;
-    const dir=e.deltaY>0?1:-1;
+    const y=scrollY;
     let at=-1;
-    for(let i=0;i<=last;i++)if(Math.abs(snapTop(list[i])-scrollY)<6)at=i;
-    if(at<0||(dir>0&&at===last)||(dir<0&&at===0))return;
+    for(let i=0;i<=last;i++){const [s,end]=range(list[i]);if(y>=s-6&&y<=end+6)at=i}
+    if(at<0)return;
+    const [s,end]=range(list[at]);
+    // 比畫面高的塊（網頁放大、手機橫拿）：這塊往捲動方向還有沒看到的，照常捲，捲到底才換塊
+    if(dir>0&&(at===last||y<end-6))return;
+    if(dir<0&&(at===0||y>s+6))return;
     e.preventDefault();wheelLock=now+750;
-    goBlock(list[at+dir]);
+    if(dir>0)goBlock(list[at+1]);
+    else{
+      // 往上：回到上一塊的底（上一塊跟畫面一樣高時就是它的開頭）
+      const [ps,pend]=range(list[at-1]);
+      if(pend-ps<6)goBlock(list[at-1]);else scrollTo({top:pend,behavior:reduce?"auto":"smooth"});
+    }
   },{passive:false});
 })();

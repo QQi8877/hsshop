@@ -37,7 +37,7 @@
      模組一定會用 CORS 抓，要加 crossorigin 才能讓這條 preconnect 真的被瀏覽器接著使用。 -->
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore-lite.js">
-<link rel="modulepreload" href="/site.js?v=5">
+<link rel="modulepreload" href="/site.js?v=6">
 <link rel="modulepreload" href="/shop-render.js?v=16">
 <link rel="modulepreload" href="/dim-figures.js?v=4">
 <!-- 字型（2026-11 老闆選的 A：全站思源黑體）：全部自行內嵌在 fonts/ 資料夾（來源 @fontsource，開放字型授權 OFL，可以免費商用），
@@ -63,8 +63,8 @@
      - font-display:block：字型還沒下載完，字先不顯示（版面照常排好），下載完直接用思源黑體顯示。
        不用 swap（先用裝置內建的字、下載完再換）：Windows 的微軟正黑體、新細明體字面比思源小，
        換過去時看起來像整頁的字突然放大。
-     - 網路很慢、1.5 秒內還沒下載完：<head> 最後的字型程式在 <html> 加上 fonts-late，先用裝置內建的黑體顯示，
-       下載完再換回思源黑體（只有很慢的網路才會看到換字，不會讓客人對著沒有字的畫面等）。
+     - 網路很慢、1.5 秒內還沒下載完：<head> 最後的字型程式在 <html> 加上 fonts-late（黑體）、brand-late（店名的明體），
+       先用裝置內建的字顯示，下載完再換回來（只有很慢的網路才會看到換字，不會讓客人對著沒有字的畫面等）。
      - 補字用的完整明體（"Noto Serif TC"）維持 swap：只在剛改過首頁大標、每小時更新還沒補字之前用到。
 
      字重限制（很重要，改 CSS 前務必看這裡）：兩套字型都只內嵌 400／500／600 三個字重，這個檔案裡任何文字的
@@ -677,7 +677,7 @@ a.cat-tab,a.sub-tab,a.cat-side-btn,a.cat-sub-btn{text-decoration:none}
 /* 商品名稱是連到商品頁的連結；點卡片任何地方一樣是打開商品 */
 .product-name a,.p-card__title a{color:inherit;text-decoration:none}
 /* 從 Google 搜尋直接進到分類頁（/c/分類）：先不放本月選品、分類磚，商品就在大圖下面；換回「全部」就恢復 */
-body.cat-landing #picks,body.cat-landing #catTiles{display:none}
+body.cat-landing #homeB2,body.cat-landing #picks,body.cat-landing #catTiles{display:none}
 .product-card{
   background:var(--paper);
   border-right:1px solid var(--line);
@@ -1412,12 +1412,15 @@ footer a:hover{color:var(--color-on-dark)}
   --text-tertiary:#655a4c;
 }
 /* 網路很慢、思源黑體 1.5 秒內還沒下載完：先用裝置內建的黑體顯示，下載完再換回來
-   （<head> 最後的字型程式加上、拿掉 fonts-late；原因見開頭的字型說明）。店名的明體檔案很小，不用換。 */
+   （<head> 最後的字型程式加上、拿掉 fonts-late；原因見開頭的字型說明）。店名的明體也一樣（brand-late，在下面）。 */
 :root.fonts-late{
   --font-body:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
   --font-mono:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
   --font-heading:"PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
 }
+/* 店名、首頁大標的明體 1.5 秒內還沒下載完：先用裝置內建的明體（宋體／新細明體），不然要空白到瀏覽器放棄（約 3 秒）。
+   不寫 "Noto Serif TC"：那是 1MB 的完整明體，網路慢的時候更不該去下載。 */
+:root.brand-late{--font-brand:"Songti TC","STSong","Noto Serif CJK TC","Source Han Serif TC","PMingLiU","MingLiU",serif}
 .nav-logo,.hero-title,.loading-breathe-text{font-family:var(--font-brand)}
 .hero-title{font-size:58px;letter-spacing:.04em}
 .hero-sub{font-size:19px;font-weight:600;letter-spacing:.1em}
@@ -1767,9 +1770,12 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
 }
 
 /* ══ 首頁四大區塊・整頁翻頁（2026-11 老闆選的 B）═══════════════════
-   首頁分成四塊：1 大圖（#hero）、2 本月選品＋分類磚（#picks＋#catTiles）、3 商品列表（#categories）、
+   首頁分成四塊：1 大圖（#hero）、2 本月選品＋分類磚（#homeB2 包住 #picks＋#catTiles）、3 商品列表（#categories）、
    4 購買須知＋聯繫我們（#buyInfo＋#contact）。捲動時一次對齊一整塊（scroll-snap），前兩塊滑一下只換一塊；
-   商品列表那塊很長，裡面照常自由捲。只加捲動效果、調前兩塊的大小，商品列表等功能都不動。
+   商品列表和第四塊用 #homeRest 包成一大塊：比畫面高的塊瀏覽器讓裡面自由捲，所以列表、購買須知、聯繫我們
+   照常捲到哪停到哪（不會在列表底部被彈回、矮手機也停得到聯繫我們的 LINE 按鈕）。只加捲動效果、調前兩塊的大小，商品列表等功能都不動。
+   - 整頁對齊等 site.js 準備好才打開（html.snap）：重新整理、按上一頁回來時，先回到原本看到的位置再對齊，
+     不然瀏覽器會把「回到原位」當成從大圖往下捲，停在第二塊（site.js「重新整理…回到離開時的位置」）。
    - 對齊的位置要扣掉上方選單：大圖在最上面時選單是 62px，往下捲之後縮成 52px（nav--scrolled），
      所以大圖留 62px、其他塊留 52px（scroll-margin-top）。
    - 前兩塊剛好一個畫面：大圖的高度＝畫面高度－62px，照片跟著高度縮放；第二塊用 main 上的 --b2-* 算照片框多高
@@ -1779,11 +1785,12 @@ html.sheet-lock,html.sheet-lock body{overflow:hidden}
    改了選單高度、本月選品卡片的字級、分類磚的樣式，下面的數字要一起看。 */
 :root{--nav-full:62px;--nav-small:52px;--vh:100vh}
 @supports(height:100svh){:root{--vh:100svh}}
-html{scroll-snap-type:y mandatory}
-#hero,#picks,#categories,#buyInfo,#buyInfo[hidden]+#contact,#picks[style*="none"]+#catTiles{scroll-snap-align:start;scroll-margin-top:var(--nav-small)}
+html.snap{scroll-snap-type:y mandatory}
+#hero,#homeB2,#homeRest{scroll-snap-align:start;scroll-margin-top:var(--nav-small)}
 #hero{scroll-margin-top:var(--nav-full)}
-#hero,#picks,#picks[style*="none"]+#catTiles{scroll-snap-stop:always}
-footer{scroll-snap-align:end} /* 第四塊比畫面高：最底下（聯繫我們的下半、頁尾）也要停得住 */
+#hero,#homeB2{scroll-snap-stop:always}
+footer{scroll-snap-align:end} /* 頁尾在 #homeRest 外面：最底下也要停得住 */
+#buyInfo,#contact{scroll-margin-top:var(--nav-small)} /* 選單、小圓點跳過去時標題不要被選單蓋住 */
 
 /* 1. 大圖：剛好一個畫面 */
 body:not(.cat-landing) #hero{min-height:calc(var(--vh) - var(--nav-full));display:flex;flex-direction:column;justify-content:center}
@@ -1801,31 +1808,44 @@ body:not(.cat-landing) .hero-inner{width:100%;padding-top:clamp(20px,6vh,64px);p
   body:not(.cat-landing) .hero-photo img{width:60%;height:60%}
 }
 
-/* 2. 本月選品＋分類磚：剛好一個畫面 */
-main{
+/* 2. 本月選品＋分類磚：剛好一個畫面。
+   #homeB2 至少一個畫面高、內容上下置中：後台關掉其中一樣（.b2-no-picks／.b2-no-tiles）也還是一整個畫面；
+   畫面太矮（手機橫拿、網頁放大）放不下時，這一塊會比畫面高，瀏覽器讓裡面自由捲，分類磚一樣滑得到。 */
+body:not(.cat-landing) #homeB2{min-height:calc(var(--vh) - var(--nav-small));display:flex;flex-direction:column;justify-content:center}
+#homeB2.b2-none{display:none}
+#homeB2>section{flex:none} /* 不要被壓扁：放不下就讓整塊變高（裡面自由捲） */
+/* 第二塊的底：比畫面高的時候多一個停點，分類磚整排停得進畫面（Chrome 讓比畫面高的塊裡面自由捲時，
+   會少算 scroll-margin-top 那 52px，最底下那段停不到）。跟畫面一樣高時這個停點就是第二塊的開頭。 */
+body:not(.cat-landing) #homeB2{position:relative}
+.b2-end{position:absolute;left:0;bottom:0;width:1px;height:1px;pointer-events:none;scroll-snap-align:end}
+#homeB2{
   --b2-blk:calc(var(--vh) - var(--nav-small));      /* 這一塊可用的高度 */
   --b2-pad:clamp(14px,3.4vh,40px);                   /* 上、下留白（還會再加上 --b2-extra） */
   --b2-headm:clamp(10px,2.2vh,24px);
   --b2-head:calc(34px + var(--b2-headm));            /* 「本月選品」標題列＋下面的間距 */
   --b2-text:68px;                                    /* 照片框下面：間距 12＋名稱 23＋間距 12＋尺寸 21 */
+  --b2-price:0px;                                    /* 選品有標價：尺寸下面多一行價格（下面 :has 那條） */
   --b2-cols:4;--b2-rows:1;--b2-gap:18px;--b2-side:80px;--b2-maxw:1200px;
   --b2-mid:clamp(12px,2.6vh,26px);                   /* 選品和分類磚之間 */
   --b2-tile:clamp(110px,calc(var(--b2-blk) * .22),190px);
   --b2-colw:calc((min(100vw - var(--b2-side),var(--b2-maxw)) - (var(--b2-cols) - 1) * var(--b2-gap)) / var(--b2-cols));
-  --b2-fit:calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - (var(--b2-rows) - 1) * var(--b2-gap)) / var(--b2-rows) - var(--b2-text));
+  --b2-fit:calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - (var(--b2-rows) - 1) * var(--b2-gap)) / var(--b2-rows) - var(--b2-text) - var(--b2-price));
   --b2-img:max(72px,min(var(--b2-colw),var(--b2-fit)));
-  --b2-extra:max(0px,calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - var(--b2-rows) * (var(--b2-img) + var(--b2-text)) - (var(--b2-rows) - 1) * var(--b2-gap)) / 2));
+  --b2-extra:max(0px,calc((var(--b2-blk) - 2 * var(--b2-pad) - var(--b2-head) - var(--b2-mid) - var(--b2-tile) - var(--b2-rows) * (var(--b2-img) + var(--b2-text) + var(--b2-price)) - (var(--b2-rows) - 1) * var(--b2-gap)) / 2));
 }
+#homeB2:has(#picksGrid .price){--b2-price:24px}     /* 價格那一行（字 18px×行高 1.2＋間距 2px），寧可多留：多的會平均放上下 */
+#homeB2.b2-no-tiles{--b2-tile:0px;--b2-mid:0px}    /* 分類磚關掉：選品照片放大填滿 */
 #picks{padding-top:calc(var(--b2-pad) + var(--b2-extra))!important}
 #picks .sec-head{margin-bottom:var(--b2-headm)}
 #picks .p-card__media{aspect-ratio:auto;height:var(--b2-img)}
 #picks .p-card__title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #catTiles{padding-top:var(--b2-mid)!important;padding-bottom:calc(var(--b2-pad) + var(--b2-extra))!important}
+#homeB2.b2-no-picks #catTiles{padding-top:var(--b2-pad)!important}
 #catTiles .cat-tile{height:var(--b2-tile);justify-content:center;padding:8px 10px;gap:clamp(4px,calc(var(--b2-tile) * .05),10px)}
 #catTiles .cat-tile__thumb{flex:none;width:clamp(40px,calc(var(--b2-tile) * .42),80px);height:clamp(40px,calc(var(--b2-tile) * .42),80px)}
 /* 手機、直立的平板：選品兩欄兩排，分類磚排成一排小磚 */
 @media(max-width:860px),(max-aspect-ratio:1/1){
-  main{--b2-cols:2;--b2-rows:2;--b2-tile:clamp(84px,calc(var(--b2-blk) * .15),130px)}
+  #homeB2{--b2-cols:2;--b2-rows:2;--b2-tile:clamp(84px,calc(var(--b2-blk) * .15),130px)}
   #picks .pick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   #catTiles .cat-grid{grid-template-columns:repeat(var(--cols,4),minmax(0,1fr));gap:10px}
   #catTiles .cat-grid.odd .cat-tile--cta{grid-column:auto}
@@ -1834,9 +1854,13 @@ main{
   #catTiles .cat-tile__count{font-size:11.5px}
   #catTiles .cat-tile--cta .cat-tile__name{font-size:13px;line-height:1.35}
   #catTiles .cat-tile--cta .cta-link{font-size:11px}
+  /* 五格（四個分類＋收藏方塊）擠一排：件數先不放、名稱縮小最多兩行，才放得進磚裡（site.js renderCategoryTiles 加 .many） */
+  #catTiles .cat-grid.many .cat-tile__count{display:none}
+  #catTiles .cat-grid.many .cat-tile__name{font-size:12px;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere}
+  #catTiles .cat-grid.many .cat-tile--cta .cat-tile__name{-webkit-line-clamp:3}
 }
-@media(max-width:860px){main{--b2-side:36px;--b2-head:calc(30px + var(--b2-headm));--b2-text:66.5px}}
-@media(max-width:760px){main{--b2-text:60.5px}} /* 760px 以下品名往上收 6px（上面「手機兩欄版面」那條） */
+@media(max-width:860px){#homeB2{--b2-side:36px;--b2-head:calc(30px + var(--b2-headm));--b2-text:66.5px}}
+@media(max-width:760px){#homeB2{--b2-text:60.5px}} /* 760px 以下品名往上收 6px（上面「手機兩欄版面」那條） */
 @media(max-width:480px){#catTiles .cat-tile--cta .cta-link{display:none}}
 
 /* 右邊的小圓點：現在在第幾塊（點了跳過去） */
@@ -1898,7 +1922,7 @@ body.lightbox-open .fx-dots{display:none}
 <script>
 /* 第一次打開網頁時的字型（原因見 <head> 開頭的字型說明）：
    1. 思源黑體還沒下載完，字先不顯示（font-display:block）；1.5 秒內還沒下載完（網路很慢），
-      加上 fonts-late 先用裝置內建的黑體顯示，下載完再拿掉、換回思源黑體。
+      加上 fonts-late 先用裝置內建的黑體顯示，下載完再拿掉、換回思源黑體。店名的明體同樣，用 brand-late。
    2. 首頁大圖文字進場：等字型都到了才播，播的時候就是正確的字體；1.5 秒內還沒到就直接顯示、不播，
       避免文字已經出現又消失重播。
    寫在這裡（不放 site.js），Firebase 載入失敗也不會讓字或標題一直藏著。 */
@@ -1906,7 +1930,7 @@ body.lightbox-open .fx-dots{display:none}
   var root=document.documentElement,fonts=document.fonts;
   if(!fonts||!fonts.load)return;
   var motion=!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
-  var sansReady=false,heroShown=!motion;
+  var sansReady=false,serifReady=false,heroShown=!motion;
   if(motion)root.classList.add("hero-pending");
   function showHero(animate){
     if(heroShown)return;
@@ -1918,11 +1942,17 @@ body.lightbox-open .fx-dots{display:none}
   }
   // 「信」不在標點檔的字範圍裡，所以只會等主要的小檔案（標點檔另外 preload，很小）
   function load(list){return Promise.all(list.map(function(f){return fonts.load(f,"信")}))}
-  var sans=load(['400 1em "HS Sans"','500 1em "HS Sans"','600 1em "HS Sans"']);
+  var sans=load(['400 1em "HS Sans"','500 1em "HS Sans"','600 1em "HS Sans"']),serif=load(['600 1em "HS Serif"']);
   function sansDone(){sansReady=true;root.classList.remove("fonts-late")}
+  function serifDone(){serifReady=true;root.classList.remove("brand-late")}
   sans.then(sansDone,sansDone);
-  setTimeout(function(){if(!sansReady)root.classList.add("fonts-late");showHero(false)},1500);
-  Promise.all([sans,load(['600 1em "HS Serif"'])]).then(function(){showHero(true)},function(){showHero(false)});
+  serif.then(serifDone,serifDone);
+  setTimeout(function(){
+    if(!sansReady)root.classList.add("fonts-late");
+    if(!serifReady)root.classList.add("brand-late");
+    showHero(false);
+  },1500);
+  Promise.all([sans,serif]).then(function(){showHero(true)},function(){showHero(false)});
 })();
 </script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"CollectionPage","name":"餐椅｜椅子｜台北大安區 信通家俱行","url":"https://hsintong.cc/c/sub-chr-dining","description":"信通家俱行的餐椅共 6 款，像是皮面圓椅、彎腰靠背餐椅、板面凹底餐椅等。點商品可以看照片和尺寸；台北市大安區的門市可以看實品，喜歡的先按愛心收藏，選好再一次用 LINE 詢問。","mainEntity":{"@type":"ItemList","numberOfItems":6,"itemListElement":[{"@type":"ListItem","position":1,"url":"https://hsintong.cc/p/64v2iwie","name":"皮面圓椅"},{"@type":"ListItem","position":2,"url":"https://hsintong.cc/p/3n6unn1b","name":"彎腰靠背餐椅"},{"@type":"ListItem","position":3,"url":"https://hsintong.cc/p/ptg5itx7","name":"板面凹底餐椅"},{"@type":"ListItem","position":4,"url":"https://hsintong.cc/p/q0d2t3wr","name":"彎背餐椅"},{"@type":"ListItem","position":5,"url":"https://hsintong.cc/p/s68rck82","name":"鋼管靠背餐椅"},{"@type":"ListItem","position":6,"url":"https://hsintong.cc/p/vn6qvrrr","name":"咖啡皮面靠背餐椅"}]}}</script>
@@ -1980,6 +2010,7 @@ body.lightbox-open .fx-dots{display:none}
   </div>
 </section>
 
+<div id="homeB2">
 <section id="picks" style="padding:34px 40px 0">
   <div class="sec-head reveal">
     <h2 data-page-field="picksTitle">本月選品</h2>
@@ -2002,7 +2033,10 @@ body.lightbox-open .fx-dots{display:none}
     <div class="cat-tile skeleton sk-tile--cta"><div class="sk-line sk-line--tile"></div><div class="sk-line sk-line--tile sk-line--tile2"></div></div>
   </div>
 </section>
+<div class="b2-end" aria-hidden="true"></div>
+</div>
 
+<div id="homeRest">
 <section id="categories">
   <div class="cat-toolbar">
     <div class="categories-bar" id="categoriesBar"><a class="cat-tab" href="/" data-main="全部">全部</a><a class="cat-tab" href="/c/cat-table" data-main="cat-table">桌子</a><a class="cat-tab active" href="/c/cat-chair" data-main="cat-chair" aria-current="page">椅子</a><a class="cat-tab" href="/c/cat-storage" data-main="cat-storage">收納櫃/架</a></div>
@@ -2042,6 +2076,7 @@ body.lightbox-open .fx-dots{display:none}
     <dl class="contact-list" id="contactItems"><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-5.6-7-11.5a7 7 0 1 1 14 0C19 15.4 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>地址</dt><dd><a href="https://maps.app.goo.gl/YVk7GoeiY2WKJWA86" target="_blank" rel="noopener">106 台北市大安區文昌街184號</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>營業時間</dt><dd>全年無休，每天 10:00-21:00</dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.2 6.2l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A16.5 16.5 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z"/></svg>電話</dt><dd><a href="tel:0227053858" data-lead="phone">02-2705-3858</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5c-4.7 0-8.5 3-8.5 6.8 0 3.4 3 6.2 7.1 6.7l-.4 2.5 3.6-2.6c3.6-.7 6.7-3.3 6.7-6.6 0-3.8-3.8-6.8-8.5-6.8z"/></svg>LINE</dt><dd><a href="https://lin.ee/YiaZm7f" target="_blank" rel="noopener" data-lead="line_friend">@833pzizi</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></svg>信箱</dt><dd><a href="mailto:service@hsintong.cc">service@hsintong.cc</a></dd></div><div class="contact-row"><dt><svg class="contact-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8.5h2.5V5H14a3.5 3.5 0 0 0-3.5 3.5V11H8v3.5h2.5V21H14v-6.5h2.5L17 11h-3V8.9c0-.2.2-.4.4-.4z"/></svg>Facebook</dt><dd><a href="https://www.facebook.com/people/%E4%BF%A1%E9%80%9A%E5%AE%B6%E4%BF%B1%E8%A1%8C-HsinTong/100063577046106/?locale=zh_TW" target="_blank" rel="noopener">信通家俱行 粉絲專頁</a></dd></div></dl>
   </div>
 </section>
+</div>
 
 </main>
 
@@ -2127,6 +2162,6 @@ body.lightbox-open .fx-dots{display:none}
 
 
 
-<script type="module" src="/site.js?v=5"></script>
+<script type="module" src="/site.js?v=6"></script>
 </body>
 </html>

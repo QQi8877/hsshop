@@ -80,7 +80,7 @@
 | `admin/*.js`、`manage.css` | 引用它的那一行（`manage.html` 或 `admin/manage.js`） |
 
 一個檔案的 import 網址變了，它自己的內容也算改了，要再往上加一層（例如 `shop-render.js` 改版號 → `admin/rich-text.js` 內容變了 → `admin/manage.js` 裡 `rich-text.js?v=` 也要加）。
-目前版本：site 6、shop-render 16、dim-figures 4、manage.js 11、rich-text 8、image-tools 2、manage.css 4、csv 1、util 1。
+目前版本：site 7、shop-render 16、dim-figures 4、manage.js 12、rich-text 9、image-tools 3、manage.css 5、csv 1、util 1。
 
 **(5) 網站文字（後台「網站文字」）**：給客人看的固定文字都登記在 `shop-render.js` 的 `TEXT_FIELDS`（key、預設文字、後台分組）。
 HTML 裡整段固定的字加 `data-page-field="key"`（改程式時寫預設文字；每小時更新會把根目錄 `index.html` 換成老闆的字，所以 main 上看到的可能是老闆改過的字），前台 `applyPageText` 和 `build-pages.mjs` 的 `fillPageText` 都會換成後台填的字；

@@ -42,7 +42,7 @@ const PHOTO_TARGET_W=1200,PHOTO_TARGET_H=1200;
    最長邊佔畫面固定比例，商品有大有小拍出來的照片看起來就會一致大小。 */
 const SUBJECT_BG_COLOR={r:255,g:250,b:243}; // #fffaf3
 const SUBJECT_TARGET_FRACTION=0.72; // 主體最長邊要佔畫面的比例，愈小代表四周留白愈多
-function detectSubjectBBox(img,MAX_DIM=300){ // MAX_DIM：分析用的縮圖大小；愈大愈準、愈慢
+function detectSubjectBBox(img,MAX_DIM=300,bg=SUBJECT_BG_COLOR){ // MAX_DIM：分析用的縮圖大小；愈大愈準、愈慢；bg：照片的底色（預設網站底色）
   const iw=img.naturalWidth||img.width,ih=img.naturalHeight||img.height;
   // 用縮圖分析就夠了，不用掃整張原圖的像素，速度快很多
   const scale=Math.min(1,MAX_DIM/Math.max(iw,ih));
@@ -59,7 +59,7 @@ function detectSubjectBBox(img,MAX_DIM=300){ // MAX_DIM：分析用的縮圖大�
     for(let x=0;x<w;x++){
       const i=(y*w+x)*4;
       if(data[i+3]<10)continue; // 透明像素當背景看待
-      const dr=data[i]-SUBJECT_BG_COLOR.r,dg=data[i+1]-SUBJECT_BG_COLOR.g,db=data[i+2]-SUBJECT_BG_COLOR.b;
+      const dr=data[i]-bg.r,dg=data[i+1]-bg.g,db=data[i+2]-bg.b;
       if(Math.sqrt(dr*dr+dg*dg+db*db)>TOLERANCE){
         if(x<minX)minX=x;
         if(x>maxX)maxX=x;
@@ -76,43 +76,69 @@ function detectSubjectBBox(img,MAX_DIM=300){ // MAX_DIM：分析用的縮圖大�
 /* ── 統一照片大小（「一鍵統一全部照片」跟上傳時自動置中共用）──────────────
    把商品主體縮放成最長邊佔畫面 SUBJECT_TARGET_FRACTION、放在正中間，四周補上網站的照片底色。
    跟裁切視窗的「自動置中」不同的是可以縮小：商品頂到照片邊緣的（例如高的書櫃）也能留出一樣的白邊。
-   只處理「去背照」：四個角落都接近底色（米白或白）才動手，一般的生活照、店內實拍整張都是主體，
-   縮小只會多出一圈邊框，所以原樣留著。回傳 {status, dataUrl?}：
+   只處理「去背照」：四個角落是同一個淺色（米白、純白、淺灰，例如 ChatGPT 修好的白底圖）或透明才動手；
+   一般的生活照、店內實拍整張都是主體，縮小只會多出一圈邊框，所以原樣留著。
+   底色跟網站的米白不一樣（純白、淺灰）時，順便把底色換成網站的米白，前台每張照片的底色才會一樣。
+   回傳 {status, dataUrl?}：
      ok＝處理好了（dataUrl 是新照片）　same＝本來就一致，不用動
-     nobg＝不是去背照，或底色跟網站的差太多（補邊會看得出接縫）　nosubject＝找不到商品　error＝照片讀不到 */
-const BG_SEAM_LIMIT=8; // 照片底色跟網站底色差多少以內，補邊才看不出接縫
-function cornerBackgroundDistance(img){
+     nobg＝不是去背照　nosubject＝找不到商品　error＝照片讀不到 */
+const BG_SEAM_LIMIT=8; // 照片底色跟網站底色差多少以內，直接補邊就看不出接縫（再多就要先把底色換掉）
+const colorDist=(a,b)=>Math.hypot(a.r-b.r,a.g-b.g,a.b-b.b);
+// 四個角落：各自的平均顏色、是不是透明。回傳 {bg:四角平均色, transparent, spread:四角彼此最大差距, dist:最偏的角跟網站底色差多少}
+function cornerBackground(img){
   const size=48,canvas=document.createElement("canvas");
   canvas.width=size;canvas.height=size;
   const ctx=canvas.getContext("2d",{willReadFrequently:true});
   ctx.drawImage(img,0,0,size,size);
   let data;
   try{data=ctx.getImageData(0,0,size,size).data}catch(e){return null}
-  let worst=0;
+  const corners=[];
   for(const [cx,cy] of [[0,0],[size-4,0],[0,size-4],[size-4,size-4]]){
-    let r=0,g=0,b=0;
-    for(let y=cy;y<cy+4;y++)for(let x=cx;x<cx+4;x++){const i=(y*size+x)*4;r+=data[i];g+=data[i+1];b+=data[i+2]}
-    const dr=r/16-SUBJECT_BG_COLOR.r,dg=g/16-SUBJECT_BG_COLOR.g,db=b/16-SUBJECT_BG_COLOR.b;
-    worst=Math.max(worst,Math.sqrt(dr*dr+dg*dg+db*db));
+    let r=0,g=0,b=0,a=0;
+    for(let y=cy;y<cy+4;y++)for(let x=cx;x<cx+4;x++){const i=(y*size+x)*4;r+=data[i];g+=data[i+1];b+=data[i+2];a+=data[i+3]}
+    corners.push({r:r/16,g:g/16,b:b/16,a:a/16});
   }
-  return worst;
+  if(corners.every(c=>c.a<20))return{transparent:true,bg:SUBJECT_BG_COLOR,spread:0,dist:0};
+  const bg={r:0,g:0,b:0};corners.forEach(c=>{bg.r+=c.r/4;bg.g+=c.g/4;bg.b+=c.b/4});
+  let spread=0;for(const c of corners)for(const d of corners)spread=Math.max(spread,colorDist(c,d));
+  return{transparent:false,bg,spread,dist:Math.max(...corners.map(c=>colorDist(c,SUBJECT_BG_COLOR)))};
+}
+// 是不是去背照的底：跟網站底色很接近，或是四個角落同一個很淺、幾乎沒有顏色的底（純白、淺灰）
+function isCutoutBackground(info){
+  if(info.transparent||info.dist<=28)return true;
+  const {r,g,b}=info.bg;
+  return info.spread<=14&&Math.min(r,g,b)>=200&&Math.max(r,g,b)-Math.min(r,g,b)<=18;
+}
+// 把照片的底色調成網站的米白：接近底色的像素（底、淡淡的影子）整個照比例調亮調暖，影子深淺跟原本一樣；
+// 跟底色差很多的（商品本身）完全不動，中間慢慢過渡，不會有一圈接縫
+function recolorBackground(ctx,x,y,w,h,bg){
+  if(w<1||h<1)return;
+  const image=ctx.getImageData(x,y,w,h),d=image.data;
+  const gr=SUBJECT_BG_COLOR.r/bg.r-1,gg=SUBJECT_BG_COLOR.g/bg.g-1,gb=SUBJECT_BG_COLOR.b/bg.b-1;
+  for(let i=0;i<d.length;i+=4){
+    if(!d[i+3])continue; // 透明（照片外面）跳過
+    const dist=Math.hypot(d[i]-bg.r,d[i+1]-bg.g,d[i+2]-bg.b);
+    if(dist>=70)continue;
+    const k=dist<=30?1:(70-dist)/40;
+    d[i]*=1+gr*k;d[i+1]*=1+gg*k;d[i+2]*=1+gb*k;
+  }
+  ctx.putImageData(image,x,y);
 }
 async function uniformSubject(src){
   let img;
   try{img=await loadImage(src)}catch(e){return{status:"error"}}
-  const bgDist=cornerBackgroundDistance(img);
-  if(bgDist===null)return{status:"error"};
-  if(bgDist>28)return{status:"nobg"}; // 跟 detectSubjectBBox 的容許值一樣：角落不是底色就不是去背照
-  const bbox=detectSubjectBBox(img,600); // 比裁切視窗的自動置中準一點：小件商品差一個像素，大小就差好幾 %
+  const info=cornerBackground(img);
+  if(!info)return{status:"error"};
+  if(!isCutoutBackground(info))return{status:"nobg"};
+  const recolor=!info.transparent&&info.dist>BG_SEAM_LIMIT; // 純白、淺灰底：要換成網站的米白
+  const bbox=detectSubjectBBox(img,600,info.bg); // 比裁切視窗的自動置中準一點：小件商品差一個像素，大小就差好幾 %
   if(!bbox)return{status:"nosubject"};
   const iw=img.naturalWidth,ih=img.naturalHeight,longest=Math.max(bbox.w,bbox.h);
   const cx=bbox.x+bbox.w/2,cy=bbox.y+bbox.h/2;
   const square=Math.abs(iw-ih)/Math.max(iw,ih)<.01;
-  if(square&&Math.abs(longest/iw-SUBJECT_TARGET_FRACTION)<.015&&Math.abs(cx/iw-.5)<.012&&Math.abs(cy/ih-.5)<.012)return{status:"same"};
+  if(!recolor&&!info.transparent&&square&&Math.abs(longest/iw-SUBJECT_TARGET_FRACTION)<.015&&Math.abs(cx/iw-.5)<.012&&Math.abs(cy/ih-.5)<.012)return{status:"same"};
   const W=PHOTO_TARGET_W,H=PHOTO_TARGET_H,scale=SUBJECT_TARGET_FRACTION*W/longest;
   const x0=W/2-cx*scale,y0=H/2-cy*scale;
-  const covers=x0<=.5&&y0<=.5&&x0+iw*scale>=W-.5&&y0+ih*scale>=H-.5;
-  if(!covers&&bgDist>BG_SEAM_LIMIT)return{status:"nobg"};
   try{
     const canvas=document.createElement("canvas");
     canvas.width=W;canvas.height=H;
@@ -120,7 +146,16 @@ async function uniformSubject(src){
     ctx.fillStyle="#fffaf3";
     ctx.fillRect(0,0,W,H);
     ctx.imageSmoothingQuality="high";
-    ctx.drawImage(img,x0,y0,iw*scale,ih*scale);
+    if(recolor){
+      // 先放在一張透明的畫布上換好底色，再疊到米白底上：照片邊緣（半透明的那一圈）也換過，
+      // 跟補的邊接起來都是米白，不會出現一條細線
+      const tmp=document.createElement("canvas");tmp.width=W;tmp.height=H;
+      const tctx=tmp.getContext("2d",{willReadFrequently:true});
+      tctx.imageSmoothingQuality="high";
+      tctx.drawImage(img,x0,y0,iw*scale,ih*scale);
+      recolorBackground(tctx,0,0,W,H,info.bg);
+      ctx.drawImage(tmp,0,0);
+    }else ctx.drawImage(img,x0,y0,iw*scale,ih*scale);
     return{status:"ok",dataUrl:canvas.toDataURL("image/jpeg",0.9)};
   }catch(e){return{status:"error"}}
 }

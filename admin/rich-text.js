@@ -22,7 +22,7 @@ function rteInit(id){
   editor.addEventListener("mouseup",saveSel);
   editor.addEventListener("keyup",saveSel);
   // 讓瀏覽器原生 Enter 換行也統一存成 <br>（不用自訂攔截 Enter 那種寫法，
-  // 避免影響上下清單的 Enter 行為），這樣跟貼上文字、自動產文案的格式一致。
+  // 避免影響上下清單的 Enter 行為），這樣跟貼上文字的格式一致。
   editor.addEventListener("focus",()=>{
     try{document.execCommand("defaultParagraphSeparator",false,"br")}catch(e){}
   });

@@ -239,9 +239,10 @@ tbody td{
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:rgba(185,146,99,.06)}
 tbody tr.is-archived{opacity:.55}
-.cell-thumb{width:52px;height:52px;border-radius:6px;object-fit:cover;background:var(--cream);display:block}
+/* 縮圖 72px：去背照的商品只佔畫面七成，太小會認不出是哪一件 */
+.cell-thumb{width:72px;height:72px;border-radius:8px;object-fit:cover;background:var(--cream);display:block}
 .cell-thumb-empty{
-  width:52px;height:52px;border-radius:6px;background:var(--cream);
+  width:72px;height:72px;border-radius:8px;background:var(--cream);
   display:flex;align-items:center;justify-content:center;color:var(--soft);font-size:10px;text-align:center;
 }
 .cell-name{font-weight:500;color:var(--charcoal)}
@@ -513,32 +514,6 @@ body.quickcat-mode .quickcat-bar{display:flex}
   font-size:12px;
 }
 .rte-toolbar button:hover{border-color:var(--tan);color:var(--tan-dark)}
-.modal .rte-toolbar select{
-  width:auto;
-  border:1px solid var(--line);
-  border-radius:6px;
-  background:var(--white);
-  color:var(--muted);
-  padding:5px 6px;
-  font-size:12px;
-}
-.modal .rte-toolbar label{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  margin:0;
-  font-size:11px;
-  color:var(--soft);
-}
-.modal .rte-toolbar input[type="color"]{
-  width:26px;
-  height:26px;
-  border:1px solid var(--line);
-  border-radius:6px;
-  padding:0;
-  background:none;
-  cursor:pointer;
-}
 .rte-editor{
   min-height:90px;
   max-height:260px;
@@ -680,6 +655,11 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .figure-preview-text{font-size:12.5px;color:var(--muted);line-height:1.6}
 .figure-preview-text strong{display:block;color:var(--ink);font-size:13.5px}
 .figure-preview-text span{display:block;text-wrap:pretty}
+.figure-preview-text{flex:1 1 auto;min-width:0}
+.figure-toggle{flex:none;align-self:center;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--tan-dark);font-size:12.5px;cursor:pointer;white-space:nowrap}
+.figure-toggle:hover{border-color:var(--tan)}
+.figure-picker{margin-top:10px}
+.figure-picker[hidden]{display:none}
 .view-on-site{display:inline-block;margin:-14px 0 14px;font-size:12.5px;color:var(--tan-dark)}
 .form-grid-2,.form-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;align-items:end}
 .form-grid-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -895,8 +875,23 @@ body.quickcat-mode .quickcat-bar{display:flex}
 .adv-fields{margin-top:28px;border:1px solid var(--line);border-radius:8px;padding:0 14px 14px;background:var(--paper)}
 .adv-fields>summary{cursor:pointer;padding:12px 0 2px;font-size:14px;font-weight:600;color:var(--ink);list-style-position:inside}
 .adv-fields:not([open])>summary{padding-bottom:12px}
-.pt-group{margin:26px 0 2px;padding-bottom:6px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600;color:var(--ink)}
-.pt-group:first-child{margin-top:6px}
+/* 網站文字：一組一組可以收合，上面搜尋框、只看改過的 */
+.pt-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0 10px}
+.pt-tools input[type="search"]{flex:1 1 220px;min-width:0}
+.modal .pt-only{display:inline-flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--muted);white-space:nowrap;cursor:pointer}
+.pt-only input{width:16px;height:16px;accent-color:var(--tan-dark)}
+.pt-section{border:1px solid var(--line);border-radius:10px;background:var(--white);margin-top:8px}
+.pt-section[hidden]{display:none}
+.pt-section>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;cursor:pointer;list-style:none;font-size:14px;font-weight:600;color:var(--ink)}
+.pt-section>summary::-webkit-details-marker{display:none}
+.pt-section>summary::after{content:"▾";color:var(--soft);font-weight:400;transition:transform .15s}
+.pt-section[open]>summary::after{transform:rotate(180deg)}
+.pt-sec-name{flex:1 1 auto}
+.pt-sec-meta{font-size:12px;font-weight:400;color:var(--soft)}
+.pt-sec-body{padding:0 14px 14px;border-top:1px solid var(--line)}
+.pt-field[hidden]{display:none}
+.pt-changed{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;background:rgba(185,146,99,.16);color:var(--tan-dark);font-size:11px;line-height:18px;vertical-align:1px}
+.pt-changed[hidden]{display:none}
 .pt-hint{margin-top:5px;font-size:11.5px;color:var(--soft);line-height:1.5}
 .catmgr-add-sub{border:1px dashed var(--line);background:transparent;color:var(--tan-dark);border-radius:6px;padding:6px 10px;font-size:12px;margin-top:4px;align-self:flex-start}
 .btn-secondary,.btn-primary{
@@ -967,7 +962,44 @@ body.quickcat-mode .quickcat-bar{display:flex}
   .sidebar{width:100%;position:static;top:auto}
   .cat-subs.open{max-height:600px}
   main,.content{width:100%}
-  table{min-width:680px}
+  /* 上面的按鈕：字不要被切成好幾行，按鈕縮小、放不下就換到下一排 */
+  .header-title{flex-wrap:wrap;row-gap:2px}
+  .header-title h1{font-size:17px}
+  .header-links{flex-wrap:wrap;gap:8px}
+  .header-links .add-btn{white-space:nowrap;padding:8px 12px;font-size:13px}
+  .header-links>a{white-space:nowrap}
+  /* 下拉選單在手機上對齊整個畫面（不然靠右的「商品工具」選單會超出畫面右邊） */
+  .dropdown{position:static}
+  .dropdown-menu{left:15px;right:15px;min-width:0}
+  .dropdown-menu-inner{max-height:72vh;overflow:auto}
+  /* 商品表格在手機上改成一件一張卡片（不用左右滑）：縮圖在左，名稱、分類、尺寸／售價／照片／狀態在右，按鈕在下面 */
+  .table-wrap{overflow:visible;border:0;background:transparent}
+  table{min-width:0}
+  thead{display:none}
+  tbody{display:flex;flex-direction:column;gap:10px}
+  tbody tr{display:grid;grid-template-columns:80px auto auto auto minmax(0,1fr);column-gap:12px;row-gap:5px;align-items:center;position:relative;
+    padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--paper)}
+  tbody tr:hover{background:var(--paper)}
+  tbody td{display:block;padding:0;border:0;font-size:12.5px}
+  tbody td.drag-handle-cell{display:none}
+  body.quickcat-mode tbody td.qc-cell{display:block;position:absolute;top:10px;right:10px}
+  tbody td:nth-child(3){grid-row:1/4;grid-column:1}
+  tbody td:nth-child(4){grid-row:1;grid-column:2/-1;padding-right:28px}
+  tbody td:nth-child(4) .cell-name{font-size:14.5px}
+  tbody td:nth-child(5){grid-row:2;grid-column:2/-1;white-space:normal}
+  tbody td:nth-child(5) div{display:inline}
+  tbody td:nth-child(5) .cell-subcat{padding-left:6px}
+  tbody td:nth-child(6){grid-row:3;grid-column:2}
+  tbody td:nth-child(7){grid-row:3;grid-column:3}
+  tbody td:nth-child(8){grid-row:3;grid-column:4;white-space:nowrap}
+  tbody td:nth-child(9){grid-row:3;grid-column:5;justify-self:start}
+  tbody td:nth-child(10){grid-row:4;grid-column:1/-1;margin-top:6px}
+  tbody td.empty-state{grid-column:1/-1}
+  .cell-thumb,.cell-thumb-empty{width:80px;height:80px}
+  .row-actions{flex-wrap:wrap}
+  .row-actions a,.row-actions button{flex:1 1 auto;justify-content:center;text-align:center}
+  .figure-preview{flex-wrap:wrap}
+  .figure-toggle{margin-left:auto}
   .modal-scroll{padding:22px 18px}
   .photo-slots{grid-template-columns:repeat(3,1fr)}
   .heat-row{grid-template-columns:22px minmax(0,1fr);row-gap:3px}

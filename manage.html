@@ -17,7 +17,7 @@
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-serif-tc-600.woff2" crossorigin>
 <link rel="preload" as="font" type="font/woff2" href="./fonts/noto-sans-tc-400.woff2" crossorigin>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23343331'/%3E%3Ctext x='32' y='43' font-family='Georgia,serif' font-size='34' fill='%23b99263' text-anchor='middle'%3E信%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="admin/manage.css?v=4">
+<link rel="stylesheet" href="admin/manage.css?v=5">
 </head>
 <body>
 
@@ -57,6 +57,8 @@
           <button onclick="closeHeaderDropdowns();toggleQuickCatMode()" id="quickCatToggleBtn">☑ 批次操作</button>
           <button onclick="closeHeaderDropdowns();openBulkUploadModal()">🖼 批次上傳照片</button>
           <button onclick="closeHeaderDropdowns();openUniformModal()">📐 統一照片大小</button>
+          <div class="menu-label">前台商品順序</div>
+          <button id="syncBtn" onclick="closeHeaderDropdowns();syncOrderToFrontend()" title="拖曳調整的順序會自動存好；這顆按鈕是把前台順序一次改成表格目前的排法">↕ 依表格目前的排序重排前台</button>
           <div class="menu-label">匯出／匯入</div>
           <button onclick="closeHeaderDropdowns();exportProductsCSV()">⬇ 匯出 CSV</button>
           <button onclick="closeHeaderDropdowns();document.getElementById('csvFileInput').click()">⬆ 匯入 CSV</button>
@@ -93,6 +95,8 @@
         <button class="filter-chip warn" data-filter="noSize" onclick="setFilter('noSize')">缺尺寸 <span class="n" id="fc-noSize"></span></button>
         <button class="filter-chip warn" data-filter="noDesc" onclick="setFilter('noDesc')">缺說明 <span class="n" id="fc-noDesc"></span></button>
         <button class="filter-chip warn" data-filter="noPhoto" onclick="setFilter('noPhoto')">缺照片 <span class="n" id="fc-noPhoto"></span></button>
+        <button class="filter-chip" data-filter="onePhoto" onclick="setFilter('onePhoto')" title="建議每件商品補到 3 張照片">只有 1 張照片 <span class="n" id="fc-onePhoto"></span></button>
+        <button class="filter-chip" data-filter="noPrice" onclick="setFilter('noPrice')" title="沒填參考售價（寫「洽詢」算有填）">沒標價 <span class="n" id="fc-noPrice"></span></button>
         <button class="filter-chip" data-filter="archived" onclick="setFilter('archived')">已封存 <span class="n" id="fc-archived"></span></button>
         <button class="filter-chip" data-filter="trashed" onclick="setFilter('trashed')">垃圾桶 <span class="n" id="fc-trashed"></span></button>
       </div>
@@ -109,10 +113,6 @@
               <option value="all">全部</option>
             </select>
           </label>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="sync-btn" id="bulkAutoDescBtn" onclick="bulkAutoDesc()">🪄 批次產生缺說明商品文案</button>
-          <button class="sync-btn" id="syncBtn" onclick="syncOrderToFrontend()" title="拖曳調整的順序會自動存好；這顆按鈕是把前台順序一次改成表格目前的排法">依「商品名稱（筆畫）」重排前台順序 →</button>
         </div>
       </div>
       <div class="quickcat-bar" id="quickCatBar">
@@ -139,7 +139,7 @@
             <tr>
               <th class="qc-cell" style="width:34px"><input type="checkbox" id="qcSelectAll" onchange="toggleQuickCatSelectAll(this)"></th>
               <th data-sort="order" style="width:30px" title="拖曳商品列可調整順序">⠿</th>
-              <th style="width:60px">縮圖</th>
+              <th style="width:84px">縮圖</th>
               <th data-sort="name" class="sorted">商品名稱（筆畫）</th>
               <th data-sort="cat">分類</th>
               <th data-sort="size" title="寬 × 深 × 高（cm）">尺寸</th>
@@ -178,7 +178,7 @@
     </div>
     <label>商品名稱 *</label>
     <input type="text" id="pName" placeholder="例：北歐實木餐桌">
-    <label>商品標籤（顯示在前台商品卡片左上角；勾選多個時只顯示優先度最高的一個）</label>
+    <label>商品標籤（顯示在前台的商品頁；客人也能在商品列表用「篩選」挑出有這個標籤的商品）</label>
     <div class="tag-checkbox-grid" id="pBadges"></div>
 
     <div class="form-section-title">價格</div>
@@ -236,25 +236,15 @@
     <div class="spec-editor" id="specEditor"></div>
     <button class="add-spec-btn" type="button" onclick="addSpecRow()">＋ 新增部位列</button>
     <label>尺寸示意圖（前台商品頁「尺寸」旁邊的線稿，會標出寬、深、高）</label>
-    <div class="figure-picker" id="pFigurePicker" role="group" aria-label="尺寸示意圖"></div>
     <div class="figure-preview" id="pFigurePreview"></div>
+    <div class="figure-picker" id="pFigurePicker" role="group" aria-label="尺寸示意圖" hidden></div>
 
     <div class="form-section-title">商品說明</div>
     <div class="rte-toolbar">
       <button type="button" onmousedown="event.preventDefault()" onclick="rteApply('pDesc','textDecoration','underline')"><u>底線</u></button>
-      <select onmousedown="event.preventDefault()" onchange="if(this.value){rteApply('pDesc','fontSize',this.value);this.value=''}">
-        <option value="">文字大小</option>
-        <option value="12px">小</option>
-        <option value="15px">標準</option>
-        <option value="18px">大</option>
-        <option value="24px">特大</option>
-      </select>
-      <label>文字顏色<input type="color" value="#262523" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','color',this.value)"></label>
-      <label>文字網底<input type="color" value="#fff2cc" onmousedown="event.preventDefault()" onchange="rteApply('pDesc','backgroundColor',this.value)"></label>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertUnorderedList')">• 項目符號</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteList('pDesc','insertOrderedList')">1. 編號清單</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="rteClear('pDesc')">清除格式</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="applyAutoDesc()">🪄 自動產生文案</button>
       <button type="button" onmousedown="event.preventDefault()" onclick="copyAiPrompt()" title="整理好這件商品的資料，貼到免費的 AI 聊天請它寫說明">📋 複製 AI 提示詞</button>
     </div>
     <div class="ai-helper" id="aiHelper" hidden>
@@ -396,7 +386,7 @@
     <div class="modal-title">聯繫資訊</div>
     <label>地址</label><input type="text" id="cAddr">
     <label>電話</label><input type="text" id="cPhone">
-    <label>LINE ID（例如 @xintong，用於「詢問這件商品」按鈕）</label><input type="text" id="cLine">
+    <label>LINE ID（例如 @xintong，顯示在前台「聯繫我們」）</label><input type="text" id="cLine">
     <label>營業時間</label><input type="text" id="cHours">
     <label>電子郵件</label><input type="text" id="cEmail">
     <label>Facebook 連結</label><input type="text" id="cFb" placeholder="https://facebook.com/...">
@@ -450,6 +440,10 @@
     <div class="modal-scroll">
     <div class="modal-title">網站文字</div>
     <p class="catmgr-hint">前台所有固定的字都在這裡改。每一格留空，就會顯示預設文字（格子裡灰色的字）。分類標題下面的介紹，在「分類管理」每個分類旁的 📝 改。</p>
+    <div class="pt-tools">
+      <input type="search" id="ptSearch" placeholder="搜尋要改的字，例如「收藏」「篩選」" aria-label="搜尋網站文字" oninput="filterPageText()">
+      <label class="pt-only"><input type="checkbox" id="ptChangedOnly" onchange="filterPageText()">只看改過的</label>
+    </div>
     <div id="pageTextFields"></div>
     <div class="modal-actions">
       <button class="btn-secondary" onclick="closeModal('pageTextModal')">取消</button>
@@ -538,7 +532,8 @@
     <div class="modal-title">統一照片大小</div>
     <p class="catmgr-hint">
       把每張照片裡的商品縮放成一樣大、放在正中間，前台排在一起才不會忽大忽小。<br>
-      只會處理<strong>去背照</strong>（背景是米白或白色）；店內實拍這類有背景的照片不會動。新上傳的照片之後會自動做，不用再按。
+      只會處理<strong>去背照</strong>（背景是米白、白色、淺灰或透明，例如 ChatGPT 修好的白底圖），白色、淺灰的底會順便換成網站的米白；
+      店內實拍這類有背景的照片不會動。新上傳的照片之後會自動做，不用再按。
     </p>
     <div class="uniform-steps">
       <button class="btn-secondary uniform-action" onclick="previewUniform()">① 先看預覽（不會存檔）</button>
@@ -582,6 +577,6 @@
   </div>
 </div>
 
-<script type="module" src="admin/manage.js?v=11"></script>
+<script type="module" src="admin/manage.js?v=12"></script>
 </body>
 </html>

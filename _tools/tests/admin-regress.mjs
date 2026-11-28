@@ -49,6 +49,6 @@ await pg.evaluate(()=>toggleQuickCatMode(false));
 const [dl]=await Promise.all([pg.waitForEvent("download"),pg.evaluate(()=>exportProductsCSV())]);
 {const fs=await import("node:fs");const t=fs.readFileSync(await dl.path(),"utf8");ok(t.split("\n").length>=60&&t.includes("測試改名商品"),"csv content "+t.split("\n").length);}
 // drag-mode sort sync button
-await pg.click("#syncBtn");await pg.waitForTimeout(600);
+await pg.click("#toolsDropdown > button");await pg.click("#syncBtn");await pg.waitForTimeout(600);
 ok(errs.length===0,"no js errors: "+errs.join(" | "));
 await b.close();ok.done();

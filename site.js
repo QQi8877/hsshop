@@ -6,7 +6,7 @@
 // 價格、尺寸、商品說明、商品頁右側那一欄的顯示規則跟後台、自動產生的商品頁共用同一份：shop-render.js
 // （尺寸示意圖在它 import 的 dim-figures.js；改了這兩個檔案要把 ?v= 加一，見檔案開頭說明）。
 // 網址用 / 開頭：每件商品的網頁在 /p/ 底下，相對路徑會找錯地方。
-import{listingTitleHtml,textOf,textHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,tagBadgeHtml,getSizeSummary,getSizeShort,activeSalePrice,priceDigits,priceHtml,productDescText,productLead,productBadgesHtml,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml,GRID_IMG_SIZES}from"/shop-render.js?v=16";
+import{listingTitleHtml,textOf,textHtml,SITE_NAME,escapeHTML,normalizeProduct,productPath,isListedProduct,catalogOrderCompare,mainNameOf,subNameOf,normalizePhotoUrl,tagDefsOf,getSizeSummary,getSizeShort,activeSalePrice,priceDigits,priceHtml,productDescText,productLead,productBadgesHtml,productOptions,productInfoHtml,buyInfoItems,buyInfoListHtml,similarProducts,photoAlt,categoryPath,categoryIdFromPath,categoryFromId,categoryPageTitle,categoryIntro,categoryNavHtml,contactItemsHtml,contactActionsHtml,GRID_IMG_SIZES}from"/shop-render.js?v=16";
 
 const firebaseConfig={
   apiKey:"AIzaSyBssTXYLERqDDcuW62MkGxdydPR_hfMBrw",
@@ -188,15 +188,6 @@ function setCategory(main,sub=null){
   const url=listUrl();
   if(location.pathname!==url||location.hash)replaceView(url);
   document.title=listTitle();
-}
-/* ── 商品標籤（左上角徽章）─────────────────────────────────────
-   state.tagDefs 的排列順序就是優先順序：一件商品若同時符合多個標籤，
-   只顯示排在最前面的那一個，避免卡片被塞太多徽章。標籤本身（改名／
-   顏色／新增／刪除）在後台「標籤管理」設定，這裡只負責讀取、顯示。 */
-function primaryTagBadgeHtml(product){
-  const badges=product.badges||[];
-  const def=tagDefsOf(state.tagDefs).find(d=>badges.includes(d.key));
-  return def?tagBadgeHtml(def):"";
 }
 let searchQuery="";
 let productsLoadFailed=false;
@@ -1035,7 +1026,6 @@ function renderPicks(){
       <button class="p-card__fav${isFavorite(product.id)?" active":""}" type="button" data-fav-id="${escapeHTML(product.id)}" aria-label="加入收藏">
         <svg viewBox="0 0 24 24" data-icon><path d="M12 19.8 4.6 12.6a4.8 4.8 0 0 1 6.8-6.8l.6.6.6-.6a4.8 4.8 0 0 1 6.8 6.8z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       </button>
-      ${primaryTagBadgeHtml(product)?`<div class="p-card__badge">${primaryTagBadgeHtml(product)}</div>`:""}
     `;
     // 首張照片先放，第二張照片存在才補上 img-secondary，滑鼠移過去用 CSS
     // 淡入切換（跟 #productsGrid 的 .product-card 是同一套做法，見 renderProducts）。

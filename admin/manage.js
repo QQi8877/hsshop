@@ -16,8 +16,8 @@ import{DIM_FIGURES,dimFigureSvg,figureDimsOf,autoDimFigureKey,hasSeatHeight}from
 // 商品說明的過濾、「前台順序」的排法跟前台用同一份規則（改了 shop-render.js 要把 ?v= 加一）
 import{catalogOrderCompare,productPageTitle,productSearchDesc,TEXT_FIELDS,categoryIntro,isListedProduct}from"../shop-render.js?v=16";
 import{escapeHTML}from"./util.js?v=1";
-import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=2";
-import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=8";
+import{uniformSubject,uploadToCloudinary,loadImage,PHOTO_TARGET_W,PHOTO_TARGET_H,SUBJECT_TARGET_FRACTION,detectSubjectBBox,resizeImageToUniform,resizeToThumb,isUrl,thumbFor,capOriginalDataUrl,resizeSquareImage,convertGdriveUrl,normalizePhotoUrl}from"./image-tools.js?v=3";
+import{rteInit,richTextIsEmpty,sanitizeRichText}from"./rich-text.js?v=9";
 import{CSV_HEADERS,csvEscapeCell,parseCSV}from"./csv.js?v=1";
 
 const firebaseConfig={
@@ -178,8 +178,9 @@ async function syncOrderToFrontend(){
   const active=products.filter(isLive);
   const archived=products.filter(p=>p.status==="archived"); // 垃圾桶裡的商品不參與排序
   const sorted=active.slice().sort((a,b)=>sortDir*sortCompare(a,b));
+  if(sortKey==="order"){toast("先點表格上面的欄位標題（例如「商品名稱」）排好順序，再用這個按鈕");return}
   if(!confirm(`將依「${sortLabel()}」重新排列前台商品的顯示順序（每個分類裡面照這個順序排），共 ${sorted.length} 個商品。確定要套用嗎？`))return;
-  btn.disabled=true;
+  btn.disabled=true;btn.dataset.busy="1";
   btn.textContent="同步中…";
   try{
     const all=[...sorted,...archived];
@@ -189,7 +190,7 @@ async function syncOrderToFrontend(){
   }catch(e){
     toast("同步失敗："+(e.message||String(e)),4000);
   }
-  btn.disabled=false;
+  btn.disabled=false;delete btn.dataset.busy;
   renderTable();
 }
 // 目前表格照哪一欄排（給「依○○重排前台順序」按鈕用）
@@ -197,12 +198,13 @@ function sortLabel(){
   const th=document.querySelector(`thead th[data-sort="${sortKey}"]`);
   return (th?.textContent||"商品名稱").replace(/[▲▼↑↓]/g,"").trim();
 }
-// 拖曳調整順序是拖完就存好；這顆按鈕是「照目前排序欄位一次重排」，表格本身就是自訂順序時不用顯示
+// 拖曳調整順序是拖完就存好；這顆按鈕是「照目前排序欄位一次重排」
 function updateSyncBtn(){
   const btn=document.getElementById("syncBtn");
-  if(!btn||btn.disabled)return;
-  btn.style.display=sortKey==="order"?"none":"";
-  btn.textContent=`依「${sortLabel()}」重排前台順序 →`;
+  if(!btn||btn.dataset.busy)return;
+  // 放在「商品工具」選單裡：表格照「自訂順序」排的時候沒東西可套用，先點表格的欄位標題（例如商品名稱）排好再用
+  btn.disabled=sortKey==="order";
+  btn.textContent=sortKey==="order"?"↕ 重排前台順序（先點表格欄位標題排序）":`↕ 依「${sortLabel()}」重排前台順序`;
 }
 window.syncOrderToFrontend=syncOrderToFrontend;
 
@@ -592,18 +594,53 @@ window.saveContactManage=saveContactManage;
    這裡照清單自動排出表單：每一格留空＝用預設文字（灰色的字）。存在網站設定的 pageText。 */
 function openPageTextManage(){
   const wrap=document.getElementById("pageTextFields");
-  let group="";
-  wrap.innerHTML=TEXT_FIELDS.map(f=>{
-    const head=f.group!==group?`<div class="pt-group">${escapeHTML(group=f.group)}</div>`:"";
+  // 照 TEXT_FIELDS 的分組排成一組一組可以收合的區塊（70 幾格一次全攤開太長），上面有搜尋框、「只看改過的」
+  const groups=[];
+  TEXT_FIELDS.forEach(f=>{let g=groups.find(x=>x.name===f.group);if(!g)groups.push(g={name:f.group,fields:[]});g.fields.push(f)});
+  const fieldHtml=f=>{
     const val=escapeHTML(typeof pageText[f.key]==="string"?pageText[f.key]:"");
     const ph=escapeHTML(f.def);
     const input=f.long
       ?`<textarea data-pt="${f.key}" rows="2" placeholder="${ph}">${val}</textarea>`
       :`<input type="text" data-pt="${f.key}" placeholder="${ph}" value="${val}">`;
-    return `${head}<label>${escapeHTML(f.label)}</label>${input}${f.hint?`<div class="pt-hint">${escapeHTML(f.hint)}</div>`:""}`;
-  }).join("");
+    const search=escapeHTML(`${f.group} ${f.label} ${f.def} ${f.hint||""}`.toLowerCase());
+    return `<div class="pt-field" data-search="${search}"><label>${escapeHTML(f.label)}<span class="pt-changed" hidden>已改</span></label>${input}${f.hint?`<div class="pt-hint">${escapeHTML(f.hint)}</div>`:""}</div>`;
+  };
+  wrap.innerHTML=groups.map(g=>`<details class="pt-section"><summary><span class="pt-sec-name">${escapeHTML(g.name)}</span><span class="pt-sec-meta"></span></summary><div class="pt-sec-body">${g.fields.map(fieldHtml).join("")}</div></details>`).join("");
+  document.getElementById("ptSearch").value="";
+  document.getElementById("ptChangedOnly").checked=false;
+  wrap.oninput=e=>{if(e.target.dataset&&e.target.dataset.pt)refreshPageTextMarks()};
+  refreshPageTextMarks();
   openModal("pageTextModal");
 }
+// 每一格有沒有改過（有填字＝改過，留空＝預設文字），每一組標出共幾格、改了幾格
+function refreshPageTextMarks(){
+  document.querySelectorAll("#pageTextFields .pt-section").forEach(sec=>{
+    let n=0,changed=0;
+    sec.querySelectorAll(".pt-field").forEach(field=>{
+      const on=!!field.querySelector("[data-pt]").value.trim();
+      field.querySelector(".pt-changed").hidden=!on;
+      field.classList.toggle("is-changed",on);
+      n++;if(on)changed++;
+    });
+    sec.querySelector(".pt-sec-meta").textContent=changed?`${n} 格・已改 ${changed}`:`${n} 格`;
+  });
+}
+window.filterPageText=function(){
+  const q=document.getElementById("ptSearch").value.trim().toLowerCase();
+  const changedOnly=document.getElementById("ptChangedOnly").checked;
+  document.querySelectorAll("#pageTextFields .pt-section").forEach(sec=>{
+    let shown=0;
+    sec.querySelectorAll(".pt-field").forEach(field=>{
+      const value=field.querySelector("[data-pt]").value.trim().toLowerCase();
+      const hit=(!q||field.dataset.search.includes(q)||value.includes(q))&&(!changedOnly||!!value);
+      field.hidden=!hit;
+      if(hit)shown++;
+    });
+    sec.hidden=!shown;
+    sec.open=!!(q||changedOnly)&&shown>0; // 有在找東西就把找到的組打開；清掉搜尋就全部收起來
+  });
+};
 window.openPageTextManage=openPageTextManage;
 async function savePageTextManage(){
   // 只留清單上的字：以前存過、網站已經不用的舊欄位（例如舊版的「Facebook」「LINE」「精選商品」標題）存一次就清掉
@@ -1016,7 +1053,7 @@ async function autoUniformUrl(url){
   }
 }
 const UNIFORM_BACKUP_KEY="hs_uniform_backup_v1";
-const UNIFORM_STATUS_TEXT={same:"本來就一致",nobg:"不是去背照（背景不是米白或白色），沒有動",nosubject:"找不到商品主體，沒有動",error:"照片讀不到，沒有動"};
+const UNIFORM_STATUS_TEXT={same:"本來就一致",nobg:"不是去背照（背景不是米白、白色、淺灰或透明），沒有動",nosubject:"找不到商品主體，沒有動",error:"照片讀不到，沒有動"};
 let uniformBusy=false;
 function uniformTargets(){return products.filter(p=>p.status!=="trashed"&&(p.photos||[]).some(Boolean))}
 function readUniformBackup(){
@@ -1541,78 +1578,6 @@ document.addEventListener("keydown",e=>{
 });
 window.closeModal=function(id){document.getElementById(id).classList.remove("open")};
 
-/* ── 自動產文案（規則式樣板，依商品名稱關鍵字比對，非真AI生成）─── */
-function autoGenerateDesc(name,catName,subName){
-  name=name||"";catName=catName||"";subName=subName||"";
-  const has=kw=>name.includes(kw);
-  const traits=[];
-  if(has("鋁架")||has("鋁"))traits.push("鋁合金材質，輕巧防鏽");
-  if(has("白鐵"))traits.push("白鐵材質，耐刮耐用好清潔");
-  if(has("實木"))traits.push("實木材質，質感自然溫潤");
-  if(has("皮面")||has("皮革"))traits.push("皮革表面，好清潔耐髒污");
-  if(has("網布"))traits.push("透氣網布，久坐不悶熱");
-  if(has("古銅腳"))traits.push("古銅色澤，耐看好搭配");
-  if(has("電金腳"))traits.push("電金色澤，質感亮眼");
-  if(has("花紋"))traits.push("花紋表面，美觀耐看");
-  if(has("牛角"))traits.push("經典造型，耐看不退流行");
-  if(has("靠腰"))traits.push("貼腰椅背設計，久坐較舒適");
-  if(has("氣壓"))traits.push("氣壓升降，高度可依需求調整");
-  if(has("凹底"))traits.push("凹底椅面設計，坐感較貼合");
-  if(has("圓"))traits.push("圓潤造型，百搭多種空間風格");
-  if(has("鋼管"))traits.push("鋼管骨架穩重紮實，久坐不搖晃");
-
-  const isFold=has("摺疊")||has("折疊")||has("立桌")||subName.includes("摺疊")||subName.includes("折疊");
-  // 看分類名稱裡的關鍵字，不比對完整名稱：「收納櫃/架」「收納櫃／架」斜線全形半形都認得，分類改名也不會失效。
-  // 先看子分類、再看主分類，順序跟尺寸示意圖的自動判斷一樣（「床架」是床不是置物架、「床邊桌」是桌子）
-  const kindOf=n=>/椅|凳/.test(n)?"chair":/桌|几|台/.test(n)?"table":/床|寢具/.test(n)?"bed":/櫃|架/.test(n)?"rack":"";
-  const kind=kindOf(subName)||kindOf(catName);
-  const isRack=kind==="rack",isTable=kind==="table",isChair=kind==="chair";
-  const matText=traits.join("，")||"簡約造型，線條俐落好搭配";
-
-  let intro,bullets;
-  if(isRack){
-    intro=`${matText}，收納空間實用，組裝簡易。`;
-    bullets=[matText,"收納空間實用，組裝簡易"];
-  }else if(isTable){
-    if(isFold){
-      intro=`${matText}，摺疊桌腳設計，需要時展開即可使用，不用時收合好收納。`;
-      bullets=["摺疊收納，不佔空間",matText];
-    }else{
-      intro=`${matText}，適合居家日常使用。`;
-      bullets=[matText,"簡約造型，好搭配空間風格"];
-    }
-  }else if(isChair){
-    if(isFold){
-      intro=`${matText}，摺疊設計方便收納移動。`;
-      bullets=[matText,"摺疊收納，不佔空間"];
-    }else{
-      intro=`${matText}，適合居家餐廳日常使用。`;
-      bullets=[matText,"穩固耐用，居家日常好搭配"];
-    }
-  }else if(traits.length){
-    // 認不出品類時，商品名稱裡看得出的材質、特色還是要寫進去
-    intro=`${matText}，適合居家日常使用。`;
-    bullets=[matText,"居家日常好搭配"];
-  }else{
-    intro="簡約實用設計，適合居家日常使用。";
-    bullets=["簡約實用","居家日常好搭配"];
-  }
-  const bulletHtml=bullets.filter(Boolean).map(b=>`• ${escapeHTML(b)}`).join("<br>");
-  return `${escapeHTML(intro)}<br><br>${bulletHtml}`;
-}
-window.applyAutoDesc=function(){
-  const editor=document.getElementById("pDesc");
-  if(!richTextIsEmpty(editor.innerHTML)&&!confirm("目前已有商品說明內容，套用自動產生的文案會覆蓋掉，確定要套用嗎？"))return;
-  const name=document.getElementById("pName").value.trim();
-  if(!name){toast("請先填寫商品名稱");return}
-  const mainId=document.getElementById("pMainCat").value;
-  const subId=document.getElementById("pSubCat").value;
-  const catName=getMainName(mainId);
-  const subName=getSubName(mainId,subId);
-  editor.innerHTML=autoGenerateDesc(name,catName,subName);
-  renderSeoPreview();
-  toast("已自動產生文案，記得檢查一下內容再儲存");
-};
 /* ── 用免費的 AI 聊天寫商品說明：把這件商品的資料整理成提示詞，你貼到 Gemini／ChatGPT／Claude，
    附上照片請它寫，再把寫好的文字貼回「商品說明」（不用申請金鑰、不用付費）─────────────── */
 const AI_PROMPT_SKIP_TAGS=["sale","new","bestseller","preorder","limited"]; // 特價、新品這類會變動的標籤不寫進說明
@@ -1713,29 +1678,6 @@ window.downloadAiPhoto=async function(){
     toast("照片已在新分頁打開，按右鍵（手機長按）另存就可以",4000);
   }
 };
-window.bulkAutoDesc=async function(){
-  const targets=products.filter(p=>isLive(p)&&richTextIsEmpty(p.desc));
-  if(!targets.length){toast("目前沒有缺說明的商品");return}
-  if(!confirm(`將為 ${targets.length} 個缺商品說明的商品自動產生文案並直接儲存，確定要執行嗎？`))return;
-  const btn=document.getElementById("bulkAutoDescBtn");
-  btn.disabled=true;
-  btn.textContent="產生中…";
-  try{
-    targets.forEach(p=>{
-      const catName=getMainName(p.mainCat);
-      const subName=getSubName(p.mainCat,p.subCat);
-      p.desc=autoGenerateDesc(p.name,catName,subName);
-    });
-    await patchProducts(targets,["desc"]);
-    toast(`已為 ${targets.length} 個商品產生文案並儲存 ☁️`);
-  }catch(e){
-    toast("批次產生失敗："+(e.message||String(e)),4000);
-  }
-  btn.disabled=false;
-  btn.textContent="批次產生缺說明商品文案";
-  renderTable();
-};
-
 // 還沒搬到圖床的照片（圖床上傳失敗時暫存在資料庫裡的 base64）：有才在「商品工具」選單顯示搬遷按鈕
 const isLocalPhoto=src=>/^data:/i.test(src||"");
 function updateMigrateMenu(){
@@ -2056,6 +1998,9 @@ function renderSpecEditor(){
    dim-figures.js，那邊加新的示意圖這裡會自動多一個選項）。縮圖跟下面的預覽都是用前台
    同一份程式畫的，看到的就是客人看到的樣子；規格列有填「椅面」高度時會多標座高。 */
 let workingDimFigure="";
+// 17 張線稿平常收起來（絕大多數商品用「自動」），只顯示目前這張；按「換一張示意圖」才攤開
+let figurePickerOpen=false;
+window.toggleFigurePicker=function(){figurePickerOpen=!figurePickerOpen;renderFigurePicker()};
 function validDimFigure(value){return value==="none"||DIM_FIGURES.some(f=>f.key===value)?value:""}
 window.renderFigurePicker=function(){
   const picker=document.getElementById("pFigurePicker");
@@ -2078,16 +2023,18 @@ window.renderFigurePicker=function(){
     workingDimFigure=btn.dataset.value;
     renderFigurePicker();
   }));
+  picker.hidden=!figurePickerOpen;
+  const toggle=`<button type="button" class="figure-toggle" onclick="toggleFigurePicker()" aria-expanded="${figurePickerOpen}" aria-controls="pFigurePicker">${figurePickerOpen?"收起":"換一張示意圖"}</button>`;
   const shownKey=selected==="none"?"":(selected||autoKey);
   if(!shownKey){
-    preview.innerHTML=`<div class="figure-preview-text"><strong>前台不顯示示意圖</strong><span>尺寸數字照常顯示。</span></div>`;
+    preview.innerHTML=`<div class="figure-preview-text"><strong>前台不顯示示意圖</strong><span>尺寸數字照常顯示。</span></div>${toggle}`;
     return;
   }
   const notes=[];
-  if(!selected)notes.push("目前是「自動」，依分類、品名和尺寸選的；想換別張就點上面的圖。");
+  if(!selected)notes.push("目前是「自動」，依分類、品名和尺寸選的；想換別張就按「換一張示意圖」。");
   if(seat)notes.push(figureOf(shownKey).seat?"有填「椅面」的高度，圖上會多標座高。":"這張圖沒有座面，座高只會出現在旁邊的數字。");
   // 預覽照這件商品填的寬深高比例畫，跟前台一樣；上面的格子用一般比例，方便認出是哪一種
-  preview.innerHTML=`${dimFigureSvg(shownKey,{seat,dims})}<div class="figure-preview-text"><strong>前台會顯示這張圖</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>`;
+  preview.innerHTML=`${dimFigureSvg(shownKey,{seat,dims})}<div class="figure-preview-text"><strong>前台會顯示這張圖</strong>${notes.map(n=>`<span>${n}</span>`).join("")}</div>${toggle}`;
 };
 // 打字時很多次 input 事件併成一次重畫
 let figureRefreshQueued=false;
@@ -2608,6 +2555,7 @@ window.openProductModal=async function(id,{copy=false}={}){
       workingSpecs=[{part:"尺寸備註",w:String(product.size).trim(),d:"",h:""}];
     }
     workingDimFigure=product.dimFigure||"";
+    figurePickerOpen=false;
     renderFigurePicker();
     // 商品說明是直接從資料庫讀出來的 HTML，理論上只有存檔時經過這個編輯器
     // 自己的過濾，但資料庫本身不會強制套用這層過濾——用同一個 sanitizeRichText
@@ -2638,6 +2586,7 @@ window.openProductModal=async function(id,{copy=false}={}){
     renderBadgeCheckboxes([]);
     document.getElementById("pDesc").innerHTML="";
     workingDimFigure="";
+    figurePickerOpen=false;
   }
   renderSpecEditor();
   renderPhotoSlots();
@@ -2845,11 +2794,15 @@ window.deleteProductRow=async function(id){
 };
 
 function missingFlags(p){
+  const photoN=p.photoCount??(p.photos||[]).filter(Boolean).length;
   return {
     noCat: !p.mainCat,
     noSize: !hasSize(p),
     noDesc: richTextIsEmpty(p.desc),
-    noPhoto: !(p.photos||[]).filter(Boolean).length
+    noPhoto: !(p.photos||[]).filter(Boolean).length,
+    // 下面兩個不算「缺」（名稱下面不提示），只給上面的篩選籤用：建議每件補到 3 張照片、標參考價（寫「洽詢」也算有標）
+    onePhoto: photoN===1,
+    noPrice: !String(p.price||"").trim()&&!String(p.salePrice||"").trim()
   };
 }
 
@@ -3548,7 +3501,7 @@ window.renderTable=function(){
   const q=(document.getElementById("searchBox").value||"").trim().toLowerCase();
   // 左邊分類是第一層篩選，上面的篩選籤（含數字）只在左邊選到的分類範圍內統計／篩選
   const catFiltered=catFilteredProducts();
-  const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,archived:0,trashed:0};
+  const counts={all:0,noCat:0,noSize:0,noDesc:0,noPhoto:0,onePhoto:0,noPrice:0,archived:0,trashed:0};
   catFiltered.forEach(p=>{
     if(!isLive(p)){if(p.status in counts)counts[p.status]++;return}
     counts.all++;
@@ -3557,6 +3510,8 @@ window.renderTable=function(){
     if(m.noSize)counts.noSize++;
     if(m.noDesc)counts.noDesc++;
     if(m.noPhoto)counts.noPhoto++;
+    if(m.onePhoto)counts.onePhoto++;
+    if(m.noPrice)counts.noPrice++;
   });
   Object.keys(counts).forEach(k=>{const el=document.getElementById("fc-"+k);if(el)el.textContent=counts[k]});
   updateSyncBtn();
